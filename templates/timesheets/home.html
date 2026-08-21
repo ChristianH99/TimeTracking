@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load i18n hours %}
+{% block title %}{% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Start" %}{% endblock %}
+
+{% block content %}
+  <h1>{% blocktranslate with name=user.first_name|default:user.get_username %}Hello {{ name }}{% endblocktranslate %}</h1>
+
+  {% if no_contract %}
+    {% comment %}A real state, not an error: an administrator with an account
+    and no shifts. Saying so beats a page of empty tables, and beats a crash on
+    a missing relation even more.{% endcomment %}
+    <div class="card">
+      <h2>{% translate "You have no contract in this app yet" %}</h2>
+      <p>{% translate "That is normal for an account that administers the app rather than working shifts. If you should have a timesheet, ask whoever manages the roster to add you as an employee — they can link this account to you on the Employees page." %}</p>
+    </div>
+  {% endif %}
+
+  {% if week %}
+    <div class="section-heading">
+      <h2>{% translate "This week" %}</h2>
+      <a class="link-button" href="{% url 'timesheets:mine' %}">{% translate "Open my timesheet" %}</a>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <span class="stat-value">{{ week.worked_total|hours:hours_style }}</span>
+        <span class="stat-label">{% translate "Worked so far" %}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ week.contracted_total|hours:hours_style }}</span>
+        <span class="stat-label">{% translate "Contracted" %}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ balance.remaining }}</span>
+        <span class="stat-label">{% translate "Leave days left" %}</span>
+      </div>
+      {% if balance.pending %}
+        <div class="stat">
+          <span class="stat-value">{{ balance.pending }}</span>
+          <span class="stat-label">{% translate "Days waiting for approval" %}</span>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if week.awaiting %}
+      <div class="card card--attention">
+        <h2>{% blocktranslate count counter=week.awaiting %}{{ counter }} day is waiting for you{% plural %}{{ counter }} days are waiting for you{% endblocktranslate %}</h2>
+        <p>{% translate "You were rostered on these days and have not said what you worked. If it was exactly as planned, one press confirms them all." %}</p>
+        <form method="post" action="{% url 'timesheets:confirm-week' %}" class="inline-form"
+              data-confirm-title="{% translate 'Confirm the rostered days?' %}"
+              data-confirm="{% translate 'Every day you were rostered this week and have not answered for is recorded as worked exactly as planned. Days you have already entered hours on are left exactly as they are.' %}"
+              data-confirm-accept="{% translate 'Confirm them' %}">
+          {% csrf_token %}
+          <input type="hidden" name="week" value="{{ week.monday|date:'Y-m-d' }}">
+          <button type="submit" class="button">{% translate "Confirm them" %}</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Day" %}</th>
+          <th scope="col">{% translate "Rostered" %}</th>
+          <th scope="col" class="numeric">{% translate "Worked" %}</th>
+          <th scope="col">{% translate "State" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in week.rows %}
+          <tr class="{% if row.is_today %}is-today{% endif %}{% if not row.is_working_day %} is-off{% endif %}">
+            <th scope="row">
+              <a href="{% url 'timesheets:day' week.employee.pk row.date|date:'Y-m-d' %}">
+                {{ row.date|date:"D d.m." }}
+              </a>
+              {% if row.holiday %}<span class="pill pill--gold">{{ row.holiday }}</span>{% endif %}
+            </th>
+            <td>
+              {% for shift in row.shifts %}
+                <span class="timesheet-span">{{ shift.start|time:"H:i" }}–{{ shift.end|time:"H:i" }}</span>
+              {% empty %}<span class="hint">—</span>{% endfor %}
+            </td>
+            <td class="numeric">
+              {% if row.record %}{{ row.worked_minutes|hours:hours_style }}{% else %}<span class="hint">—</span>{% endif %}
+            </td>
+            <td>
+              {% if row.absence %}
+                <span class="pill pill--{{ row.absence.kind }}">{{ row.absence.get_kind_display }}</span>
+              {% elif row.record and row.record.is_confirmed %}
+                <span class="pill pill--ok">{% translate "confirmed" %}</span>
+              {% elif row.record %}
+                <span class="pill pill--pending">{% translate "not confirmed" %}</span>
+              {% elif row.awaiting %}
+                <span class="pill pill--pending">{% translate "waiting for you" %}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if is_manager %}
+    <div class="section-heading">
+      <h2>{% translate "For you to deal with" %}</h2>
+      <a class="link-button" href="{% url 'roster:plan' %}">{% translate "Open the roster" %}</a>
+    </div>
+
+    <div class="manager-panels">
+      <div class="card">
+        <h3>{% translate "Time off waiting for a decision" %}</h3>
+        {% if waiting_requests %}
+          <ul class="plain-list">
+            {% for absence in waiting_requests %}
+              <li>
+                <strong>{{ absence.employee.full_name }}</strong>
+                {{ absence.start_date|date:"d.m." }}–{{ absence.end_date|date:"d.m.Y" }}
+                <span class="hint">{{ absence.get_kind_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <a class="button button--secondary button--small" href="{% url 'absences:requests' %}">{% translate "Decide them" %}</a>
+        {% else %}
+          <p class="hint">{% translate "Nothing is waiting." %}</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h3>{% translate "Hours nobody has confirmed" %}</h3>
+        {% if unconfirmed_people %}
+          <ul class="plain-list">
+            {% for person, records in unconfirmed_people %}
+              <li>
+                <a href="{% url 'timesheets:employee' person.pk %}">{{ person.full_name }}</a>
+                <span class="hint">{% blocktranslate count counter=records|length %}{{ counter }} day{% plural %}{{ counter }} days{% endblocktranslate %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <a class="button button--secondary button--small" href="{% url 'timesheets:team' %}">{% translate "See the team’s week" %}</a>
+        {% else %}
+          <p class="hint">{% translate "Everything from the last fortnight is confirmed." %}</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

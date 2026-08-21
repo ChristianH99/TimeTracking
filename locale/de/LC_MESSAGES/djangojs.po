@@ -1,0 +1,50 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-20 20:37+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\static\js\shell.js:175 .\static\js\shell.js:184
+msgid "OK"
+msgstr "OK"
+
+#: .\static\js\shell.js:182 .\static\js\shell.js:289
+msgid "Continue"
+msgstr "Weiter"
+
+#: .\static\js\shell.js:380
+msgid "Dismiss"
+msgstr "Schließen"
+
+#: .\static\js\shell.js:463
+msgid "Copied"
+msgstr "Kopiert"
+
+#: .\static\js\shell.js:464 .\static\js\shell.js:469
+msgid "Press Ctrl-C"
+msgstr "Strg-C drücken"
+
+#: .\static\js\timeinput.js:65
+msgid "That is not a time this app can read. Try 8:30, 8,5 or 830."
+msgstr "Das ist keine Zeitangabe, die diese App lesen kann. Versuchen Sie 8:30, 8,5 oder 830."
+
+#: .\static\js\timesheet_day.js:45
+msgid "running"
+msgstr "läuft"
+
+#: .\static\js\timesheet_day.js:128
+msgid "This overlaps another stretch on the same day."
+msgstr "Das überschneidet sich mit einem anderen Abschnitt am selben Tag."

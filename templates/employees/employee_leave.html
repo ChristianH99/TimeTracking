@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ employee.full_name }} – {% translate "Leave" %}{% endblock %}
+{% block topbar_title %}{{ employee.full_name }}{% endblock %}
+{% block topbar_sub %}{% translate "Leave" %} {{ year }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <h1>{% translate "Leave balance" %}</h1>
+    <form method="get" class="inline-form">
+      <label class="sr-only" for="year-select">{% translate "Year" %}</label>
+      <select id="year-select" name="year">
+        {% for option in years %}
+          <option value="{{ option }}"{% if option == year %} selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="button button--secondary button--small">{% translate "Show" %}</button>
+    </form>
+  </div>
+
+  {% comment %}Rendered from the same Balance the employee sees on their own
+  page — deliberately one class, because a balance that reads differently
+  depending on who is looking at it is the single thing most likely to be
+  reported as a bug and hardest to explain as anything else.{% endcomment %}
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-value">{{ balance.entitlement }}</span>
+      <span class="stat-label">{% translate "Days a year" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.taken }}</span>
+      <span class="stat-label">{% translate "Taken" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.remaining }}</span>
+      <span class="stat-label">{% translate "Left" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.pending }}</span>
+      <span class="stat-label">{% translate "Waiting" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.sick_days }}</span>
+      <span class="stat-label">{% translate "Sick days" %}</span>
+    </div>
+  </div>
+
+
+  {% comment %}The line that explains the entitlement figure above. Without it,
+  somebody whose balance is 24 in one year and 29 in the next has no way to tell
+  a carry-over from a mistake — and the figure they cannot explain is the one
+  they will report as a bug. apps/absences/carryover.py holds the reasoning.
+  {% endcomment %}
+  {% if balance.carried_days or balance.carried_lost %}
+    <p class="notice{% if balance.expiring_soon %} notice--warning{% endif %}">
+      {% if balance.carried_days %}
+        {% blocktranslate with days=balance.carried_days year=year|add:"-1" %}{{ days }} day(s) were carried over from {{ year }}.{% endblocktranslate %}
+        {% if balance.expiring_soon %}
+          <strong>
+            {% blocktranslate with date=balance.expiring_soon|date:"d.m.Y" %}They lapse on {{ date }}.{% endblocktranslate %}
+          </strong>
+        {% elif balance.carried.statutory_deadline and balance.carried.expires_statutory %}
+          {% blocktranslate with date=balance.carried.statutory_deadline|date:"d.m.Y" %}They lapse on {{ date }}.{% endblocktranslate %}
+        {% else %}
+          {% translate "They do not expire." %}
+        {% endif %}
+      {% endif %}
+      {% if balance.carried_lost %}
+        {% blocktranslate with lost=balance.carried_lost date=balance.carried.forfeited_on|date:"d.m.Y" %}{{ lost }} day(s) lapsed on {{ date }} and are no longer available.{% endblocktranslate %}
+      {% endif %}
+      {% if balance.carried.extension_reason %}
+        {% blocktranslate with reason=balance.carried.extension_reason %}The deadline was extended: {{ reason }}{% endblocktranslate %}
+      {% endif %}
+    </p>
+  {% endif %}
+
+  {% if balance.notice_is_missing %}
+    <p class="notice notice--warning">
+      {% comment %}Only on the manager's copy. The employee has nothing to do
+      about it and it is not good news for them either way; the person who has to
+      act is the one reading this page.{% endcomment %}
+      <strong>{% translate "No reminder was recorded." %}</strong>
+      {% translate "German case law says statutory leave only lapses if the employee was told, before the year ended, how many days were left and that they would expire. Until a date is recorded on the Year end page, these days go on being owed." %}
+      <a href="{% url 'absences:year-end' %}">{% translate "Year end" %}</a>
+    </p>
+  {% endif %}
+
+  {% if periods|length > 1 %}
+    <p class="help">
+      {% translate "Their hours changed during this period, so the entitlement is worked out from each contract in turn, weighted by how much of the year it covered." %}
+      {% for period in periods %}
+        <span class="pill pill--muted">{{ period.valid_from|date:"d.m.Y" }} — {{ period.weekly_hours }} h / {{ period.working_days_per_week }} {% translate "days" %}</span>
+      {% endfor %}
+    </p>
+  {% endif %}
+
+  {% if balance.special %}
+    <h2 class="form-section">{% translate "Special leave" %}</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Type" %}</th>
+          <th scope="col">{% translate "Worked out" %}</th>
+          <th scope="col" class="numeric">{% translate "Entitled" %}</th>
+          <th scope="col" class="numeric">{% translate "Taken" %}</th>
+          <th scope="col" class="numeric">{% translate "Left" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for grant, entitled, taken, left in balance.special %}
+          <tr>
+            <th scope="row">{{ grant.leave_type.name }}</th>
+            <td>
+              {% if grant.days_override is not None %}
+                <span class="is-override">{% translate "set on this contract" %}</span>
+              {% else %}{{ grant.leave_type.get_mode_display }}{% endif %}
+            </td>
+            <td class="numeric">{{ entitled }}</td>
+            <td class="numeric">{{ taken }}</td>
+            <td class="numeric">{{ left }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  <h2 class="form-section">{% translate "Everything recorded this year" %}</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "From" %}</th>
+        <th scope="col">{% translate "To" %}</th>
+        <th scope="col">{% translate "Reason" %}</th>
+        <th scope="col" class="numeric">{% translate "Working days" %}</th>
+        <th scope="col" class="numeric">{% translate "Charged" %}</th>
+        <th scope="col">{% translate "State" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for absence in absences %}
+        <tr>
+          <td>{{ absence.start_date|date:"d.m.Y" }}</td>
+          <td>{{ absence.end_date|date:"d.m.Y" }}</td>
+          <td>
+            <span class="pill pill--{{ absence.kind }}">
+              {% if absence.kind == 'special' and absence.special_type %}{{ absence.special_type.name }}
+              {% else %}{{ absence.get_kind_display }}{% endif %}
+            </span>
+            {% if absence.reason %}<span class="hint">{{ absence.reason }}</span>{% endif %}
+            {% if absence.is_half_day %}
+              {% comment %}Marked wherever an absence is listed, not only where
+              the day count happens to show 0.5 — "0,5" in a column headed Days
+              is a number somebody reads twice, and the word beside it is what
+              stops them.{% endcomment %}
+              <span class="pill pill--muted">{% translate "half day" %}</span>
+            {% endif %}
+          </td>
+          <td class="numeric">{{ absence.working_days }}</td>
+          {% comment %}Two columns, not one: a sick absence is five working days
+          long and costs nothing, and a single column would have to show it as
+          nought — which reads as somebody having been ill for no days.{% endcomment %}
+          <td class="numeric">{{ absence.days_charged }}</td>
+          <td>
+            <span class="pill pill--{% if absence.status == 'approved' %}ok{% elif absence.status == 'requested' %}pending{% else %}off{% endif %}">
+              {{ absence.get_status_display }}
+            </span>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="hint">{% translate "Nothing recorded this year." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="form-actions">
+    <a class="link-button" href="{% url 'employees:edit' employee.pk %}">{% translate "Back to the contract" %}</a>
+    <a class="link-button" href="{% url 'timesheets:employee' employee.pk %}">{% translate "Their timesheet" %}</a>
+  </div>
+{% endblock %}

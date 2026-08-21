@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load static i18n hours %}
+{% block title %}{% translate "Roster" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Roster" %}{% endblock %}
+{% block topbar_sub %}{{ monday|date:"d.m.Y" }} – {{ days|last|date:"d.m.Y" }}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="button" class="button button--small button--ghost" data-help-open>{% translate "Help" %}</button>
+  <button type="submit" class="button button--small" form="roster-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <div class="week-nav">
+      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}">&larr; {% translate "Previous" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %} &rarr;</a>
+    </div>
+    <div class="toolbar-actions">
+      {% comment %}Both of these add to the week rather than replacing it, and
+      both say so on the button. See Shift.copy_week for why a destructive
+      default is not one this app chooses for somebody.{% endcomment %}
+      <form method="post" action="{% url 'roster:fill-from-pattern' %}" class="inline-form"
+            data-confirm-title="{% translate 'Draft this week from the contracts?' %}"
+            data-confirm="{% blocktranslate with start=settings.day_start|time:'H:i' %}Everybody who works a day this week and is not already rostered on it gets a shift starting at {{ start }}, as long as their contract says. Days that already have somebody on them are left alone. It is a first draft — drag the cards where they belong.{% endblocktranslate %}"
+            data-confirm-accept="{% translate 'Draft the week' %}">
+        {% csrf_token %}
+        <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+        <button type="submit" class="button button--secondary button--small">{% translate "Fill from contracts" %}</button>
+      </form>
+      <form method="post" action="{% url 'roster:copy-week' %}" class="inline-form copy-week">
+        {% csrf_token %}
+        <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+        <label class="sr-only" for="{{ copy_form.source_monday.id_for_label }}">{{ copy_form.source_monday.label }}</label>
+        {{ copy_form.source_monday }}
+        <button type="submit" class="button button--secondary button--small">{% translate "Copy that week here" %}</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="post" id="roster-form" class="roster" data-unsaved-guard data-roster>
+    {% csrf_token %}
+    <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+    {{ formset.management_form }}
+
+    {% if formset.non_form_errors %}
+      <ul class="messages" role="status">
+        {% for error in formset.non_form_errors %}<li class="notice notice--error">{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <div class="roster-week">
+      {% for column in columns %}
+        {% comment %}data-roster-day is the drop target. The date on it is what
+        roster_plan.js writes into a dropped card's hidden `date` input — the
+        card *is* the form row and the drag moves it, so there is never a second
+        copy of the week to keep in step.{% endcomment %}
+        <section class="roster-day{% if column.is_today %} is-today{% endif %}{% if column.holiday %} is-holiday{% endif %}"
+                 data-roster-day="{{ column.date|date:'Y-m-d' }}">
+          <header class="roster-day-head">
+            <span class="roster-day-name">{{ column.date|date:"D" }}</span>
+            <span class="roster-day-date">{{ column.date|date:"d.m." }}</span>
+            {% if column.holiday %}<span class="pill pill--gold">{{ column.holiday }}</span>{% endif %}
+          </header>
+
+          {% comment %}Who is already away. Read-only bands, not cards — without
+          them the mistake this page invites is rostering somebody with an
+          approved holiday, which nobody notices until the morning they do not
+          arrive.{% endcomment %}
+          {% for absence in column.away %}
+            <div class="roster-away roster-away--{{ absence.kind }}{% if absence.status == 'requested' %} is-pending{% endif %}">
+              <span class="roster-away-name">{{ absence.employee.full_name }}</span>
+              <span class="roster-away-kind">
+                {% if absence.kind == 'special' and absence.special_type %}{{ absence.special_type.name }}
+                {% else %}{{ absence.get_kind_display }}{% endif %}
+                {% if absence.status == 'requested' %}· {% translate "asked for" %}{% endif %}
+              </span>
+            </div>
+          {% endfor %}
+
+          <div class="roster-cards" data-roster-cards></div>
+
+          <button type="button" class="roster-add" data-roster-add="{{ column.date|date:'Y-m-d' }}">
+            + {% translate "Shift" %}
+          </button>
+        </section>
+      {% endfor %}
+    </div>
+
+    {% comment %}Every card is rendered here once and then *moved* into the
+    column it belongs to by roster_plan.js. Rendering them straight into the
+    columns would mean the server deciding the layout and the browser deciding
+    it again, and the first edit to disagree looks like a save that did not
+    take.
+
+    The holder is not `hidden`: a hidden container makes its inputs
+    unfocusable, and a validation error inside one then makes Save do nothing at
+    all with an unfocusable-control warning in the console as the only clue.
+    It is moved off-screen by CSS instead.{% endcomment %}
+    <div class="roster-holder" data-roster-holder>
+      {% for form in formset.forms %}
+        <article class="roster-card{% if form.errors %} has-error{% endif %}"
+                 data-roster-card data-card-index="{{ forloop.counter0 }}"
+                 draggable="true">
+          {{ form.id }}
+          {{ form.date }}
+          <div class="roster-card-grip" aria-hidden="true">⠿</div>
+          <div class="roster-card-body">
+            <label class="sr-only" for="{{ form.employee.id_for_label }}">{% translate "Employee" %}</label>
+            {{ form.employee }}
+            <div class="roster-times">
+              <label class="sr-only" for="{{ form.start.id_for_label }}">{% translate "From" %}</label>
+              {{ form.start }}
+              <span class="roster-dash" aria-hidden="true">–</span>
+              <label class="sr-only" for="{{ form.end.id_for_label }}">{% translate "To" %}</label>
+              {{ form.end }}
+            </div>
+            <label class="sr-only" for="{{ form.note.id_for_label }}">{% translate "Note" %}</label>
+            {{ form.note }}
+            {% for field in form %}
+              {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="roster-card-actions">
+            {% comment %}Both the arrows and the drag do the same thing, and the
+            arrows are not a courtesy: a drag has no keyboard equivalent, and a
+            control half a team cannot use is not a control.{% endcomment %}
+            <button type="button" class="icon-button" data-roster-move="-1"
+                    aria-label="{% translate 'Move to the previous day' %}">‹</button>
+            <button type="button" class="icon-button" data-roster-move="1"
+                    aria-label="{% translate 'Move to the next day' %}">›</button>
+            <label class="roster-delete">
+              {{ form.DELETE }}
+              <span>{% translate "Remove" %}</span>
+            </label>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    {% comment %}The blank form a "+" clones. `__prefix__` is replaced with the
+    next free index and TOTAL_FORMS bumped — see simple_rows.js for why missing
+    that last step makes a row vanish silently on save.{% endcomment %}
+    <template data-roster-template>
+      <article class="roster-card" data-roster-card draggable="true">
+        {{ formset.empty_form.id }}
+        {{ formset.empty_form.date }}
+        <div class="roster-card-grip" aria-hidden="true">⠿</div>
+        <div class="roster-card-body">
+          {{ formset.empty_form.employee }}
+          <div class="roster-times">
+            {{ formset.empty_form.start }}
+            <span class="roster-dash" aria-hidden="true">–</span>
+            {{ formset.empty_form.end }}
+          </div>
+          {{ formset.empty_form.note }}
+        </div>
+        <div class="roster-card-actions">
+          <button type="button" class="icon-button" data-roster-move="-1"
+                  aria-label="{% translate 'Move to the previous day' %}">‹</button>
+          <button type="button" class="icon-button" data-roster-move="1"
+                  aria-label="{% translate 'Move to the next day' %}">›</button>
+          <label class="roster-delete">
+            {{ formset.empty_form.DELETE }}
+            <span>{% translate "Remove" %}</span>
+          </label>
+        </div>
+      </article>
+    </template>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save the roster" %}</button>
+    </div>
+  </form>
+
+  {{ days|json_script:"roster-days" }}
+{% endblock %}
+
+{% block help_modal %}
+  <div class="modal-overlay" id="page-help" hidden data-help-modal>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="page-help-title">
+      <h2 class="modal-title" id="page-help-title">{% translate "Planning the week" %}</h2>
+      <div class="modal-body">
+        <p>{% translate "Each column is a day. A card is one person’s shift on that day, and somebody can have more than one — a split shift is two cards." %}</p>
+        <p>{% translate "Drag a card to another column to move the shift, or use the ‹ and › buttons on it. Nothing is written until you press Save." %}</p>
+        <p>{% translate "“Fill from contracts” drafts a whole week from everybody’s contracted hours, starting at the time set under Working time. It adds the break the day needs on top, because a contract counts working time and a shift is clock-in to clock-out." %}</p>
+        <p>{% translate "The pale bands are people who are already away. A band marked “asked for” is a request nobody has decided yet — deciding it and planning around it are the same job." %}</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="button" data-help-close>{% translate "Close" %}</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/roster_plan.js' %}"></script>
+{% endblock %}

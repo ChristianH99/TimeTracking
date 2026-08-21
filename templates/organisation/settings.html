@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Working time" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Working time" %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="rules-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Working time" %}</h1>
+  <p class="page-lead">
+    {% translate "The rules everything else in the app computes against. Changing one of these moves every employee’s figures at once, which is why this page is separate from the roster and why managing the roster does not open it." %}
+  </p>
+
+  <nav class="subnav">
+    <a class="subnav-item is-current" href="{% url 'organisation:settings' %}">{% translate "Rules" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:leave-types' %}">{% translate "Special leave" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:holidays' %}">{% translate "Public holidays" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:closures' %}">{% translate "Closures" %}</a>
+  </nav>
+
+  <form method="post" id="rules-form" data-unsaved-guard>
+    {% csrf_token %}
+
+    <h2 class="form-section">{% translate "What a full week is" %}</h2>
+    <p class="help">
+      {% translate "Everybody’s leave is this many days scaled by how much of a full week they work — by days, never by hours, so somebody on three ten-hour days gets exactly as many days off as somebody on three six-hour days." %}
+    </p>
+    <p class="help">
+      {% comment %}The two halves of the entitlement expire on different terms
+      and an app that treated them as one number would get it wrong in whichever
+      direction its single rule pointed. apps/absences/carryover.py has the long
+      version.{% endcomment %}
+      {% translate "The statutory part is protected: it carries over only until the deadline below, and under German case law it does not lapse at all unless the employee was told beforehand what was left. Whatever the employer grants on top follows the employer’s own deadline, which most contracts set at the end of the year it was earned in." %}
+    </p>
+    <div class="field-grid">
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <h2 class="form-section">{% translate "Breaks" %}</h2>
+    <p class="help">
+      {% translate "Each row says: once the day’s working time would go over this long, a break of this many minutes is required. The app takes whichever row asks for the most." %}
+    </p>
+
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}
+      {% for error in formset.non_form_errors %}<p class="notice notice--error">{{ error }}</p>{% endfor %}
+    {% endif %}
+
+    <table class="data-table compact" data-rows="breaks">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Working time over (hours)" %}</th>
+          <th scope="col">{% translate "Break (minutes)" %}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule_form in formset.forms %}
+          <tr data-row>
+            {{ rule_form.id }}
+            <td>{{ rule_form.over_hours }}
+              {% for error in rule_form.over_hours.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>{{ rule_form.break_minutes }}
+              {% for error in rule_form.break_minutes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>
+              <label class="row-delete">{{ rule_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
+              <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <template data-rows-template="breaks">
+      <tr data-row>
+        {{ formset.empty_form.id }}
+        <td>{{ formset.empty_form.over_hours }}</td>
+        <td>{{ formset.empty_form.break_minutes }}</td>
+        <td>
+          <label class="row-delete">{{ formset.empty_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
+          <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+        </td>
+      </tr>
+    </template>
+
+    <button type="button" class="button button--secondary button--small" data-rows-add="breaks">
+      + {% translate "Another tier" %}
+    </button>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save the rules" %}</button>
+    </div>
+  </form>
+
+  {% if offer_defaults %}
+    <div class="card card--attention">
+      <h2>{% translate "There are no break rules yet" %}</h2>
+      <p>
+        {% translate "Until there are, the app computes against the usual German ones anyway — so adding them here changes nothing except that you can then see and edit them." %}
+      </p>
+      <ul class="plain-list">
+        {% for over, minutes in default_rules %}
+          <li>{% blocktranslate %}Over {{ over }} hours of work: {{ minutes }} minutes{% endblocktranslate %}</li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="{% url 'organisation:break-rules' %}">
+        {% csrf_token %}
+        <button type="submit" class="button button--secondary">{% translate "Add these" %}</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% comment %}Worked examples from the live rules. The resolution is not the
+  obvious "over six hours, so thirty minutes" — see OrgSettings.required_break —
+  and a table of five days is the only way to show that it is doing what
+  somebody expects rather than asking them to trust it.{% endcomment %}
+  <h2 class="form-section">{% translate "What that comes to" %}</h2>
+  <table class="data-table compact">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Time at work" %}</th>
+        <th scope="col" class="numeric">{% translate "Break" %}</th>
+        <th scope="col" class="numeric">{% translate "Counted as worked" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for gross, break_minutes, net in examples %}
+        <tr>
+          <td>{{ gross }}</td>
+          <td class="numeric">{{ break_minutes }}&nbsp;{% translate "min" %}</td>
+          <td class="numeric">{{ net }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="help">
+    {% translate "Note the middle rows: a day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier. That is what the law asks for, and reading the rules the other way costs somebody break they were entitled to." %}
+  </p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/simple_rows.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Change the working hours" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Change the working hours" %}{% endblock %}
+{% block topbar_sub %}{{ employee.full_name }}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="contract-form">{% translate "Change the hours" %}</button>
+{% endblock %}
+
+{% block content %}
+  <form method="post" id="contract-form" data-unsaved-guard>
+    {% csrf_token %}
+
+    {% for error in form.non_field_errors %}
+      <p class="notice notice--error">{{ error }}</p>
+    {% endfor %}
+
+    <h2 class="form-section">{% translate "From when" %}</h2>
+    <p class="help">
+      {% translate "Everything before this date keeps the hours they are on now. Nothing already worked is rewritten — what moves is the contracted hours those days are measured against, and the leave the year is worth." %}
+    </p>
+    <div class="field">
+      <label for="{{ form.valid_from.id_for_label }}">{{ form.valid_from.label }}</label>
+      {{ form.valid_from }}
+      {% if form.valid_from.help_text %}<span class="help">{{ form.valid_from.help_text }}</span>{% endif %}
+      {% for error in form.valid_from.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <h2 class="form-section">{% translate "The new working week" %}</h2>
+    {% comment %}Seven independent numbers, so these reflow to one column on a
+    narrow screen — unlike the roster's seven days, which never do, because
+    nothing is compared across these.{% endcomment %}
+    <div class="week-fields" data-week-fields>
+      {% for field in form %}
+        {% if field.name|slice:":6" == 'hours_' %}
+          <div class="week-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <dl class="contract-summary" data-contract-summary>
+      <div><dt>{% translate "Hours a week" %}</dt><dd data-summary-hours>—</dd></div>
+      <div><dt>{% translate "Working days a week" %}</dt><dd data-summary-days>—</dd></div>
+      <div><dt>{% translate "Leave days a year" %}</dt><dd data-summary-leave>—</dd></div>
+    </dl>
+
+    <div class="field">
+      <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+      {{ form.note }}
+      {% if form.note.help_text %}<span class="help">{{ form.note.help_text }}</span>{% endif %}
+      {% for error in form.note.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <p class="help">
+      {% blocktranslate with year=year %}Their leave for {{ year }} is worked out from every contract in force during it, each weighted by how much of the year it covered — so a change in April gives a quarter of the old entitlement and three quarters of the new one. Nothing is stored and recalculated; the balance is derived each time it is shown, so it cannot fall out of step.{% endblocktranslate %}
+    </p>
+    <p class="help">
+      {% translate "Dating this in the past is allowed — paperwork is slow, and an agreement made in April is often typed in June. You will be told how many already-confirmed days it reaches back over." %}
+    </p>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Change the hours" %}</button>
+      <a class="button button--secondary" href="{% url 'employees:edit' employee.pk %}">{% translate "Cancel" %}</a>
+    </div>
+  </form>
+
+  {% if periods %}
+    <h2 class="form-section">{% translate "Contracts so far" %}</h2>
+    <table class="data-table compact">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "In force from" %}</th>
+          <th scope="col">{% translate "Week" %}</th>
+          <th scope="col" class="numeric">{% translate "Hours" %}</th>
+          <th scope="col" class="numeric">{% translate "Days" %}</th>
+          <th scope="col">{% translate "Why" %}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for period in periods %}
+          <tr>
+            <th scope="row">
+              {{ period.valid_from|date:"d.m.Y" }}
+              {% if period.pk == current.pk %}<span class="pill pill--ok">{% translate "now" %}</span>{% endif %}
+            </th>
+            <td>
+              {% for index, label, hours in period.weekly_pattern %}
+                {% if hours %}<span class="timesheet-span">{{ label|slice:":2" }} {{ hours }}</span>{% endif %}
+              {% endfor %}
+            </td>
+            <td class="numeric">{{ period.weekly_hours }}</td>
+            <td class="numeric">{{ period.working_days_per_week }}</td>
+            <td>{% if period.note %}{{ period.note }}{% else %}<span class="hint">—</span>{% endif %}</td>
+            <td>
+              {% if periods|length > 1 %}
+                <form method="post" class="inline-form"
+                      action="{% url 'employees:contract-delete' employee.pk period.pk %}"
+                      data-confirm-title="{% translate 'Remove this change?' %}"
+                      data-confirm="{% translate 'The contract before it applies again from that date, and every figure derived from it moves back with it. Nothing that was worked is lost.' %}"
+                      data-confirm-accept="{% translate 'Remove it' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="link-button link-button--danger">{% translate "Remove" %}</button>
+                </form>
+              {% else %}
+                <span class="hint">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {{ leave_rules|json_script:"leave-rules" }}
+{% endblock %}
+
+{% block scripts %}
+  {% comment %}The same four as the contract form, in the same order. hours.js
+  first, because timeinput.js reads window.ttHours and returns silently without
+  it — config/tests.py walks every template to check the order.{% endcomment %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/employee_form.js' %}"></script>
+{% endblock %}

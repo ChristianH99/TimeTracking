@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load i18n hours %}
+{% block title %}{% translate "Team timesheets" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Team timesheets" %}{% endblock %}
+{% block topbar_sub %}{{ monday|date:"d.m.Y" }} – {{ days|last|date:"d.m.Y" }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <div class="week-nav">
+      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}">&larr; {% translate "Previous" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %} &rarr;</a>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-value">{{ worked_total|hours:hours_style }}</span>
+      <span class="stat-label">{% translate "Worked, everybody" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ contracted_total|hours:hours_style }}</span>
+      <span class="stat-label">{% translate "Contracted, everybody" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ awaiting_total }}</span>
+      <span class="stat-label">{% translate "Days nobody has answered for" %}</span>
+    </div>
+  </div>
+
+  <table class="data-table team-week">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Employee" %}</th>
+        {% for day in days %}
+          <th scope="col" class="team-day">{{ day|date:"D" }}<span class="team-day-date">{{ day|date:"d.m." }}</span></th>
+        {% endfor %}
+        <th scope="col" class="numeric">{% translate "Worked" %}</th>
+        <th scope="col" class="numeric">{% translate "Difference" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+        <tr>
+          <th scope="row">
+            <a href="{% url 'timesheets:employee' week.employee.pk %}?week={{ monday|date:'Y-m-d' }}">
+              {{ week.employee.full_name }}
+            </a>
+          </th>
+          {% for row in week.rows %}
+            {% comment %}One cell per day, and the cell's class is the story:
+            what it is, at a glance, across eleven people at once. A manager
+            scanning this is looking for the amber and the outline, not reading
+            the numbers.{% endcomment %}
+            <td class="team-cell
+                       {% if row.absence %}is-away is-away--{{ row.absence.kind }}
+                       {% elif row.record and row.record.is_confirmed %}is-confirmed
+                       {% elif row.record %}is-entered
+                       {% elif row.awaiting %}is-awaiting
+                       {% elif not row.is_working_day %}is-off{% endif %}
+                       {% if row.differs_from_roster %} is-differing{% endif %}">
+              {% if row.absence %}
+                <abbr title="{{ row.absence.get_kind_display }}">{{ row.absence.get_kind_display|slice:":1" }}</abbr>
+              {% elif row.record %}
+                {{ row.worked_minutes|hours:hours_style }}
+              {% elif row.awaiting %}
+                <abbr title="{% translate 'Rostered, but nobody has said what was worked' %}">?</abbr>
+              {% else %}
+                <span class="hint">·</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+          <td class="numeric">{{ week.worked_total|hours:hours_style }}</td>
+          <td class="numeric{% if week.difference < 0 %} is-short{% elif week.difference > 0 %} is-over{% endif %}">
+            {{ week.difference|hours_signed:hours_style }}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10" class="hint">{% translate "Nobody is employed yet." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <ul class="legend">
+    <li><span class="legend-swatch is-confirmed"></span>{% translate "confirmed" %}</li>
+    <li><span class="legend-swatch is-entered"></span>{% translate "entered, not confirmed" %}</li>
+    <li><span class="legend-swatch is-awaiting"></span>{% translate "rostered, nothing entered" %}</li>
+    <li><span class="legend-swatch is-differing"></span>{% translate "different from the roster" %}</li>
+    <li><span class="legend-swatch is-away"></span>{% translate "away" %}</li>
+  </ul>
+{% endblock %}

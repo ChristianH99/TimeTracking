@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Year end" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Year end" %}{% endblock %}
+{% block topbar_sub %}{{ year }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <div class="week-nav">
+      {% for option in years %}
+        <a class="button button--secondary button--small{% if option == year %} is-current{% endif %}"
+           href="?year={{ option }}">{{ option }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <p class="help">
+    {% blocktranslate with statutory=statutory_deadline|date:"d.m.Y" %}Days left over at the end of a year are carried into the next one. The statutory part lapses on {{ statutory }}; anything the employer grants on top follows the employer’s own deadline. Neither happens by itself — closing the year writes down what is left, and the days only lapse when the deadline has actually passed.{% endblocktranslate %}
+  </p>
+  <p class="help">
+    {% comment %}The sentence a manager most needs to read on this page, and it
+    is deliberately not a footnote. An employer who cannot show the reminder
+    went out does not get the expiry, and the days go on being owed.{% endcomment %}
+    <strong>{% translate "Statutory days only lapse if the employee was told." %}</strong>
+    {% translate "German case law requires the employer to tell each person, before the year ends, how many days are left and that they will lapse. Without a date recorded against a row, this app treats those days as not expiring — which is the safe answer, because the alternative is destroying an entitlement that still exists." %}
+  </p>
+
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-value">{{ carried_total }}</span>
+      <span class="stat-label">{% translate "Carried into this year" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ lost_total }}</span>
+      <span class="stat-label">{% translate "Lapsed" %}</span>
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Who" %}</th>
+        <th scope="col" class="numeric">{% translate "This year" %}</th>
+        <th scope="col" class="numeric">{% translate "Carried in" %}</th>
+        <th scope="col" class="numeric">{% translate "Taken" %}</th>
+        <th scope="col" class="numeric">{% translate "Left" %}</th>
+        <th scope="col">{% translate "Lapses" %}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <th scope="row">
+            <a href="{% url 'employees:leave' row.employee.pk %}?year={{ year }}">{{ row.employee.full_name }}</a>
+          </th>
+          <td class="numeric">{{ row.balance.this_year }}</td>
+          <td class="numeric">
+            {% if row.balance.carried_days %}{{ row.balance.carried_days }}{% else %}<span class="hint">—</span>{% endif %}
+            {% if row.balance.carried_lost %}
+              <span class="pill pill--attention" title="{% translate 'Lapsed and no longer available.' %}">
+                −{{ row.balance.carried_lost }}
+              </span>
+            {% endif %}
+          </td>
+          <td class="numeric">{{ row.balance.taken }}</td>
+          <td class="numeric">{{ row.balance.remaining }}</td>
+          <td>
+            {% if row.carried %}
+              {% if row.carried.is_forfeited %}
+                <span class="pill pill--attention">
+                  {% blocktranslate with date=row.carried.forfeited_on|date:"d.m.Y" %}lapsed {{ date }}{% endblocktranslate %}
+                </span>
+              {% elif row.notice_missing %}
+                {% comment %}The state that most needs saying: a deadline is set,
+                nobody was told, so the deadline will not bite and the days are
+                still owed.{% endcomment %}
+                <span class="pill pill--attention"
+                      title="{% translate 'They were not told, so these days do not expire.' %}">
+                  {% translate "no reminder sent" %}
+                </span>
+              {% elif row.carried.statutory_deadline %}
+                <span class="pill pill--pending">{{ row.carried.statutory_deadline|date:"d.m.Y" }}</span>
+              {% else %}
+                <span class="pill pill--ok">{% translate "does not expire" %}</span>
+              {% endif %}
+              {% if row.carried.extension_reason %}
+                <span class="hint" title="{{ row.carried.extension_reason }}">
+                  {% translate "extended" %}
+                </span>
+              {% endif %}
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.carried and not row.carried.is_forfeited %}
+              <details class="row-detail">
+                <summary class="link-button">{% translate "Change" %}</summary>
+                <form method="post" action="{% url 'absences:extend-deadline' row.carried.pk %}" class="stack-form">
+                  {% csrf_token %}
+                  <div class="field">
+                    <label for="statutory-{{ row.carried.pk }}">{% translate "Statutory days lapse on" %}</label>
+                    <input type="date" id="statutory-{{ row.carried.pk }}" name="statutory_deadline"
+                           value="{{ row.carried.statutory_deadline|date:'Y-m-d' }}">
+                  </div>
+                  <div class="field">
+                    <label for="employer-{{ row.carried.pk }}">{% translate "The extra lapses on" %}</label>
+                    <input type="date" id="employer-{{ row.carried.pk }}" name="employer_deadline"
+                           value="{{ row.carried.employer_deadline|date:'Y-m-d' }}">
+                  </div>
+                  <div class="field">
+                    <label for="notice-{{ row.carried.pk }}">{% translate "They were told on" %}</label>
+                    <input type="date" id="notice-{{ row.carried.pk }}" name="notice_given_on"
+                           value="{{ row.carried.notice_given_on|date:'Y-m-d' }}">
+                    <span class="help">{% translate "Without this the statutory days do not lapse at all." %}</span>
+                  </div>
+                  <div class="field">
+                    <label for="reason-{{ row.carried.pk }}">{% translate "Why it was extended" %}</label>
+                    <input type="text" id="reason-{{ row.carried.pk }}" name="extension_reason"
+                           maxlength="200" value="{{ row.carried.extension_reason }}">
+                    <span class="help">{% translate "Required to move a deadline. It is the only record of why this person’s is different." %}</span>
+                  </div>
+                  <button type="submit" class="button button--small">{% translate "Save" %}</button>
+                </form>
+              </details>
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty">{% translate "Nobody is employed yet." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="form-section">{% translate "Closing the year" %}</h2>
+  <p class="help">
+    {% blocktranslate %}Closing writes down what each person has left at the end of {{ year }} and carries it into the next year. It can be run again after a late correction — it recomputes from the absences rather than adding to what is already there.{% endblocktranslate %}
+  </p>
+
+  <form method="post" action="{% url 'absences:close-year' %}" class="stack-form"
+        data-confirm-title="{% translate 'Close the year?' %}"
+        data-confirm="{% translate 'Each person’s remaining days are written down and carried into the next year, with the deadlines from the working time settings. Nothing lapses yet.' %}"
+        data-confirm-accept="{% translate 'Close it' %}">
+    {% csrf_token %}
+    <input type="hidden" name="year" value="{{ year }}">
+    <div class="field">
+      <label for="notice-all">{% translate "Everybody was told on" %}</label>
+      <input type="date" id="notice-all" name="notice_given_on">
+      <span class="help">
+        {% translate "The date the reminder went out to the whole team. Leave it empty if it has not, and the statutory days will be treated as not expiring until you record one." %}
+      </span>
+    </div>
+    <button type="submit" class="button">
+      {% blocktranslate %}Close {{ year }}{% endblocktranslate %}
+    </button>
+  </form>
+
+  <h2 class="form-section">{% translate "Letting the days lapse" %}</h2>
+  <p class="help">
+    {% blocktranslate with date=statutory_deadline|date:"d.m.Y" %}Once {{ date }} has passed, whatever is left of the carried-over days can be written off. This is refused before the deadline — until then the days are still theirs to take, and there is no undo for removing them.{% endblocktranslate %}
+  </p>
+  <form method="post" action="{% url 'absences:expire-year' %}" class="inline-form"
+        data-confirm-title="{% translate 'Let the carried days lapse?' %}"
+        data-confirm="{% translate 'Every carried-over day past its deadline is written off, and each row records what went and on what date. Days belonging to somebody who was never sent the reminder are left alone.' %}"
+        data-confirm-accept="{% translate 'Write them off' %}">
+    {% csrf_token %}
+    <input type="hidden" name="year" value="{{ year }}">
+    <button type="submit" class="button button--danger">{% translate "Write off what has lapsed" %}</button>
+  </form>
+{% endblock %}

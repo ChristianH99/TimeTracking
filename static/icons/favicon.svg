@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- The same clock as templates/_brand.html, and deliberately a second copy
+       of those two paths rather than an include.
+
+       The partial is drawn with stroke="currentColor" so it can sit on the teal
+       sidebar and the white login card without a second asset. A favicon has no
+       inherited colour to take: it is fetched on its own, by the browser,
+       outside any page. So this one carries the palette itself — the deep teal
+       and the paper white from the token block at the top of
+       static/css/main.css, written out because a favicon cannot read a CSS
+       custom property either.
+
+       If the mark is ever redrawn, both files change. That is the cost, and it
+       is smaller than the alternative: a favicon that renders as a black
+       silhouette on a tab strip nobody can pick this app out of. -->
+  <rect width="32" height="32" rx="7" fill="#1C3A3A"/>
+  <g fill="none" stroke="#F7F9F9" stroke-width="2.2"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- the face -->
+    <circle cx="16" cy="16" r="9"/>
+    <!-- the hands: the short one at eight, the long one at the quarter -->
+    <path d="M16 10.5V16l3.8 2.2"/>
+  </g>
+</svg>

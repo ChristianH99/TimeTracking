@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Closures" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Closures" %}{% endblock %}
+
+{% block topbar_actions %}
+  <a class="button button--small" href="{% url 'organisation:closure-add' %}">{% translate "New closure" %}</a>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "When the workplace is shut" %}</h1>
+  <p class="page-lead">
+    {% translate "Two weeks in August, the days between Christmas and New Year — periods nobody is expected in. Saving one records the absence for everybody currently employed, and by default it comes out of their leave, which is what Betriebsferien normally means. Days somebody was not due to work, and public holidays, are never charged." %}
+  </p>
+
+  <nav class="subnav">
+    <a class="subnav-item" href="{% url 'organisation:settings' %}">{% translate "Rules" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:leave-types' %}">{% translate "Special leave" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:holidays' %}">{% translate "Public holidays" %}</a>
+    <a class="subnav-item is-current" href="{% url 'organisation:closures' %}">{% translate "Closures" %}</a>
+  </nav>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Name" %}</th>
+        <th scope="col">{% translate "From" %}</th>
+        <th scope="col">{% translate "To" %}</th>
+        <th scope="col">{% translate "Leave" %}</th>
+        <th scope="col" class="numeric">{% translate "People" %}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for closure in closures %}
+        <tr>
+          <th scope="row">{{ closure.name }}</th>
+          <td>{{ closure.start_date|date:"d.m.Y" }}</td>
+          <td>{{ closure.end_date|date:"d.m.Y" }}</td>
+          <td>
+            {% if closure.deducts_leave %}
+              <span class="pill">{% translate "comes out of their leave" %}</span>
+            {% else %}
+              <span class="pill pill--ok">{% translate "paid, not deducted" %}</span>
+            {% endif %}
+          </td>
+          <td class="numeric">{{ closure.absences.count }}</td>
+          <td class="people-actions">
+            <div class="people-actions-group">
+              <a class="link-button" href="{% url 'organisation:closure-edit' closure.pk %}">{% translate "Edit" %}</a>
+              <form method="post" action="{% url 'organisation:closure-delete' closure.pk %}" class="inline-form"
+                    data-confirm-title="{% translate 'Delete this closure?' %}"
+                    data-confirm="{% translate 'The days it took off everybody are given back. Nothing else is affected.' %}"
+                    data-confirm-accept="{% translate 'Delete' %}" data-confirm-danger>
+                {% csrf_token %}
+                <button type="submit" class="link-button">{% translate "Delete" %}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="hint">{% translate "No closures recorded." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

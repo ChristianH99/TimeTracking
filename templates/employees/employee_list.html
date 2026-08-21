@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n hours %}
+{% block title %}{% translate "Employees" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Employees" %}{% endblock %}
+
+{% block topbar_actions %}
+  <a class="button button--small" href="{% url 'employees:add' %}">{% translate "Add someone" %}</a>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Employees" %}</h1>
+  <p class="page-lead">
+    {% blocktranslate with days=settings.full_time_days_per_week leave=settings.full_time_leave_days %}A full week here is {{ days }} days and carries {{ leave }} days of leave. Everybody’s entitlement is that share of it, worked out from the days their contract gives hours to.{% endblocktranslate %}
+  </p>
+
+  {% if unlinked_count %}
+    <div class="notice notice--info">
+      {% blocktranslate count counter=unlinked_count %}{{ counter }} employee has no account yet. That is normal — the link is made by itself the first time they sign in, matched on their sign-in name.{% plural %}{{ counter }} employees have no account yet. That is normal — the link is made by itself the first time they sign in, matched on their sign-in name.{% endblocktranslate %}
+    </div>
+  {% endif %}
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Name" %}</th>
+        <th scope="col">{% translate "Week" %}</th>
+        <th scope="col" class="numeric">{% translate "Hours" %}</th>
+        <th scope="col" class="numeric">{% translate "Days" %}</th>
+        <th scope="col" class="numeric">{% translate "Leave" %}</th>
+        <th scope="col" class="numeric">{% translate "Balance" %}</th>
+        <th scope="col">{% translate "Account" %}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr{% if not row.employee.is_active %} class="is-off"{% endif %}>
+          <th scope="row">
+            {{ row.employee.full_name }}
+            {% if row.employee.is_manager %}<span class="pill pill--gold">{% translate "manager" %}</span>{% endif %}
+            {% if not row.employee.is_active %}<span class="pill pill--off">{% translate "left" %}</span>{% endif %}
+            <span class="people-sub">{{ row.employee.username }}</span>
+          </th>
+          <td class="pattern">
+            {% comment %}The seven days as a strip, so the shape of a contract
+            is readable at a glance across the whole list. A day with no hours
+            is drawn as an empty box rather than left out — the position is what
+            says which weekday it is.{% endcomment %}
+            {% for index, label, hours_value in row.employee.weekly_pattern %}
+              <span class="pattern-day{% if hours_value > 0 %} is-on{% endif %}"
+                    title="{{ label }}: {{ hours_value }}">{{ label|slice:":2" }}</span>
+            {% endfor %}
+          </td>
+          <td class="numeric">{{ row.weekly_hours }}</td>
+          <td class="numeric">{{ row.working_days }}</td>
+          <td class="numeric">
+            <span{% if row.is_override %} class="is-override" title="{% translate 'Set by hand on the contract, not worked out from the working days.' %}"{% endif %}>
+              {{ row.leave_days }}
+            </span>
+            {% for grant, days in row.special %}
+              <span class="pill pill--small" title="{{ grant.leave_type.name }}">+{{ days }}</span>
+            {% endfor %}
+          </td>
+          {% comment %}The running hours balance, which is where an opening
+          figure carried in from a previous contract becomes visible. Signed,
+          because the sign is the whole message: "0:45" in a column headed
+          Balance does not say which way.{% endcomment %}
+          <td class="numeric">
+            <span class="{% if row.running.total < 0 %}is-short{% elif row.running.total > 0 %}is-over{% endif %}"
+                  {% if row.running.opening %}title="{% blocktranslate with opening=row.running.opening|hours_signed:hours_style %}Includes {{ opening }} brought from a previous contract.{% endblocktranslate %}"{% endif %}>
+              {{ row.running.total|hours_signed:hours_style }}
+            </span>
+          </td>
+          <td>
+            {% if row.employee.user %}
+              <span class="pill pill--pine">{{ row.employee.user.get_username|truncatechars:18 }}</span>
+            {% else %}
+              <span class="hint">{% translate "not yet" %}</span>
+            {% endif %}
+          </td>
+          <td class="people-actions">
+            <div class="people-actions-group">
+              <a class="link-button" href="{% url 'employees:edit' row.employee.pk %}">{% translate "Contract" %}</a>
+              <a class="link-button" href="{% url 'employees:leave' row.employee.pk %}">{% translate "Leave" %}</a>
+              <a class="link-button" href="{% url 'timesheets:employee' row.employee.pk %}">{% translate "Timesheet" %}</a>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="hint">{% translate "Nobody has been added yet." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

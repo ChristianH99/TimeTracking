@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Requests" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Requests" %}{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Time off waiting for a decision" %}</h1>
+
+  {% if rows %}
+    <div class="request-list">
+      {% for row in rows %}
+        <article class="card request">
+          <header class="request-head">
+            <h2>{{ row.absence.employee.full_name }}</h2>
+            <span class="pill pill--{{ row.absence.kind }}">
+              {% if row.absence.kind == 'special' and row.absence.special_type %}{{ row.absence.special_type.name }}
+              {% else %}{{ row.absence.get_kind_display }}{% endif %}
+            </span>
+            {% comment %}Beside the kind, not inside it — a pill nested in a pill
+            renders as one unreadable lozenge, and this has to be legible before
+            somebody presses Approve on half a day they read as a whole one.
+            {% endcomment %}
+            {% if row.absence.is_half_day %}
+              <span class="pill pill--muted">{% translate "half day" %}</span>
+            {% endif %}
+          </header>
+
+          <p class="request-dates">
+            {{ row.absence.start_date|date:"D d.m.Y" }} – {{ row.absence.end_date|date:"D d.m.Y" }}
+            <strong>{% blocktranslate count counter=row.days %}{{ counter }} working day{% plural %}{{ counter }} working days{% endblocktranslate %}</strong>
+          </p>
+          {% if row.absence.reason %}<p class="request-reason">{{ row.absence.reason }}</p>{% endif %}
+
+          {% comment %}The balance beside the request rather than a page away.
+          "Can they afford this" is the question being answered, and a decision
+          made without it is a decision made blind. The second figure is the one
+          that matters when somebody has several requests waiting: approving two
+          of three is a thing that happens.{% endcomment %}
+          <dl class="request-balance">
+            <div><dt>{% translate "Entitled to" %}</dt><dd>{{ row.balance.entitlement }}</dd></div>
+            <div><dt>{% translate "Already taken" %}</dt><dd>{{ row.balance.taken }}</dd></div>
+            <div><dt>{% translate "Left now" %}</dt><dd>{{ row.balance.remaining }}</dd></div>
+            <div class="is-quiet">
+              <dt>{% translate "Left if everything waiting is approved" %}</dt>
+              <dd>{{ row.balance.remaining_if_all_approved }}</dd>
+            </div>
+          </dl>
+
+          {% if row.balance.remaining_if_all_approved < 0 %}
+            <p class="notice notice--warning">
+              {% translate "Approving everything this person has asked for would take them past their entitlement." %}
+            </p>
+          {% endif %}
+
+          <form method="post" action="{% url 'absences:decide' row.absence.pk %}" class="request-decision">
+            {% csrf_token %}
+            <label class="sr-only" for="note-{{ row.absence.pk }}">{% translate "Reply" %}</label>
+            <input type="text" id="note-{{ row.absence.pk }}" name="note" maxlength="200"
+                   placeholder="{% translate 'A sentence back to them — required when declining' %}">
+            <div class="request-buttons">
+              <button type="submit" name="approve" value="1" class="button">{% translate "Approve" %}</button>
+              <button type="submit" class="button button--secondary">{% translate "Decline" %}</button>
+            </div>
+          </form>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card card--quiet">
+      <p>{% translate "Nothing is waiting for a decision." %}</p>
+    </div>
+  {% endif %}
+
+  <h2 class="form-section">{% translate "Recently decided" %}</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Employee" %}</th>
+        <th scope="col">{% translate "Dates" %}</th>
+        <th scope="col">{% translate "Reason" %}</th>
+        <th scope="col">{% translate "Decision" %}</th>
+        <th scope="col">{% translate "By" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for absence in recent %}
+        <tr>
+          <th scope="row">{{ absence.employee.full_name }}</th>
+          <td>{{ absence.start_date|date:"d.m.Y" }} – {{ absence.end_date|date:"d.m.Y" }}</td>
+          <td>
+            {% if absence.kind == 'special' and absence.special_type %}{{ absence.special_type.name }}
+            {% else %}{{ absence.get_kind_display }}{% endif %}
+            {% if absence.decision_note %}<span class="hint">{{ absence.decision_note }}</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill pill--{% if absence.status == 'approved' %}ok{% else %}off{% endif %}">
+              {{ absence.get_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if absence.decided_by %}{% firstof absence.decided_by.get_full_name absence.decided_by.get_username %}
+            {% else %}<span class="hint">—</span>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="hint">{% translate "Nothing has been decided yet." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

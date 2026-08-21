@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load i18n hours %}
+{% block title %}{% if is_own %}{% translate "My timesheet" %}{% else %}{{ employee.full_name }}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% if is_own %}{% translate "My timesheet" %}{% else %}{{ employee.full_name }}{% endif %}{% endblock %}
+{% block topbar_sub %}{{ monday|date:"d.m.Y" }} – {{ sunday|date:"d.m.Y" }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <div class="week-nav">
+      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}">&larr; {% translate "Previous" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
+      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %} &rarr;</a>
+    </div>
+    {% if is_own and awaiting %}
+      {% comment %}Only offered when there is something to confirm. A button
+      that reports "nothing to do" after being pressed is a button that should
+      not have been there.{% endcomment %}
+      <form method="post" action="{% url 'timesheets:confirm-week' %}" class="inline-form"
+            data-confirm-title="{% translate 'Confirm the rostered days?' %}"
+            data-confirm="{% translate 'Every day you were rostered this week and have not answered for is recorded as worked exactly as planned. Days you have already entered hours on are left exactly as they are.' %}"
+            data-confirm-accept="{% translate 'Confirm them' %}">
+        {% csrf_token %}
+        <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+        <button type="submit" class="button button--small">
+          {% blocktranslate count counter=awaiting %}Confirm {{ counter }} day{% plural %}Confirm {{ counter }} days{% endblocktranslate %}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% comment %}Exactly one of the two buttons, ever. A page showing both has to
+  be read before it can be used — which one am I? — and a page showing one is a
+  page you press. The state comes from the database and not from anything on
+  this page, so a tab left open overnight cannot start a second shift.
+  apps/timesheets/clocking.py holds the whole argument.{% endcomment %}
+  <div class="clock-bar{% if clock.running %} clock-bar--running{% endif %}">
+    <div class="clock-bar-state">
+      {% if clock.running %}
+        <span class="pill pill--attention">{% translate "at work" %}</span>
+        <span class="clock-bar-since">
+          {% blocktranslate with time=clock.since|time:"H:i" %}since {{ time }}{% endblocktranslate %}
+          {% if clock.since_date != today %}
+            <span class="hint">({{ clock.since_date|date:"d.m." }})</span>
+          {% endif %}
+        </span>
+        <span class="clock-bar-elapsed">{{ clock.minutes_so_far|hours:hours_style }}</span>
+      {% else %}
+        <span class="clock-bar-since hint">
+          {% blocktranslate with time=clock.now|time:"H:i" %}It is {{ time }} now.{% endblocktranslate %}
+        </span>
+      {% endif %}
+      {% if clock.is_elsewhere %}
+        {% comment %}Said out loud, because a manager looking at somebody in
+        another country otherwise reads a start time that appears to be an hour
+        wrong and corrects it.{% endcomment %}
+        <span class="pill pill--muted" title="{% translate 'Their own clock, not the workplace’s.' %}">{{ clock.zone }}</span>
+      {% endif %}
+    </div>
+    <form method="post" class="inline-form"
+          action="{% if is_own %}{% url 'timesheets:clock' employee.pk %}{% else %}{% url 'timesheets:employee-clock' employee.pk %}{% endif %}">
+      {% csrf_token %}
+      {% if clock.can_start %}
+        <button type="submit" class="button">{% translate "Start" %}</button>
+      {% else %}
+        <button type="submit" class="button button--attention">{% translate "Stop" %}</button>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-value">{{ worked_total|hours:hours_style }}</span>
+      <span class="stat-label">{% translate "Worked" %}</span>
+    </div>
+    {% if credited_total %}
+      {% comment %}Only shown when there is any, because a row reading "0:00
+      credited" on an ordinary week is a column of noise. When there is some, it
+      is the difference between a week that looks like a shortfall and a week
+      that is explained.{% endcomment %}
+      <div class="stat">
+        <span class="stat-value">{{ credited_total|hours:hours_style }}</span>
+        <span class="stat-label">{% translate "Credited" %}</span>
+      </div>
+    {% endif %}
+    <div class="stat">
+      <span class="stat-value">{{ contracted_total|hours:hours_style }}</span>
+      <span class="stat-label">{% translate "Contracted" %}</span>
+    </div>
+    <div class="stat">
+      {% comment %}The sign is the whole message here, which is why this is
+      hours_signed and the others are not: "0:45" in a column headed difference
+      does not say which way.{% endcomment %}
+      <span class="stat-value{% if difference < 0 %} is-short{% elif difference > 0 %} is-over{% endif %}">
+        {{ difference|hours_signed:hours_style }}
+      </span>
+      <span class="stat-label">{% translate "Difference" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ planned_total|hours:hours_style }}</span>
+      <span class="stat-label">{% translate "Rostered" %}</span>
+    </div>
+    {% comment %}Everything owed, up to the end of this week — including
+    whatever was agreed before they started here. It is the figure people
+    actually ask for, and without it an opening balance would be stored and
+    never shown. apps/timesheets/balance.py says why it is derived.{% endcomment %}
+    <div class="stat stat--total">
+      <span class="stat-value{% if running.total < 0 %} is-short{% elif running.total > 0 %} is-over{% endif %}">
+        {{ running.total|hours_signed:hours_style }}
+      </span>
+      <span class="stat-label">{% translate "Balance to date" %}</span>
+    </div>
+  </div>
+
+  {% if running.opening %}
+    <p class="help">
+      {% blocktranslate with opening=running.opening|hours_signed:hours_style date=running.opening_on|date:"d.m.Y" %}Includes {{ opening }} brought from a previous contract, as at {{ date }}.{% endblocktranslate %}
+    </p>
+  {% endif %}
+
+  <table class="data-table timesheet">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Day" %}</th>
+        <th scope="col">{% translate "Rostered" %}</th>
+        <th scope="col">{% translate "Worked" %}</th>
+        <th scope="col" class="numeric">{% translate "Break" %}</th>
+        <th scope="col" class="numeric">{% translate "Total" %}</th>
+        <th scope="col">{% translate "State" %}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr class="{% if row.is_today %}is-today{% endif %}{% if not row.is_working_day %} is-off{% endif %}">
+          <th scope="row" class="timesheet-day">
+            <span class="timesheet-day-name">{{ row.date|date:"D" }}</span>
+            <span class="timesheet-day-date">{{ row.date|date:"d.m." }}</span>
+            {% if row.holiday %}<span class="pill pill--gold">{{ row.holiday }}</span>{% endif %}
+          </th>
+
+          <td class="timesheet-plan">
+            {% for shift in row.shifts %}
+              <span class="timesheet-span">{{ shift.start|time:"H:i" }}–{{ shift.end|time:"H:i" }}</span>
+            {% empty %}
+              <span class="hint">—</span>
+            {% endfor %}
+          </td>
+
+          <td class="timesheet-actual">
+            {% if row.absence %}
+              <span class="pill pill--{{ row.absence.kind }}">
+                {% if row.absence.kind == 'special' and row.absence.special_type %}{{ row.absence.special_type.name }}
+                {% else %}{{ row.absence.get_kind_display }}{% endif %}
+              </span>
+              {% if row.is_half_day %}
+                <span class="pill pill--muted">{% translate "half day" %}</span>
+              {% endif %}
+              {% if row.absence.status == 'requested' %}
+                {% comment %}Sickness is waiting to be *acknowledged*, not to be
+                allowed — it already counts. Saying "waiting for approval" over
+                a sick day would tell somebody their hours are in doubt when
+                they are not.{% endcomment %}
+                {% if row.absence.kind == 'sick' %}
+                  <span class="pill pill--pending">{% translate "not yet seen" %}</span>
+                {% else %}
+                  <span class="pill pill--pending">{% translate "waiting" %}</span>
+                {% endif %}
+              {% elif row.absence.status == 'rejected' and row.absence.kind == 'sick' %}
+                <span class="pill pill--attention">{% translate "not accepted" %}</span>
+              {% endif %}
+            {% elif row.record %}
+              {% for segment in row.record.segments.all %}
+                {% if segment.end %}
+                  <span class="timesheet-span">{{ segment.start|time:"H:i" }}–{{ segment.end|time:"H:i" }}</span>
+                {% else %}
+                  <span class="timesheet-span timesheet-span--running">
+                    {{ segment.start|time:"H:i" }}–<span class="hint">{% translate "running" %}</span>
+                  </span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+
+          <td class="numeric">
+            {% if row.record %}
+              {% comment %}Amber when somebody typed it over the calculated one.
+              The two are the same number and mean entirely different things to
+              whoever signs this off, which is the whole reason the column
+              exists — see DayRecord.break_is_override.{% endcomment %}
+              <span class="{% if row.break_is_override %}is-override{% endif %}"
+                    {% if row.break_is_override %}title="{% blocktranslate with computed=row.required_break %}Entered by hand. The rules would give {{ computed }} minutes.{% endblocktranslate %}"{% endif %}>
+                {{ row.record.break_minutes }}&nbsp;{% translate "min" %}
+              </span>
+            {% else %}<span class="hint">—</span>{% endif %}
+          </td>
+
+          <td class="numeric timesheet-total">
+            {% if row.record or row.credited_minutes %}
+              {{ row.counted_minutes|hours:hours_style }}
+              {% if row.credited_minutes %}
+                <span class="hint" title="{% translate 'Credited, not worked — an absence the hours are paid for.' %}">
+                  ({{ row.credited_minutes|hours:hours_style }})
+                </span>
+              {% endif %}
+            {% else %}<span class="hint">—</span>{% endif %}
+          </td>
+
+          <td>
+            {% if row.is_running %}
+              <span class="pill pill--attention">{% translate "still running" %}</span>
+            {% elif row.record and row.record.is_confirmed %}
+              <span class="pill pill--ok">{% translate "confirmed" %}</span>
+            {% elif row.record %}
+              <span class="pill pill--pending">{% translate "not confirmed" %}</span>
+            {% elif row.awaiting %}
+              <span class="pill pill--pending">{% translate "waiting for you" %}</span>
+            {% endif %}
+            {% if row.differs_from_roster %}
+              {% comment %}The line a manager reads first. Not "confirmed", but
+              confirmed *and different from what was asked* — a day that matches
+              needs no attention and a day that does not is why anybody opened
+              this page.{% endcomment %}
+              <span class="pill pill--attention" title="{% translate 'The hours entered are not the hours rostered.' %}">
+                {% translate "differs" %}
+              </span>
+            {% endif %}
+          </td>
+
+          <td class="timesheet-actions">
+            {% if row.absence and row.absence.status == 'approved' %}
+              <span class="hint">—</span>
+            {% else %}
+              {% if row.shifts and not row.record %}
+                <form method="post" class="inline-form"
+                      action="{% if is_own %}{% url 'timesheets:confirm-day' employee.pk row.date|date:'Y-m-d' %}{% else %}{% url 'timesheets:employee-confirm-day' employee.pk row.date|date:'Y-m-d' %}{% endif %}">
+                  {% csrf_token %}
+                  <button type="submit" class="link-button">{% translate "Confirm" %}</button>
+                </form>
+              {% endif %}
+              <a class="link-button"
+                 href="{% if is_own %}{% url 'timesheets:day' employee.pk row.date|date:'Y-m-d' %}{% else %}{% url 'timesheets:employee-day' employee.pk row.date|date:'Y-m-d' %}{% endif %}">
+                {% if row.record %}{% translate "Edit" %}{% else %}{% translate "Enter hours" %}{% endif %}
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="help">
+    {% translate "A holiday, a day of leave or a sick day is credited at the contracted hours, so the week comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back." %}
+  </p>
+{% endblock %}

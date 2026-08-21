@@ -1,0 +1,231 @@
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% translate "Time Tracking" %}{% endblock %}</title>
+  {% comment %}Without this a browser asks for /favicon.ico on its own, which
+  resolves to nothing and logs a 404 warning for every page anybody opens. The
+  route in config/urls.py catches the ones that ask for it anyway — a bookmark,
+  a browser that ignores this tag — so neither path is a miss.{% endcomment %}
+  <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+  {% comment %}Inter and Manrope are served from static/fonts/ — never linked
+  from Google. static/css/fonts.css says why.{% endcomment %}
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% comment %}Defines gettext() in the browser from the compiled djangojs
+  catalog, so the scripts in static/js render in the active language. Must load
+  before any app script that calls it. Note that a {# #} comment cannot span
+  lines — Django's lexer matches it without DOTALL, so a multi-line attempt is
+  rendered onto the page for the reader to enjoy.{% endcomment %}
+  <script src="{% url 'javascript-catalog' %}"></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">{% translate "Skip to content" %}</a>
+  <div class="shell">
+    <aside class="shell-sidebar" id="shell-sidebar">
+      <div class="shell-brand">
+        <a class="brand" href="{% url 'timesheets:home' %}">
+          {% include "_brand.html" %}
+          <span class="brand-word">{% translate "Time Tracking" %}</span>
+        </a>
+      </div>
+      {% comment %}Which entry is current comes from apps/nav.py, keyed on the
+      (app, url_name) pair Django resolved — not from comparing url_name here.
+      A url_name is only unique within an app, so the moment a second app has a
+      "list" or a "settings", the inline version marks two entries at once and
+      nobody notices for a month.{% endcomment %}
+      {% comment %}The nav is what the app is *for*: your own time first, then
+      the team — because everybody has the first section and only managers have
+      the second. Everything about the app itself lives in the Settings
+      disclosure in the footer below.{% endcomment %}
+      <nav class="shell-nav">
+        <a class="shell-nav-item{% if 'home' in nav_current %} active{% endif %}"
+           href="{% url 'timesheets:home' %}">{% translate "Start" %}</a>
+
+        <a class="shell-nav-item shell-nav-parent{% if 'mine' in nav_current %} active{% endif %}"
+           href="{% url 'timesheets:mine' %}">{% translate "My time" %}</a>
+        <div class="shell-nav-sub">
+          <a class="shell-nav-subitem{% if 'mine.timesheet' in nav_current %} active{% endif %}"
+             href="{% url 'timesheets:mine' %}">{% translate "Timesheet" %}</a>
+          <a class="shell-nav-subitem{% if 'mine.absences' in nav_current %} active{% endif %}"
+             href="{% url 'absences:mine' %}">{% translate "Time off" %}</a>
+        </div>
+
+        {% comment %}Manager-only, and hiding it is presentation rather than
+        access control: every view behind these carries its own check, and
+        apps/employees/tests.py walks the URLconf to make sure none has lost
+        it.{% endcomment %}
+        {% if is_manager %}
+          <a class="shell-nav-item shell-nav-parent{% if 'team' in nav_current %} active{% endif %}"
+             href="{% url 'roster:plan' %}">{% translate "Team" %}</a>
+          <div class="shell-nav-sub">
+            <a class="shell-nav-subitem{% if 'team.roster' in nav_current %} active{% endif %}"
+               href="{% url 'roster:plan' %}">{% translate "Roster" %}</a>
+            <a class="shell-nav-subitem{% if 'team.timesheets' in nav_current %} active{% endif %}"
+               href="{% url 'timesheets:team' %}">{% translate "Timesheets" %}</a>
+            <a class="shell-nav-subitem{% if 'team.requests' in nav_current %} active{% endif %}"
+               href="{% url 'absences:requests' %}">{% translate "Requests" %}{% if pending_request_count %}
+                 <span class="nav-badge">{{ pending_request_count }}</span>{% endif %}</a>
+            <a class="shell-nav-subitem{% if 'team.employees' in nav_current %} active{% endif %}"
+               href="{% url 'employees:list' %}">{% translate "Employees" %}</a>
+            <a class="shell-nav-subitem{% if 'team.year-end' in nav_current %} active{% endif %}"
+               href="{% url 'absences:year-end' %}">{% translate "Year end" %}</a>
+          </div>
+        {% endif %}
+      </nav>
+      <div class="shell-sidebar-footer">
+        {% comment %}Settings: the pages that are about the app rather than
+        about the work — how breaks are calculated, who may sign in, how they
+        sign in, and the raw admin. A disclosure rather than five permanent
+        entries, because they are opened a handful of times a year and were
+        otherwise sitting above the timesheet somebody opens daily.
+
+        It is `open` when one of the pages inside it is the current one: a menu
+        that hides the page you are looking at reads as broken. shell.js
+        remembers the state otherwise.
+
+        Every view behind these carries its own permission check — hiding a link
+        is presentation, not access control, and a test walks the URLconf to
+        make sure none of them has lost it.{% endcomment %}
+        {% if user.is_authenticated %}
+          <details class="shell-settings" data-shell-settings{% if 'settings' in nav_current %} open{% endif %}>
+            <summary class="shell-settings-summary">{% translate "Settings" %}</summary>
+            <div class="shell-nav-sub shell-settings-items">
+              {% comment %}First, and for everybody: it is the only entry here
+              that is about the person rather than about the organisation, and
+              it is the only reason somebody without staff rights opens this
+              menu at all.{% endcomment %}
+              <a class="shell-nav-subitem{% if 'settings.me' in nav_current %} active{% endif %}"
+                 href="{% url 'accounts:preferences' %}">{% translate "My settings" %}</a>
+              {% if user.is_staff %}
+                {% comment %}The rules the whole app computes against: break
+                thresholds, the full-time entitlement, the Land whose public
+                holidays apply, and the special leave types.{% endcomment %}
+                <a class="shell-nav-subitem{% if 'settings.rules' in nav_current %} active{% endif %}"
+                   href="{% url 'organisation:settings' %}">{% translate "Working time" %}</a>
+                <a class="shell-nav-subitem{% if 'settings.users' in nav_current %} active{% endif %}"
+                   href="{% url 'accounts:user-list' %}">{% translate "People" %}</a>
+              {% endif %}
+              {% comment %}Superuser only, and below People on purpose: "may add
+              an account" and "may repoint the whole app at a different identity
+              provider" are not the same right.{% endcomment %}
+              {% if user.is_superuser %}
+                <a class="shell-nav-subitem{% if 'settings.sso' in nav_current %} active{% endif %}"
+                   href="{% url 'accounts:sso' %}">{% translate "Sign-in" %}</a>
+              {% endif %}
+              {% if user.is_staff %}
+                <a class="shell-nav-subitem" href="{% url 'admin:index' %}">{% translate "Administration" %}</a>
+              {% endif %}
+            </div>
+          </details>
+        {% endif %}
+        {% comment %}Which build this is. Blank in a checkout and blank renders
+        as nothing — a version string is a claim, and a working copy has none to
+        make. Not a translatable string: it is a version number, and wrapping it
+        in a label would put one word of German around three digits.{% endcomment %}
+        {% if app_version %}
+          <span class="shell-version">{{ app_version }}</span>
+        {% endif %}
+        {% if user.is_authenticated %}
+          <div class="shell-user">
+            {% comment %}The display name if the identity provider gave us one,
+            otherwise the username — which for an SSO account is the OIDC `sub`
+            and is not a thing to show a person (apps/accounts/oidc.py explains
+            why it is the username all the same).{% endcomment %}
+            <span class="shell-user-name" title="{{ user.get_username }}">{% firstof user.get_full_name user.get_username %}</span>
+            <form method="post" action="{% url 'accounts:logout' %}" class="shell-logout-form">
+              {% csrf_token %}
+              <button type="submit" class="shell-logout">{% translate "Sign out" %}</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </aside>
+    <div class="shell-overlay" id="shell-overlay"></div>
+    <div class="shell-main">
+      <header class="shell-topbar">
+        {% comment %}No aria-expanded rendered here: the server cannot know the
+        viewport, and the sidebar is shown by default on desktop but off-canvas
+        on a phone — so any value written here is simply wrong on one of them
+        until shell.js runs. shell.js sets it from the actual state on load.{% endcomment %}
+        <button class="shell-hamburger" id="shell-hamburger" aria-controls="shell-sidebar"
+                aria-label="{% translate 'Toggle navigation' %}">
+          <span class="shell-hamburger-icon"><span></span><span></span><span></span></span>
+        </button>
+        <div class="topbar-titles">
+          <span class="topbar-page">{% block topbar_title %}{% translate "Time Tracking" %}{% endblock %}</span>
+          <span class="topbar-sub">{% block topbar_sub %}{% endblock %}</span>
+        </div>
+        <div class="topbar-actions">
+          {% block topbar_actions %}{% endblock %}
+          {% include "_lang_switcher.html" %}
+        </div>
+      </header>
+      <main class="content" id="main-content">
+        {% comment %}role="status" (an aria-live="polite" region), so a message
+        is announced rather than silently added to the page — it is the app's
+        answer to something somebody just did. shell.js gives each one a dismiss
+        button.{% endcomment %}
+        {% if messages %}
+          <ul class="messages" role="status">
+            {% for message in messages %}
+              <li class="notice notice--{{ message.tags|default:'info' }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% comment %}The app's own confirm/alert dialog, on every page. Nothing calls
+  window.confirm() or window.alert(): a browser dialog wears the OS's styling,
+  cannot be translated by us, states its question as one unformatted string
+  (which is why callers end up gluing "\n\n" into it) and puts the answer behind
+  a control that looks nothing like the page. The one exception is the browser's
+  own "leave this page?" on tab close, which no page is allowed to draw.
+
+  Filled by window.appConfirm()/appAlert() in shell.js, which also give it the
+  focus management every dialog here gets.{% endcomment %}
+  <div class="modal-overlay" id="app-dialog" hidden data-app-dialog>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title">
+      <h2 class="modal-title" id="app-dialog-title" data-dialog-title></h2>
+      <div class="modal-body" data-dialog-body></div>
+      <div class="modal-actions">
+        <button type="button" class="button" data-dialog-accept></button>
+        <button type="button" class="button button--secondary" data-dialog-cancel>{% translate "Cancel" %}</button>
+      </div>
+    </div>
+  </div>
+
+  {% comment %}Shown when somebody navigates away from a form with unsaved
+  changes. Opted into per form with data-unsaved-guard — the roster planner and
+  the timesheet day form, both long enough that losing one to a stray click
+  matters.{% endcomment %}
+  <div class="modal-overlay" id="unsaved-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="unsaved-title">
+      <h2 class="modal-title" id="unsaved-title">{% translate "Unsaved changes" %}</h2>
+      <p class="modal-body">{% translate "You have unsaved changes on this page. Do you want to save them before leaving?" %}</p>
+      <div class="modal-actions">
+        <button type="button" class="button" data-unsaved-save>{% translate "Save changes" %}</button>
+        <button type="button" class="button button--secondary" data-unsaved-discard>{% translate "Discard" %}</button>
+        <button type="button" class="link-button" data-unsaved-cancel>{% translate "Cancel" %}</button>
+      </div>
+    </div>
+  </div>
+
+  {% comment %}Page help: the topbar "?" (block topbar_actions) opens this. A
+  page supplies the *whole* overlay, not just its contents — see
+  templates/roster/plan.html for the shape.{% endcomment %}
+  {% block help_modal %}{% endblock %}
+
+  {% comment %}The shell's own behaviour — the dialog machinery, data-confirm
+  forms, the help pop-up, the language menu, the sidebar toggle, the dismissable
+  messages. A file rather than inline blocks because the app ships a
+  Content-Security-Policy, which cannot tell our inline script from an injected
+  one (config/csp.py).{% endcomment %}
+  <script src="{% static 'js/shell.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

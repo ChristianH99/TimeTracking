@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% load static i18n hours %}
+{% block title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="employee-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Contract" %}</h1>
+
+  <form method="post" id="employee-form" data-unsaved-guard data-employee-form>
+    {% csrf_token %}
+
+    {% for error in form.non_field_errors %}
+      <p class="notice notice--error">{{ error }}</p>
+    {% endfor %}
+
+    <h2 class="form-section">{% translate "Who they are" %}</h2>
+    <div class="field-grid">
+      {% for field in form %}
+        {% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'username' or field.name == 'time_zone' %}
+          <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="field-grid">
+      <div class="field">
+        <label class="checkbox-row">{{ form.is_manager }}<span>{{ form.is_manager.label }}</span></label>
+        <span class="help">{{ form.is_manager.help_text }}</span>
+      </div>
+      <div class="field">
+        <label class="checkbox-row">{{ form.is_active }}<span>{{ form.is_active.label }}</span></label>
+        <span class="help">{{ form.is_active.help_text }}</span>
+      </div>
+      <div class="field">
+        <label for="{{ form.started_on.id_for_label }}">{{ form.started_on.label }}</label>
+        {{ form.started_on }}
+      </div>
+      <div class="field">
+        <label for="{{ form.ended_on.id_for_label }}">{{ form.ended_on.label }}</label>
+        {{ form.ended_on }}
+        {% for error in form.ended_on.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <h2 class="form-section">{% translate "The account they sign in with" %}</h2>
+    <p class="help">
+      {% translate "Usually left alone: the link is made by itself the first time they sign in, matched on the sign-in name above. Set it by hand only when somebody signed in before they were added here, or when the directory calls them something other than what is on this contract." %}
+    </p>
+    <div class="field">
+      <label for="employee-user">{% translate "Account" %}</label>
+      <select id="employee-user" name="user">
+        <option value="">{% translate "— none yet —" %}</option>
+        {% for account in linkable %}
+          <option value="{{ account.pk }}"{% if employee and employee.user_id == account.pk %} selected{% endif %}>
+            {% firstof account.get_full_name account.get_username %} ({{ account.get_username|truncatechars:24 }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <h2 class="form-section">{% translate "The working week" %}</h2>
+    <p class="help">
+      {% translate "Hours per day. A day with nothing in it is a day they do not work — which is what decides whether being away on it costs them a day of leave. 20 hours can be 8, 8 and 4 on three days, or 4 on each of five; the two are different contracts and this is where the difference lives." %}
+    </p>
+    <div class="week-fields" data-week-fields>
+      {% for field in form %}
+        {% if field.name|slice:":6" == 'hours_' %}
+          <div class="week-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% comment %}The consequence of the seven boxes above, worked out in the
+    browser as they are typed. The relationship between working days and leave
+    days is the one thing on this page that is not obvious, and showing it after
+    the save is showing it too late. The server computes the same thing on
+    Employee.annual_leave_days; this is a preview and never the stored value.{% endcomment %}
+    <dl class="contract-summary" data-contract-summary>
+      <div><dt>{% translate "Hours a week" %}</dt><dd data-summary-hours>—</dd></div>
+      <div><dt>{% translate "Working days a week" %}</dt><dd data-summary-days>—</dd></div>
+      <div><dt>{% translate "Leave days a year" %}</dt><dd data-summary-leave>—</dd></div>
+      {% if preview %}
+        <div>
+          <dt>{% blocktranslate with year=preview.year %}Leave in {{ year }}{% endblocktranslate %}</dt>
+          <dd>{{ preview.this_year }}</dd>
+        </div>
+      {% endif %}
+    </dl>
+
+    {% if employee %}
+      <p class="help">
+        {% comment %}Editing the boxes above moves this person's *first*
+        contract — it is a correction, not a change. Changing hours for real
+        needs a date, and the page that asks for one is a different page. The
+        two doors are deliberately not one: a manager fixing a spelling must not
+        be able to rewrite somebody's working week as a side effect.{% endcomment %}
+        {% translate "Editing the boxes above corrects the contract they started on. To put them on different hours from a date — everything before it staying as it is — use the change page." %}
+        <a href="{% url 'employees:contract-change' employee.pk %}">{% translate "Change the hours from a date" %}</a>
+      </p>
+    {% endif %}
+
+    {% if contract_periods|length > 1 %}
+      <table class="data-table compact">
+        <thead>
+          <tr>
+            <th scope="col">{% translate "In force from" %}</th>
+            <th scope="col" class="numeric">{% translate "Hours" %}</th>
+            <th scope="col" class="numeric">{% translate "Days" %}</th>
+            <th scope="col">{% translate "Why" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for period in contract_periods %}
+            <tr>
+              <th scope="row">{{ period.valid_from|date:"d.m.Y" }}</th>
+              <td class="numeric">{{ period.weekly_hours }}</td>
+              <td class="numeric">{{ period.working_days_per_week }}</td>
+              <td>{% if period.note %}{{ period.note }}{% else %}<span class="hint">—</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <h2 class="form-section">{% translate "Leave" %}</h2>
+    <div class="field">
+      <label for="{{ form.leave_days_override.id_for_label }}">{{ form.leave_days_override.label }}</label>
+      {{ form.leave_days_override }}
+      <span class="help">{{ form.leave_days_override.help_text }}</span>
+      {% for error in form.leave_days_override.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <h2 class="form-section">{% translate "What they arrived with" %}</h2>
+    <p class="help">
+      {% translate "Nobody starts at nought. Somebody moving from another contract arrives with a figure already agreed — hours in hand, days of leave not yet taken — and this is where it goes. Leave it empty for anybody starting fresh." %}
+    </p>
+    <p class="help">
+      {% comment %}Said here rather than left to be discovered: the hours figure
+      is the starting point of a running total that every later week moves, and
+      the leave figure is added to one year and never again. Those are different
+      shapes and somebody filling this in should know which is which.{% endcomment %}
+      {% translate "The hours are added to their running balance from that date onwards. The leave days are added to that one year’s entitlement — whatever is left of them afterwards carries forward like anybody else’s." %}
+    </p>
+    <div class="field-grid">
+      {% for field in form %}
+        {% if field.name == 'opening_balance_minutes' or field.name == 'opening_leave_days' or field.name == 'opening_balance_on' %}
+          <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if preview and employee %}
+      <dl class="contract-summary">
+        <div>
+          <dt>{% translate "Balance now" %}</dt>
+          <dd class="{% if running.total < 0 %}is-short{% elif running.total > 0 %}is-over{% endif %}">
+            {{ running.total|hours_signed:hours_style }}
+          </dd>
+        </div>
+        <div>
+          <dt>{% translate "Of which brought with them" %}</dt>
+          <dd>{{ preview.opening_minutes|hours_signed:hours_style }}</dd>
+        </div>
+      </dl>
+    {% endif %}
+
+    <h2 class="form-section">{% translate "Special leave" %}</h2>
+    <p class="help">{% translate "Only what this person has been given. A type that exists in the organisation but is not listed here is not theirs — it is not “zero days of it”." %}</p>
+    {{ formset.management_form }}
+    <table class="data-table compact" data-rows="grants">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Type" %}</th>
+          <th scope="col">{% translate "Days instead of the rule" %}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for grant_form in formset.forms %}
+          <tr data-row>
+            {{ grant_form.id }}
+            <td>{{ grant_form.leave_type }}
+              {% for error in grant_form.leave_type.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>{{ grant_form.days_override }}
+              {% for error in grant_form.days_override.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>
+              <label class="row-delete">
+                {{ grant_form.DELETE }}
+                <span class="sr-only">{% translate "Remove" %}</span>
+              </label>
+              <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <template data-rows-template="grants">
+      <tr data-row>
+        {{ formset.empty_form.id }}
+        <td>{{ formset.empty_form.leave_type }}</td>
+        <td>{{ formset.empty_form.days_override }}</td>
+        <td>
+          <label class="row-delete">{{ formset.empty_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
+          <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+        </td>
+      </tr>
+    </template>
+
+    <button type="button" class="button button--secondary button--small" data-rows-add="grants">
+      + {% translate "Grant a special leave type" %}
+    </button>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save the contract" %}</button>
+      {% if employee %}
+        <a class="link-button" href="{% url 'employees:leave' employee.pk %}">{% translate "Leave balance" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if employee %}
+    <div class="danger-zone">
+      <h2>{% translate "Delete" %}</h2>
+      <p>{% translate "Only possible while there is nothing recorded. Once there are hours, shifts or absences, switching the employee off is the operation you want — it takes them off the roster and keeps every hour they worked." %}</p>
+      <form method="post" action="{% url 'employees:delete' employee.pk %}"
+            data-confirm-title="{% translate 'Delete this employee?' %}"
+            data-confirm="{% translate 'This cannot be undone. If anything has been recorded for them, the app will refuse and tell you to switch them off instead.' %}"
+            data-confirm-accept="{% translate 'Delete' %}" data-confirm-danger>
+        {% csrf_token %}
+        <button type="submit" class="button button--danger">{% translate "Delete" %}</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {{ leave_rules|json_script:"leave-rules" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/simple_rows.js' %}"></script>
+  <script src="{% static 'js/employee_form.js' %}"></script>
+{% endblock %}

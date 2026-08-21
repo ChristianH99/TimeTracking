@@ -1,0 +1,18 @@
+{% comment %}
+The app's mark: a clock face whose hands read a quarter past eight, over the
+ticks at the quarters. Inline SVG rather than an image file so it takes
+`currentColor` and can sit on the teal sidebar and the white login card without
+a second asset — and so it stays crisp at the one size it is drawn at and the
+three it is scaled to.
+
+Included by base.html (sidebar) and the login page, which is why it is a partial
+rather than markup repeated twice. static/icons/favicon.svg is a third copy and
+deliberately so — see the note in that file.
+{% endcomment %}
+<svg class="brand-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {# the face #}
+  <circle cx="16" cy="16" r="11"></circle>
+  {# the hands: the short one at eight, the long one at the quarter #}
+  <path d="M16 9.5V16l4.5 2.5"></path>
+</svg>

@@ -1,0 +1,1586 @@
+/* ===== DESIGN TOKENS =====
+
+   Everything visual comes from here. Three rules keep it that way:
+
+   - No raw colour outside this block. A value that appears twice is a token.
+   - No raw length for padding, gap, margin or font-size, no raw transition
+     duration and no raw z-index. Every scale below is a closed set — if a
+     component needs a step that isn't here, the step is missing from the
+     scale, not from the component.
+   - The app is deliberately light-only, and `color-scheme` is NOT declared.
+     Naming a dark scheme without shipping dark rules is what makes a browser
+     paint inputs, selects and scrollbars dark against a permanently light
+     page. A real dark theme means redefining the tokens below under
+     `prefers-color-scheme`, and only then re-declaring `color-scheme`.
+
+   The palette is a deep slate-teal sidebar, an ember topbar that stays put and
+   says at a glance which app this is, and gold for the one thing on a page that
+   is currently selected. Cool greys throughout, because a warm grey next to
+   teal reads as dirty.
+
+   Everything below the token block is built out of those tokens and nothing
+   else. The scales are closed sets: a component that needs a step which is not
+   there means the *scale* is missing a step, and the answer is to add it here
+   rather than to write a raw value further down.
+*/
+:root {
+  /* ---- palette ---- */
+  --pine: #1C3A3A;
+  --pine-deep: #142B2B;
+  --pine-light: #2F5A57;
+  --ember: #C9741C;
+  --ember-hover: #A85E12;
+  --ember-light: #E09A4E;
+  --gold: #E0A92E;
+  --gold-deep: #B07F12;
+
+  --snow: #F7F9F9;
+  --white: #FFFFFF;
+  --paper: #FCFDFD;
+
+  --text-dark: #16211F;
+  --text-mid: #56635F;
+  --text-light: #808D89;
+  --text-muted: #A9B4B1;
+  --border: #DDE4E2;
+  --border-light: #EDF1F0;
+
+  --pine-bg: #E9F0EF;
+  --ember-bg: #FBEEE0;
+  --gold-bg: #FDF5E0;
+
+  /* Success — saved, done, confirmed. The colour of a day somebody has agreed
+     they worked, which is most of the cells on most of the pages. */
+  --success: #1F8B57;
+  --success-strong: #166B42;
+  --success-bg: #E7F4EC;
+
+  /* Amber — something to look at, not something broken.
+     This app has one specific job for it and it is load-bearing: **a value
+     somebody typed over the one the rules calculated**. A break of 30 minutes
+     that came from the break rules and a break of 30 minutes that somebody
+     entered by hand are the same number and mean entirely different things to
+     whoever signs the timesheet off, so the second is always drawn in this. */
+  --amber: #8A5A12;
+  --amber-bg: #FBF0DA;
+
+  /* Plum — absence that is nobody's choice: sickness. Deliberately not
+     --danger, which in this app means "this action destroys something" and
+     nothing else; a sick day is not a failure and must not be coloured as one. */
+  --plum: #6B4A8F;
+  --plum-bg: #F0EAF7;
+
+  /* Danger — destructive actions and refusals. */
+  --danger: #B3261E;
+  --danger-bg: #FBE9E7;
+
+  --shadow-sm: 0 1px 3px rgba(22,33,31,0.05), 0 2px 8px rgba(22,33,31,0.04);
+  --shadow-md: 0 4px 12px rgba(22,33,31,0.08), 0 2px 6px rgba(22,33,31,0.05);
+  --shadow-lg: 0 12px 32px rgba(22,33,31,0.12);
+
+  /* ---- spacing scale (4px grid) ----
+     Use for padding, gap and margin. Nothing in between these steps. */
+  --space-1: 0.125rem;  /*  2px */
+  --space-2: 0.25rem;   /*  4px */
+  --space-3: 0.375rem;  /*  6px */
+  --space-4: 0.5rem;    /*  8px */
+  --space-5: 0.75rem;   /* 12px */
+  --space-6: 1rem;      /* 16px */
+  --space-7: 1.25rem;   /* 20px */
+  --space-8: 1.5rem;    /* 24px */
+  --space-9: 2rem;      /* 32px */
+  --space-10: 3rem;     /* 48px */
+
+  /* ---- type scale ----
+     `2xs` and `xs` are the uppercase micro-labels; `base` is body text. */
+  --text-2xs: 0.6875rem;  /* 11px */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 0.9375rem;   /* 15px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.125rem;    /* 18px */
+  --text-2xl: 1.3125rem;  /* 21px */
+  --text-3xl: 1.5rem;     /* 24px */
+  --text-4xl: 2rem;       /* 32px */
+
+  /* ---- radii ---- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* ---- type ----
+     An amount, a unit, a duration: things read as quantities rather than as
+     prose, and things that have to line up in a column. */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---- motion ---- a closed set, like the scales above. */
+  --dur-1: 0.06s;  /* a press: as near instant as still reads as a change */
+  --dur-2: 0.12s;
+  --dur-3: 0.15s;  /* hover and focus, the app's default */
+  --dur-4: 0.2s;   /* something that moves rather than recolours */
+  --dur-5: 0.6s;   /* a panel sliding in */
+
+  /* ---- stacking order ----
+     Named steps, bottom of the page to the top of it. Nothing sets a raw
+     z-index, and no two things share a step — which is what stops "whichever
+     of these two fixed elements comes later in the document wins". */
+  --z-sticky-heading: 1;
+  --z-topbar: 10;
+  --z-popover: 20;
+  --z-menu: 40;
+  /* A shift card while it is being dragged across the roster. Above the columns
+     it is travelling over and above their drop highlights, below the scrim. */
+  --z-dragging: 45;
+  --z-scrim: 50;
+  --z-sidebar: 60;
+  --z-modal: 80;
+  --z-skip-link: 90;
+
+  /* ---- chrome dimensions ----
+     Each of these is a number two rules have to agree on: the sidebar's width
+     and the room the main column leaves for it; the topbar's height and how
+     far down anything sticky below it starts. */
+  --sidebar-w: 240px;
+  --topbar-h: 60px;
+
+  /* ---- breakpoints ----
+     Not tokens, because `@media` cannot read a custom property — the values
+     are written out at each rule. Listed here so the set stays closed like the
+     scales above, and so adding a fourth is a decision rather than a habit:
+
+       900px  the sidebar goes off-canvas behind the hamburger
+       700px  page padding steps down; the roster's seven columns become a
+              scrolling strip and the week table folds to a card per day
+       520px  the stat tiles and the day form go to one column
+  */
+
+  /* ---- content width ---- one measure for every page. */
+  --content-max: 1100px;
+}
+
+* { box-sizing: border-box; }
+
+/* The `hidden` attribute must always win, even over components that set their
+   own `display` (e.g. flex rows toggled by JS). */
+[hidden] { display: none !important; }
+
+html { min-height: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  background: var(--snow);
+  color: var(--text-mid);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: 'Manrope', sans-serif;
+  color: var(--text-dark);
+  letter-spacing: -0.3px;
+}
+
+h1 { font-size: var(--text-3xl); font-weight: 800; margin: 0 0 var(--space-7); }
+h2 { font-size: var(--text-xl); font-weight: 800; margin: 0 0 var(--space-5); }
+h3 { font-size: var(--text-lg); font-weight: 700; margin: 0 0 var(--space-4); }
+
+p { line-height: 1.6; }
+
+a { color: var(--ember); text-decoration: none; transition: color var(--dur-3); }
+a:hover { color: var(--ember-hover); }
+
+/* ===== SKIP LINK / SCREEN-READER TEXT ===== */
+.skip-link {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-skip-link);
+  padding: var(--space-4) var(--space-5);
+  background: var(--pine);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.skip-link:not(:focus) {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* `clip` rather than display:none or visibility:hidden — both of those take the
+   text out of the accessibility tree along with the pixels. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ===== SHELL LAYOUT ===== */
+.shell { display: flex; min-height: 100vh; }
+
+/* ===== SIDEBAR ===== */
+.shell-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--pine);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  z-index: var(--z-sidebar);
+  overflow-y: auto;
+  transition: transform var(--dur-4) ease;
+}
+
+.shell-brand {
+  padding: var(--space-6) var(--space-7);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  min-height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-5);
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: var(--text-xl);
+  color: var(--white);
+}
+.brand:hover { color: var(--white); }
+/* The mark: a lidded pot over a flame. Sized in `em` so it scales with the
+   wordmark rather than needing its own step on the type scale. */
+.brand-mark {
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  color: var(--gold);
+}
+.brand-word { letter-spacing: -0.4px; }
+
+.shell-nav { padding: var(--space-6) 0; flex: 1; }
+.shell-nav-item {
+  display: block;
+  padding: var(--space-5) var(--space-7);
+  color: rgba(255,255,255,0.75);
+  font-size: var(--text-base);
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: color var(--dur-3), background var(--dur-3), border-color var(--dur-3);
+}
+.shell-nav-item:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+.shell-nav-item.active {
+  color: var(--white);
+  font-weight: 700;
+  background: rgba(255,255,255,0.09);
+  border-left-color: var(--gold);
+}
+.shell-nav-parent { font-weight: 700; }
+
+.shell-nav-sub { display: flex; flex-direction: column; padding: var(--space-1) 0 var(--space-3); }
+.shell-nav-subitem {
+  display: block;
+  padding: var(--space-4) var(--space-7) var(--space-4) var(--space-9);
+  color: rgba(255,255,255,0.6);
+  font-size: var(--text-base);
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: color var(--dur-3), background var(--dur-3), border-color var(--dur-3);
+}
+.shell-nav-subitem:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+.shell-nav-subitem.active {
+  color: var(--white);
+  font-weight: 600;
+  background: rgba(255,255,255,0.09);
+  border-left-color: var(--gold);
+}
+
+.shell-sidebar-footer {
+  padding: var(--space-6) var(--space-7);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+/* The running build. Monospaced and quiet: it is read once, after an update,
+   to answer "did that take" — and the rest of the time it should be furniture. */
+.shell-version {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.04em;
+}
+/* The Settings disclosure in the sidebar footer: the pages that are about the
+   app rather than about the food. A <details> rather than a scripted menu — it
+   opens with the keyboard, is announced as a disclosure without any ARIA, and
+   works before any script has run. shell.js only remembers the state. */
+.shell-settings { margin-bottom: var(--space-5); }
+.shell-settings-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+/* The default marker is a black triangle that reads as a smudge on the herb
+   ground; ::before below is the same affordance in the sidebar's own colour. */
+.shell-settings-summary::-webkit-details-marker { display: none; }
+.shell-settings-summary::before {
+  content: "›";
+  display: inline-block;
+  font-size: var(--text-lg);
+  line-height: 1;
+  transition: transform var(--dur-4);
+}
+.shell-settings[open] > .shell-settings-summary::before { transform: rotate(90deg); }
+.shell-settings-summary:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+.shell-settings-items { padding-bottom: var(--space-3); }
+
+.shell-user { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); }
+.shell-user-name {
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-logout-form { margin: 0; }
+.shell-logout {
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background var(--dur-3), color var(--dur-3), border-color var(--dur-3);
+}
+.shell-logout:hover { background: rgba(255,255,255,0.1); color: var(--white); border-color: rgba(255,255,255,0.5); }
+
+.shell-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,48,35,0.45);
+  z-index: var(--z-scrim);
+}
+
+/* ===== MAIN ===== */
+.shell-main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--dur-4) ease;
+}
+/* Desktop: the hamburger collapses the sidebar out of the way, and the choice
+   is remembered (static/js/shell.js) because it is a preference about the app
+   rather than about one page. */
+.shell.sidebar-collapsed .shell-sidebar { transform: translateX(-100%); }
+.shell.sidebar-collapsed .shell-main { margin-left: 0; }
+
+/* ===== TOPBAR =====
+   Terracotta and always visible. It is the one element on screen at all times,
+   so it carries the identity: on a phone, where the green sidebar is off
+   canvas, this bar is the entire answer to "which app am I in". */
+.shell-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-7);
+  background: var(--ember);
+  color: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar);
+  min-height: var(--topbar-h);
+  box-shadow: 0 1px 0 rgba(43,37,33,0.08), 0 2px 10px rgba(43,37,33,0.06);
+}
+
+.topbar-titles { display: flex; align-items: baseline; gap: var(--space-5); min-width: 0; }
+.topbar-page {
+  font-family: 'Manrope', sans-serif;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.topbar-sub {
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-4); flex-shrink: 0; }
+/* The round chrome shared by the topbar's icon buttons. Outlined in the bar's
+   own white rather than filled: a filled button here would compete with the
+   page's primary action, which is also terracotta on white. */
+.topbar-help {
+  width: 2rem; height: 2rem; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0;
+  border: 1.5px solid rgba(255,255,255,0.45);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--white);
+  font-family: 'Manrope', sans-serif; font-weight: 800; font-size: var(--text-lg);
+  cursor: pointer;
+  transition: background var(--dur-3), border-color var(--dur-3);
+}
+.topbar-help:hover { background: rgba(255,255,255,0.16); border-color: var(--white); }
+
+/* A `.button` in the topbar cannot wear the page's primary colour, because the
+   bar already is that colour — terracotta on terracotta is a button-shaped
+   shadow. So the pair is inverted here: the primary action goes solid white,
+   the secondary takes the outlined chrome the help button and the hamburger
+   already share. This only became visible when the bar grew a second action;
+   with one there was nothing for it to be less prominent than. */
+.shell-topbar .button {
+  background: var(--white);
+  color: var(--ember);
+  box-shadow: none;
+}
+.shell-topbar .button:hover {
+  background: var(--snow);
+  color: var(--ember-hover);
+  transform: none;
+  box-shadow: none;
+}
+.shell-topbar .button--secondary {
+  background: transparent;
+  color: var(--white);
+  border: 1.5px solid rgba(255,255,255,0.45);
+}
+.shell-topbar .button--secondary:hover {
+  background: rgba(255,255,255,0.16);
+  border-color: var(--white);
+  color: var(--white);
+}
+
+.shell-hamburger {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.45);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.shell-hamburger:hover { background: rgba(255,255,255,0.16); }
+.shell-hamburger-icon { position: relative; display: inline-block; width: 20px; height: 14px; }
+.shell-hamburger-icon span {
+  position: absolute; left: 0;
+  width: 100%; height: 2px;
+  background: var(--white);
+  border-radius: var(--radius-xs);
+  transition: transform var(--dur-4) ease, opacity var(--dur-3) ease, top var(--dur-4) ease;
+}
+.shell-hamburger-icon span:nth-child(1) { top: 0; }
+.shell-hamburger-icon span:nth-child(2) { top: 6px; }
+.shell-hamburger-icon span:nth-child(3) { top: 12px; }
+.shell-hamburger[aria-expanded="true"] .shell-hamburger-icon span:nth-child(1) { top: 6px; transform: rotate(45deg); }
+.shell-hamburger[aria-expanded="true"] .shell-hamburger-icon span:nth-child(2) { opacity: 0; }
+.shell-hamburger[aria-expanded="true"] .shell-hamburger-icon span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+/* ===== LANGUAGE SWITCHER ===== */
+.lang-switcher { position: relative; flex-shrink: 0; }
+.lang-toggle[aria-expanded="true"] { background: rgba(255,255,255,0.2); border-color: var(--white); }
+.lang-menu {
+  position: absolute; top: calc(100% + var(--space-4)); right: 0;
+  z-index: var(--z-menu);
+  min-width: 9rem;
+  display: flex; flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  gap: var(--space-1);
+}
+.lang-menu form { margin: 0; }
+.lang-option {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-5);
+  padding: var(--space-4);
+  border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-mid);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: var(--text-base); font-weight: 500; text-align: left;
+  transition: background var(--dur-2), color var(--dur-2);
+}
+.lang-option:hover { background: var(--snow); color: var(--text-dark); }
+.lang-option--active { color: var(--text-dark); font-weight: 600; }
+.lang-option-code { text-transform: uppercase; font-size: var(--text-2xs); letter-spacing: 0.05em; color: var(--text-light); }
+.lang-option--active .lang-option-code { color: var(--ember); }
+
+/* ===== CONTENT ===== */
+.content { padding: var(--space-9); max-width: var(--content-max); margin: 0 auto; width: 100%; }
+
+.page-lead { color: var(--text-mid); margin: calc(-1 * var(--space-5)) 0 var(--space-8); max-width: 46rem; }
+.hint { color: var(--text-light); font-size: var(--text-base); }
+.back-link { display: inline-block; font-size: var(--text-base); font-weight: 600; color: var(--text-mid); margin-bottom: var(--space-5); }
+.back-link:hover { color: var(--ember); }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-8);
+}
+
+.table-card {
+  background: var(--paper);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  margin-top: var(--space-6);
+}
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-light); }
+/* Uppercase micro-caps are for things that are not field labels — a column
+   heading, a stat caption, a pill. A label on a field somebody fills in is
+   sentence case; see the FORMS section. */
+th {
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--snow);
+  border-bottom: 1px solid var(--border);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: rgba(43,37,33,0.015); }
+
+/* ===== BUTTONS ===== */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  background: var(--ember);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-base);
+  box-shadow: 0 4px 12px rgba(185,79,44,0.22);
+  transition: background var(--dur-3), transform var(--dur-1), box-shadow var(--dur-3);
+  cursor: pointer;
+}
+.button:hover {
+  background: var(--ember-hover);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(185,79,44,0.28);
+}
+.button:disabled, .button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  pointer-events: none;
+}
+.button--secondary {
+  background: transparent;
+  color: var(--pine);
+  border: 1.5px solid var(--border);
+  box-shadow: none;
+  font-weight: 600;
+}
+.button--secondary:hover {
+  background: var(--white);
+  border-color: var(--pine);
+  color: var(--pine);
+  transform: none;
+  box-shadow: none;
+}
+.button--danger { background: var(--danger); box-shadow: none; }
+.button--danger:hover { background: var(--danger); box-shadow: none; filter: brightness(0.92); }
+.button--small { padding: var(--space-3) var(--space-5); font-size: var(--text-sm); }
+.button--big { padding: var(--space-5) var(--space-8); font-size: var(--text-md); width: 100%; justify-content: center; }
+
+.link-button {
+  background: none; border: none; padding: 0;
+  color: var(--ember);
+  text-decoration: underline;
+  font-size: inherit; font-family: inherit;
+  cursor: pointer;
+}
+.link-button:hover { color: var(--ember-hover); }
+
+/* ===== LIST TOOLBAR (search left, primary action right) ===== */
+.list-toolbar { display: flex; align-items: center; gap: var(--space-5); margin-bottom: var(--space-6); flex-wrap: wrap; }
+.list-toolbar .search-form { margin-bottom: 0; flex: 1 1 16rem; }
+.list-toolbar > .button { margin-left: auto; flex-shrink: 0; }
+
+.search-form { display: flex; gap: var(--space-4); margin-bottom: var(--space-6); }
+.search-input-wrap { position: relative; display: flex; flex: 1 1 auto; }
+.search-form input[type="text"] {
+  padding: var(--space-4) var(--space-9) var(--space-4) var(--space-5);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-family: inherit;
+  font-size: var(--text-md);
+  color: var(--text-dark);
+  width: 100%;
+  transition: border-color var(--dur-3), box-shadow var(--dur-3);
+}
+.search-form input[type="text"]:focus {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px rgba(36,64,47,0.1);
+}
+/* The soft ring is the *pointer* focus style, and it must not remove the
+   outline: `form input:focus` outranks `input:focus-visible` on specificity,
+   so an `outline: none` here silently strips the keyboard indicator from the
+   whole app. `:not(:focus-visible)` confines it to the pointer. */
+.search-form input[type="text"]:focus:not(:focus-visible) { outline: none; }
+.search-clear {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 1.35rem; height: 1.35rem;
+  padding: 0; border: none; border-radius: 50%;
+  background: transparent;
+  color: var(--text-light);
+  font-size: var(--text-xl); line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+.search-clear:hover { background: var(--border-light); color: var(--text-dark); }
+
+/* ===== PILLS AND TAGS ===== */
+.pill {
+  display: inline-block;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--border-light);
+  color: var(--text-mid);
+}
+.pill--pine { background: var(--pine-bg); color: var(--pine); }
+.pill--gold { background: var(--gold-bg); color: var(--gold-deep); }
+
+/* A tag as a link. `a.tag` inherits the pill shape but has to say it is
+   clickable, which it does by moving on hover rather than by being underlined —
+   a row of underlined pills is a row of underlines. */
+.tag-row { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.tag {
+  display: inline-block;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--pine-bg);
+  color: var(--pine);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+a.tag:hover { background: var(--pine); color: var(--white); }
+.tag--active { background: var(--pine); color: var(--white); }
+.tag-count { color: inherit; opacity: 0.6; margin-left: var(--space-2); font-weight: 500; }
+
+/* ===== FORMS ===== */
+form p, form .field { margin: var(--space-6) 0; display: flex; flex-direction: column; gap: var(--space-3); }
+/* ...but a hint inside a form is prose, not a label+field row: the column flex
+   would put every inline child of it on its own line. */
+form p.hint, form p.help { display: block; }
+/* A button in one of those rows is not a field, so it must not be stretched to
+   the field width — `align-items: stretch` is the flex default and it turned
+   "+ Another line" into a 1100px bar. */
+form p > .button, form p > .link-button { align-self: flex-start; }
+
+/* The label convention, and it is the only one: a label on a field somebody
+   fills in is **sentence case**, in this size and weight, wherever that field
+   lives. Uppercase is for things that are not labels (see `th` above) — and
+   all-caps is worst exactly where German puts its longest compounds. */
+form label, .field-label {
+  font-family: 'Manrope', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-dark);
+  text-transform: none;
+  letter-spacing: normal;
+}
+form input, form select, form textarea {
+  padding: var(--space-4) var(--space-5);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-size: var(--text-md);
+  font-family: inherit;
+  color: var(--text-dark);
+  transition: border-color var(--dur-3), box-shadow var(--dur-3);
+}
+form textarea { line-height: 1.6; resize: vertical; }
+form input:focus, form select:focus, form textarea:focus {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px rgba(36,64,47,0.1);
+}
+form input:focus:not(:focus-visible),
+form select:focus:not(:focus-visible),
+form textarea:focus:not(:focus-visible) { outline: none; }
+form input[type="checkbox"] { width: auto; }
+
+.help { color: var(--text-light); font-size: var(--text-sm); margin: 0; }
+.field-error { color: var(--danger); font-size: var(--text-sm); }
+.field-error:empty { display: none; }
+.required-marker { color: var(--ember); }
+
+/* A section eyebrow, not a field label — so it takes the uppercase treatment
+   (see the note above `form label`). */
+.form-section {
+  font-family: 'Manrope', sans-serif;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: var(--space-9) 0 var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.form-actions { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; margin-top: var(--space-9); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-6); }
+.form-grid > p { margin: 0; }
+
+/* ===== MODAL ===== */
+body.modal-open { overflow: hidden; }
+.modal-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-modal);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-8);
+  background: rgba(26,48,35,0.5);
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8) var(--space-8) var(--space-7);
+  max-width: 420px;
+  width: 100%;
+  /* Never taller than the screen, and the *body* is what scrolls.
+     `body.modal-open` stops the page behind from moving, so a panel taller than
+     the viewport had its foot below the bottom edge with nothing able to reach
+     it — which is how the help on a long form became unreadable from about
+     halfway down. The title and the buttons stay put; only the prose moves. */
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+.modal-title { font-family: 'Manrope', sans-serif; font-size: var(--text-xl); font-weight: 800; color: var(--text-dark); margin: 0 0 var(--space-4); }
+.modal-body {
+  color: var(--text-mid);
+  font-size: var(--text-md);
+  margin: 0 0 var(--space-7);
+  overflow-y: auto;
+  /* The default is `min-height: auto` — "never shrink below my content" — which
+     would make the cap above do nothing at all. The same rule as the diagram
+     column, in a flex column rather than a grid. */
+  min-height: 0;
+  /* Reaching the end of the help must not then start scrolling the page
+     underneath it. */
+  overscroll-behavior: contain;
+}
+.modal-body p { margin: 0 0 var(--space-4); }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-body ul { margin: var(--space-3) 0 var(--space-5); padding-left: var(--space-7); }
+.modal-body li { margin: var(--space-2) 0; }
+.modal-body h3 { font-size: var(--text-base); margin: var(--space-6) 0 var(--space-3); }
+.modal-actions { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; }
+.help-panel { max-width: 32rem; position: relative; }
+.help-panel .modal-title { padding-right: var(--space-8); }
+.help-panel .modal-body { margin-bottom: 0; }
+.modal-close {
+  position: absolute; top: var(--space-5); right: var(--space-6);
+  border: none; background: transparent; cursor: pointer;
+  font-size: var(--text-2xl); line-height: 1; color: var(--text-light);
+}
+.modal-close:hover { color: var(--text-dark); }
+
+/* ===== NOTICES ===== */
+.messages { list-style: none; padding: 0; margin: 0 0 var(--space-7); }
+.notice {
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  padding-right: var(--space-9);
+  margin-bottom: var(--space-6);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  background: var(--pine-bg);
+  border-left: 4px solid var(--pine);
+  color: var(--text-dark);
+}
+.notice--success { background: var(--success-bg); border-left-color: var(--success); }
+.notice--warning { background: var(--amber-bg); border-left-color: var(--amber); }
+.notice--error { background: var(--danger-bg); border-left-color: var(--danger); }
+.notice-dismiss {
+  position: absolute; top: var(--space-3); right: var(--space-4);
+  border: 0; background: none; padding: var(--space-2);
+  line-height: 1; font-size: var(--text-xl); color: var(--text-light);
+  cursor: pointer; border-radius: var(--radius-xs);
+}
+.notice-dismiss:hover { color: var(--text-dark); }
+
+/* "Nothing here yet" is a heading and a centred card, never a bare paragraph on
+   a blank page — which reads as a page that failed to load rather than as an
+   empty collection. */
+.empty-state {
+  padding: var(--space-10) var(--space-7);
+  text-align: center;
+  color: var(--text-light);
+  background: var(--paper);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+.empty-state h2 { color: var(--text-dark); }
+.empty-state > p { max-width: 34rem; margin-inline: auto; }
+.empty-state .button { margin-top: var(--space-6); }
+
+/* ===== HOME ===== */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-6); margin-bottom: var(--space-9); }
+.stat {
+  background: var(--paper);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-7);
+}
+.stat-value { font-family: 'Manrope', sans-serif; font-size: var(--text-4xl); font-weight: 800; color: var(--text-dark); line-height: 1; }
+.stat-label {
+  display: block;
+  margin-top: var(--space-4);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+}
+.section-heading {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-6);
+  margin: var(--space-9) 0 var(--space-6);
+}
+.section-heading h2 { margin: 0; }
+
+/* ===== SIMPLE FORMSET ROWS =====
+   The alias and purchase-size rows on the catalogue page. Not the canvas: these
+   are a short list of like things with no geometry to them. */
+.simple-rows { list-style: none; margin: 0 0 var(--space-6); padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.simple-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-5); }
+.simple-row-field { flex: 1 1 8rem; min-width: 0; }
+.simple-row-field input, .simple-row-field select { width: 100%; }
+.simple-row--size .simple-row-field { flex: 0 0 7rem; }
+.simple-row--size .simple-row-field:last-of-type { flex: 1 1 8rem; }
+.simple-row-delete { flex: 0 0 auto; font-size: var(--text-2xs); }
+/* An "×" per row instead of a "remove" tick-box, and a "+" under the list. The
+   DELETE box is still there and still ticked — the formset needs it — it is
+   just not what anybody presses. */
+.simple-row[hidden] { display: none; }
+.row-drop {
+  flex: 0 0 auto;
+  width: 1.75rem; height: 1.75rem;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-light);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+.row-drop:hover { background: var(--danger-bg); color: var(--danger); }
+
+/* ===== DATA TABLES ===== */
+/* Wide content scrolls inside its own box. Without this the table widens the
+   page and takes the topbar and sidebar sideways with it. */
+.table-scroll { overflow-x: auto; }
+/* A unit is at most a few characters. Left to the form grid it stretched to
+   half the page on the ingredient form — a dropdown the width of a paragraph
+   for the word "g". */
+select[data-unit-select] { max-width: 11rem; }
+.data-table { width: 100%; border-collapse: collapse; font-size: var(--text-base); }
+.data-table th, .data-table td { padding: var(--space-5); text-align: left; border-bottom: 1px solid var(--border-light); }
+.data-table thead th {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border);
+}
+/* The global `th` rule uppercases and letter-spaces headings, which is right
+   for a column heading and wrong for a row one: it turned every ingredient in
+   the catalogue into "ERDNUSSBUTTER". The same override the People table
+   needs, for the same reason. */
+.data-table th[scope="row"] {
+  font-weight: 600;
+  color: var(--text-dark);
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--text-base);
+  background: transparent;
+}
+.catalogue-aliases { display: block; font-size: var(--text-2xs); color: var(--text-light); font-weight: 400; }
+.plain-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); margin-bottom: var(--space-7); }
+/* Bounded, not greedy. `1 1 14rem` on its own let the box eat the whole row —
+   a search field the width of the page for a word like "Butter". */
+.filter-bar input[type="search"] { flex: 1 1 14rem; min-width: 0; max-width: 26rem; }
+
+/* ===== PEOPLE ===== */
+.people-table th[scope="row"] { font-weight: 600; text-transform: none; letter-spacing: normal; font-size: var(--text-base); background: transparent; color: var(--text-dark); }
+.people-sub { display: block; font-size: var(--text-xs); color: var(--text-light); font-weight: 400; }
+/* Four actions on one line push the table past the content width on a laptop,
+   and the fourth — Delete — is the one that falls off the right-hand edge. So
+   they wrap: the row is a little taller and every action is reachable without
+   discovering that the table scrolls sideways. */
+.people-actions { width: 1%; }
+.people-actions-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.people-actions form { margin: 0; }
+.people-table td, .people-table th { padding: var(--space-5); }
+.people-table tr.is-inactive td, .people-table tr.is-inactive th { opacity: 0.55; }
+.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.pill--off { background: var(--danger-bg); color: var(--danger); }
+.link-button--danger { color: var(--danger); }
+.link-button--danger:hover { color: var(--danger); }
+
+/* ===== SSO SETTINGS ===== */
+/* The redirect URI, which is a value people come to this page to copy into DSM
+   and which fails silently if it is mistyped. Given its own block for that
+   reason rather than being one field among fifteen. */
+.callback-box {
+  padding: var(--space-6) var(--space-7);
+  margin-bottom: var(--space-8);
+  background: var(--pine-bg);
+  border-left: 4px solid var(--pine);
+  border-radius: var(--radius-sm);
+}
+.callback-label {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pine);
+}
+.callback-url {
+  display: block;
+  margin: var(--space-3) 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  color: var(--text-dark);
+  word-break: break-all;
+}
+/* Said when the address shown is the app's configured public one rather than
+   the address in the bar — which is the normal case while somebody is setting
+   this up over the LAN, and the difference decides whether the login works. */
+.callback-note {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+  color: var(--amber);
+}
+
+/* Every validation error, at the top, linked to its field. The fields these
+   belong to can be inside a closed <details>, and an error on a control nobody
+   can see is a Save that appears to do nothing. */
+.error-summary { margin: var(--space-4) 0 0; padding-left: var(--space-7); }
+.error-summary li { margin-bottom: var(--space-2); }
+
+/* The four endpoints as an answer rather than as four questions: what the
+   provider said when it was last asked. */
+.endpoint-readout {
+  margin: var(--space-6) 0;
+  padding: var(--space-6);
+  background: var(--snow);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+.endpoint {
+  display: grid;
+  grid-template-columns: 1.25rem 9rem minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+}
+.endpoint-mark { color: var(--success); font-weight: 700; }
+.endpoint--missing .endpoint-mark { color: var(--text-muted); }
+.endpoint-label { font-size: var(--text-sm); color: var(--text-mid); }
+/* min-width: 0 so a long URL wraps inside its column instead of widening the
+   grid and pushing the page sideways. */
+.endpoint-url {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-dark);
+  word-break: break-all;
+}
+.endpoint--missing .endpoint-url { color: var(--text-muted); font-style: italic; }
+.endpoint-provenance {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-light);
+}
+
+.endpoint-override { margin-bottom: var(--space-8); }
+.endpoint-override > summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-mid);
+  padding: var(--space-3) 0;
+}
+.endpoint-override > summary:hover { color: var(--text-dark); }
+
+.check-results {
+  padding: var(--space-7);
+  margin-bottom: var(--space-8);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.check-list { list-style: none; margin: 0; padding: 0; }
+/* Two columns, not three. The version with the outcome in a third `auto`
+   column collapsed the middle one to a single character wide the first time a
+   real failure came back: the detail was a `requests` exception several hundred
+   characters long with no spaces to break at, so it took the whole row and left
+   the URL wrapping one letter per line. Anything holding text of unpredictable
+   length gets its own row and is allowed to break anywhere. */
+.check {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.check:last-child { border-bottom: none; }
+.check > * { min-width: 0; }
+.check-mark { font-weight: 800; }
+.check--ok .check-mark { color: var(--success); }
+.check--bad .check-mark { color: var(--danger); }
+.check-label { display: block; font-weight: 600; color: var(--text-dark); font-size: var(--text-sm); }
+.check-url {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-light);
+  overflow-wrap: anywhere;
+}
+.check-detail {
+  grid-column: 2;
+  font-size: var(--text-sm);
+  color: var(--text-mid);
+  overflow-wrap: anywhere;
+}
+.check--bad .check-detail { color: var(--danger); }
+
+.sso-actions {
+  display: flex; flex-wrap: wrap; gap: var(--space-5);
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
+}
+.sso-actions form { margin: 0; }
+
+/* ===== LOGIN =====
+   Its own page, outside the shell: there is no navigation to offer somebody
+   who is not signed in yet. */
+.login-body {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-8);
+  background: var(--pine);
+}
+.login-card {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-9);
+}
+.login-brand { display: flex; justify-content: center; margin-bottom: var(--space-7); }
+.login-brand .brand { color: var(--pine); font-size: var(--text-2xl); }
+.login-brand .brand-mark { color: var(--ember); }
+.login-title { font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-8); }
+.login-form { margin: 0; }
+/* The SSO button is the way in, so it is the filled one and it is first. The
+   local form below is the way *back* in when SSO is broken — present, and
+   visibly secondary. */
+.login-sso { margin-bottom: var(--space-7); }
+.login-sso .button { width: 100%; justify-content: center; }
+.login-divider {
+  display: flex; align-items: center; gap: var(--space-5);
+  margin: var(--space-7) 0;
+  color: var(--text-light);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.login-local-toggle { display: block; margin: 0 auto; font-size: var(--text-sm); color: var(--text-light); }
+.login-local-toggle:hover { color: var(--text-dark); }
+.login-lang {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-light);
+}
+.login-lang form { margin: 0; }
+.login-lang .link-button { color: var(--text-light); text-decoration: none; font-size: var(--text-sm); }
+.login-lang .link-button:hover { color: var(--text-dark); }
+/* The current language is stated by weight rather than by being unclickable:
+   a disabled control here would look like the choice had failed. */
+.login-lang--active { color: var(--text-dark); font-weight: 700; }
+
+.pw-wrap { position: relative; display: flex; }
+.pw-wrap input { width: 100%; padding-right: var(--space-9); }
+.pw-reveal {
+  position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%);
+  border: none; background: transparent; color: var(--text-light);
+  cursor: pointer; padding: var(--space-2); display: flex;
+}
+.pw-reveal:hover { color: var(--text-dark); }
+
+/* ===== ACCESSIBILITY ===== */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+/* Inside the ember topbar, ember is invisible. */
+.shell-topbar a:focus-visible,
+.shell-topbar button:focus-visible { outline-color: var(--white); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ===== SUBNAV (the four pages of Working time) =====
+
+   The rule line under the tabs is an *inset shadow* on the container rather
+   than a border, and the current tab's underline is an ordinary border on the
+   tab. That is not a flourish: with a border on both, the two sit a pixel apart
+   and the usual fix is `margin-bottom: -1px` on the tab — a raw length outside
+   the spacing scale, and one that is not a step on any scale because it is
+   cancelling a border width rather than spacing anything.
+
+   An inset shadow paints with the container's background, so a child's border
+   lands on top of it and the two coincide with nothing to cancel.
+*/
+.subnav {
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.subnav-item {
+  padding: var(--space-4) var(--space-6);
+  color: var(--text-mid); font-size: var(--text-base); font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-3), border-color var(--dur-3);
+}
+.subnav-item:hover { color: var(--text-dark); }
+.subnav-item.is-current { color: var(--ember); border-bottom-color: var(--ember); }
+
+/* ===== WEEK NAVIGATION ===== */
+.week-nav { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.toolbar-actions { display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: center; }
+.inline-form { display: inline-flex; gap: var(--space-3); align-items: center; margin: 0; }
+.copy-week input[type="date"] { max-width: 10rem; }
+
+/* ===== THE ROSTER =====
+
+   Seven columns, one per day, and a card per shift stacked inside the day it
+   falls on. The columns do not reflow to one at a narrow width: a week that is
+   not seven columns is not a week, and the comparison across days is the whole
+   reason somebody opens this page. It scrolls sideways instead — which is why
+   .roster-week is the thing carrying overflow-x, and why the page body never
+   is.
+*/
+.roster { margin-top: var(--space-6); }
+.roster-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(11rem, 1fr));
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-5);
+  /* Never shrink below the content: a grid column holding a card would
+     otherwise let the *page* scroll sideways, taking the topbar and sidebar
+     with it. The scrolling belongs here, where there is a scrollbar for it. */
+  min-width: 0;
+}
+.roster-day {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  background: var(--paper);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  min-height: 12rem;
+  min-width: 0;
+  transition: background var(--dur-3), border-color var(--dur-3);
+}
+.roster-day.is-today { border-color: var(--ember-light); }
+.roster-day.is-holiday { background: var(--gold-bg); }
+.roster-day.is-over { background: var(--pine-bg); border-color: var(--pine-light); }
+.roster-day-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
+.roster-day-name { font-family: "Manrope", sans-serif; font-weight: 800; color: var(--text-dark); font-size: var(--text-base); }
+.roster-day-date { font-size: var(--text-xs); color: var(--text-light); }
+.roster-cards { display: flex; flex-direction: column; gap: var(--space-3); flex: 1; min-height: var(--space-9); }
+
+.roster-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+}
+.roster-card.is-dragging { opacity: 0.4; cursor: grabbing; z-index: var(--z-dragging); }
+.roster-card.has-error { border-color: var(--danger); background: var(--danger-bg); }
+.roster-card.is-removed { opacity: 0.45; }
+.roster-card-grip { color: var(--text-muted); font-size: var(--text-xs); line-height: 1; text-align: center; }
+.roster-card-body { display: flex; flex-direction: column; gap: var(--space-3); }
+.roster-card select, .roster-card input { width: 100%; font-size: var(--text-sm); }
+.roster-times { display: flex; align-items: center; gap: var(--space-2); }
+.roster-dash { color: var(--text-light); }
+.roster-card-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.roster-delete { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-2xs); color: var(--text-light); }
+
+.roster-add {
+  border: 1px dashed var(--border); background: transparent; color: var(--text-light);
+  border-radius: var(--radius-sm); padding: var(--space-4); cursor: pointer;
+  font-size: var(--text-xs); font-weight: 600;
+  transition: color var(--dur-3), border-color var(--dur-3);
+}
+.roster-add:hover { color: var(--ember); border-color: var(--ember-light); }
+
+/* Who is already away. A band rather than a card, and not draggable: it is
+   something to plan around, not something to move. */
+.roster-away {
+  border-left: 3px solid var(--text-muted);
+  background: var(--border-light);
+  border-radius: var(--radius-xs);
+  padding: var(--space-3) var(--space-4);
+  display: flex; flex-direction: column;
+  font-size: var(--text-2xs);
+}
+.roster-away--holiday, .roster-away--special { border-left-color: var(--success); background: var(--success-bg); }
+.roster-away--sick { border-left-color: var(--plum); background: var(--plum-bg); }
+.roster-away--closure { border-left-color: var(--gold-deep); background: var(--gold-bg); }
+.roster-away.is-pending { border-left-style: dashed; }
+.roster-away-name { font-weight: 700; color: var(--text-dark); }
+.roster-away-kind { color: var(--text-mid); }
+
+/* Where the cards live before render() sends them home. Off-screen rather than
+   `hidden`, because a hidden container makes its inputs unfocusable — and a
+   validation error inside one makes Save do nothing at all, with an
+   unfocusable-control warning in the console as the only clue. */
+.roster-holder { position: absolute; left: -9999px; top: 0; width: 1px; overflow: hidden; }
+
+/* ===== THE TIMESHEET ===== */
+.timesheet-day { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
+.timesheet-day-name { font-weight: 700; color: var(--text-dark); }
+.timesheet-day-date { font-size: var(--text-xs); color: var(--text-light); }
+.timesheet-span {
+  display: inline-block; font-family: var(--font-mono); font-size: var(--text-sm);
+  background: var(--border-light); border-radius: var(--radius-xs);
+  padding: var(--space-1) var(--space-3); margin-right: var(--space-2);
+}
+.timesheet-total { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.timesheet-actions { white-space: nowrap; }
+tr.is-today > * { background: var(--ember-bg); }
+tr.is-off > * { color: var(--text-light); }
+
+/* A value somebody typed over the one the rules produced. The same amber
+   everywhere it appears — a break, a leave entitlement — because it is always
+   the same statement: this number did not come from the policy. */
+.is-override { color: var(--amber); font-weight: 700; border-bottom: 1px dotted var(--amber); cursor: help; }
+.is-short { color: var(--danger); }
+.is-over { color: var(--success-strong); }
+
+/* ===== THE DAY FORM ===== */
+.rostered { margin-bottom: var(--space-8); }
+.rostered-times { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: baseline; }
+.rostered-total { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.segment-rows { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-5); }
+.segment-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.segment-length { font-family: var(--font-mono); color: var(--text-light); font-size: var(--text-sm); min-width: var(--space-9); }
+.row-delete { display: inline-flex; align-items: center; gap: var(--space-2); }
+.break-block { display: flex; flex-direction: column; gap: var(--space-5); }
+.break-manual { display: flex; flex-direction: column; gap: var(--space-3); max-width: 14rem; }
+.break-manual.is-automatic { opacity: 0.6; }
+.break-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-6); margin: 0;
+  background: var(--snow); border: 1px solid var(--border-light);
+  border-radius: var(--radius-md); padding: var(--space-6);
+}
+.break-summary dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); font-weight: 700; }
+.break-summary dd { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: var(--text-xl); color: var(--text-dark); font-weight: 700; }
+.checkbox-row { display: inline-flex; align-items: center; gap: var(--space-3); }
+
+/* ===== THE TEAM WEEK ===== */
+.team-week { table-layout: fixed; }
+.team-day { text-align: center; font-size: var(--text-xs); }
+.team-day-date { display: block; font-weight: 400; color: var(--text-light); font-size: var(--text-2xs); }
+.team-cell {
+  text-align: center; font-family: var(--font-mono); font-size: var(--text-xs);
+  border-radius: var(--radius-xs);
+}
+.team-cell.is-confirmed { background: var(--success-bg); color: var(--success-strong); }
+.team-cell.is-entered { background: var(--gold-bg); color: var(--amber); }
+.team-cell.is-awaiting { background: var(--danger-bg); color: var(--danger); font-weight: 700; }
+.team-cell.is-away { background: var(--border-light); color: var(--text-light); }
+.team-cell.is-away--sick { background: var(--plum-bg); color: var(--plum); }
+.team-cell.is-off { color: var(--text-muted); }
+/* An outline rather than another background: "different from the roster" can be
+   true of a confirmed day *and* of an entered one, so it has to stack with the
+   colour rather than replace it. */
+.team-cell.is-differing { outline: 2px solid var(--amber); outline-offset: -2px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-6); list-style: none; padding: 0; margin-top: var(--space-6); font-size: var(--text-xs); color: var(--text-mid); }
+.legend li { display: inline-flex; align-items: center; gap: var(--space-3); }
+.legend-swatch { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-xs); display: inline-block; }
+.legend-swatch.is-confirmed { background: var(--success-bg); }
+.legend-swatch.is-entered { background: var(--gold-bg); }
+.legend-swatch.is-awaiting { background: var(--danger-bg); }
+.legend-swatch.is-away { background: var(--border-light); }
+.legend-swatch.is-differing { outline: 2px solid var(--amber); outline-offset: -2px; background: var(--white); }
+
+/* ===== THE CONTRACT ===== */
+.field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-6); margin-bottom: var(--space-7); }
+.field { display: flex; flex-direction: column; gap: var(--space-3); }
+.stacked-form { display: flex; flex-direction: column; gap: var(--space-6); }
+.week-fields { display: grid; grid-template-columns: repeat(7, minmax(4.5rem, 1fr)); gap: var(--space-4); margin-bottom: var(--space-7); }
+.week-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.week-field label { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 700; }
+.contract-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-6); margin: 0 0 var(--space-8);
+  background: var(--pine-bg); border-radius: var(--radius-md); padding: var(--space-6);
+}
+.contract-summary dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-mid); font-weight: 700; }
+.contract-summary dd { margin: var(--space-2) 0 0; font-family: "Manrope", sans-serif; font-size: var(--text-2xl); font-weight: 800; color: var(--text-dark); }
+
+/* The seven days as a strip, so the shape of a contract is readable at a glance
+   down the whole list. A day with no hours is an empty box rather than left
+   out — the position is what says which weekday it is. */
+.pattern { display: flex; gap: var(--space-1); }
+.pattern-day {
+  font-size: var(--text-2xs); font-weight: 700; text-transform: uppercase;
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-xs);
+  background: var(--border-light); color: var(--text-muted);
+}
+.pattern-day.is-on { background: var(--pine); color: var(--white); }
+
+.danger-zone { margin-top: var(--space-10); padding-top: var(--space-7); border-top: 1px solid var(--border); }
+.danger-zone h2 { color: var(--danger); }
+
+/* ===== REQUESTS ===== */
+.request-list { display: flex; flex-direction: column; gap: var(--space-6); }
+.request-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-4); }
+.request-head h2 { margin: 0; }
+.request-dates { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: baseline; }
+.request-reason { color: var(--text-mid); font-style: italic; }
+.request-balance {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-5); margin: var(--space-6) 0;
+  background: var(--snow); border-radius: var(--radius-sm); padding: var(--space-5);
+}
+.request-balance dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 700; }
+.request-balance dd { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: var(--text-lg); font-weight: 700; color: var(--text-dark); }
+.request-balance .is-quiet dd { color: var(--text-mid); font-size: var(--text-md); }
+.request-decision { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
+.request-decision input[type="text"] { flex: 1 1 16rem; min-width: 0; }
+.request-buttons { display: flex; gap: var(--space-4); }
+
+/* ===== SHARED ODDS AND ENDS ===== */
+.manager-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: var(--space-6); }
+.plain-list { list-style: none; padding: 0; margin: 0 0 var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+.disclosure { border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-7); background: var(--paper); }
+.disclosure > summary { cursor: pointer; font-weight: 700; color: var(--text-dark); }
+.disclosure[open] > summary { margin-bottom: var(--space-6); }
+.card--attention { border-left: 3px solid var(--ember); }
+.card--quiet { background: var(--snow); }
+.nav-badge {
+  display: inline-block; min-width: var(--space-7); text-align: center;
+  background: var(--gold); color: var(--pine-deep);
+  border-radius: var(--radius-pill); font-size: var(--text-2xs); font-weight: 800;
+  padding: 0 var(--space-3); margin-left: var(--space-3);
+}
+.pill--small { font-size: var(--text-2xs); padding: 0 var(--space-3); }
+.pill--ok { background: var(--success-bg); color: var(--success-strong); }
+.pill--pending { background: var(--gold-bg); color: var(--amber); }
+.pill--attention { background: var(--amber-bg); color: var(--amber); }
+.pill--holiday, .pill--special { background: var(--success-bg); color: var(--success-strong); }
+.pill--sick { background: var(--plum-bg); color: var(--plum); }
+.pill--closure { background: var(--gold-bg); color: var(--gold-deep); }
+.pill--overtime { background: var(--pine-bg); color: var(--pine); }
+/* Deliberately the quietest pill there is. It carries a fact that qualifies the
+   one beside it — "half day", a time zone name — and a second loud pill next to
+   a loud pill is two things competing to be read first. */
+.pill--muted { background: var(--border-light); color: var(--text-light); }
+
+/* ===== START AND STOP =====
+   One row above the week, holding whichever of the two buttons makes sense and
+   the state that decided it. It is deliberately the loudest thing on the page
+   while a shift is running: a stretch left open overnight is the one mistake
+   this feature can produce, and the only defence against it is that the page
+   says so where somebody will look. */
+.clock-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.clock-bar--running {
+  background: var(--amber-bg);
+  border-color: var(--gold);
+}
+.clock-bar-state {
+  display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+  /* A flex child holding a time zone name, which can be long. Without this the
+     default min-width of auto keeps its full width and the *page* scrolls
+     sideways, taking the topbar and sidebar with it. */
+  min-width: 0;
+}
+.clock-bar-since { font-size: var(--text-sm); color: var(--text-mid); }
+.clock-bar-elapsed {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--amber);
+}
+.button--attention { background: var(--gold-deep); }
+.button--attention:hover { background: var(--gold-deep); filter: brightness(0.92); }
+
+/* ===== YEAR END =====
+   A form that stacks rather than sitting on one line: every field on it needs
+   its help text read before it is answered, and a row of date boxes with the
+   explanations underneath them reads as four unrelated controls. */
+.stack-form { display: flex; flex-direction: column; gap: var(--space-5); max-width: 32rem; }
+.stack-form .field { margin: 0; }
+
+/* The per-person controls, folded away behind a summary. Open by default they
+   would be five date boxes per row on a page whose whole job is to be read as a
+   table — and the row somebody wants to change is one of eleven. */
+.row-detail > summary { cursor: pointer; list-style: none; }
+.row-detail > summary::-webkit-details-marker { display: none; }
+.row-detail[open] > summary { margin-bottom: var(--space-5); }
+.row-detail .stack-form {
+  padding: var(--space-5);
+  background: var(--snow);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 18rem;
+}
+.empty { text-align: center; color: var(--text-light); padding: var(--space-9); }
+.button--secondary.is-current { border-color: var(--ember); color: var(--ember); }
+
+/* A stretch with no end yet. Dashed on the open side, because the shape says
+   "unfinished" faster than any word does. */
+.timesheet-span--running {
+  border-bottom: 1px dashed var(--gold-deep);
+  color: var(--amber);
+}
+.stat--pending .stat-value { color: var(--amber); }
+.data-table.compact th, .data-table.compact td { padding: var(--space-4) var(--space-5); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  /* The sidebar is off-canvas by default; the hamburger slides it in. */
+  .shell-sidebar { transform: translateX(-100%); }
+  .shell-main { margin-left: 0; }
+  .shell.sidebar-open .shell-sidebar { transform: translateX(0); }
+  .shell.sidebar-open .shell-overlay { display: block; }
+}
+
+@media (max-width: 700px) {
+  .content { padding: var(--space-7); }
+  th, td { padding: var(--space-4) var(--space-5); }
+  .topbar-sub { display: none; }
+  /* The roster keeps its seven columns and scrolls. Reflowing a week to one
+     column is exactly the thing it exists not to do — the comparison across
+     days is why anybody opened it. */
+  .roster-week { grid-template-columns: repeat(7, 10rem); }
+  /* The contract's seven boxes *do* reflow: they are seven independent numbers
+     and nothing is being compared across them. */
+  .week-fields { grid-template-columns: repeat(4, 1fr); }
+  .request-decision input[type="text"] { flex-basis: 100%; }
+}
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .week-fields { grid-template-columns: repeat(2, 1fr); }
+  .segment-row { gap: var(--space-3); }
+  .list-toolbar { flex-direction: column; align-items: stretch; }
+}
+
+/* ===== A BOX THAT HOLDS A TIME =====
+
+   Text inputs, not `type="time"` — that widget empties itself when it cannot
+   read what was typed, so the page cannot tell you what you entered. The two
+   states below are the two things that can be wrong with one, and they are
+   deliberately different colours: --danger for "this is not a time at all", and
+   --amber for "these two overlap", which is a statement about a *pair* and
+   about a value that is perfectly readable. */
+input[data-time-input] { font-family: var(--font-mono); max-width: 7rem; }
+input[data-time-input].is-unreadable {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+.segment-row.is-overlapping input[data-time-input] {
+  border-color: var(--amber);
+  background: var(--amber-bg);
+}
+.week-field input[data-time-input] { max-width: 100%; }
+.roster-card input[data-time-input] { max-width: 100%; text-align: center; }

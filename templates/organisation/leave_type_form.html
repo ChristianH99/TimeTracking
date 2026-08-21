@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% if leave_type %}{{ leave_type.name }}{% else %}{% translate "New leave type" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% if leave_type %}{{ leave_type.name }}{% else %}{% translate "New leave type" %}{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="type-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Special leave type" %}</h1>
+
+  <form method="post" id="type-form" data-unsaved-guard>
+    {% csrf_token %}
+
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+
+    <h2 class="form-section">{% translate "The table" %}</h2>
+    <p class="help">
+      {% translate "Only read when the mode above is “from a table of working days per week”. Each row says: work at least this many days a week and get this many. It is a step, not a proportion — “three days or more gets one, five days gets two” means somebody on two days gets none, which is exactly what a table is for." %}
+    </p>
+
+    {{ formset.management_form }}
+    {% for error in formset.non_form_errors %}<p class="notice notice--error">{{ error }}</p>{% endfor %}
+
+    <table class="data-table compact" data-rows="thresholds">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Working days a week, at least" %}</th>
+          <th scope="col">{% translate "Days of this leave" %}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row_form in formset.forms %}
+          <tr data-row>
+            {{ row_form.id }}
+            <td>{{ row_form.min_days_per_week }}
+              {% for error in row_form.min_days_per_week.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>{{ row_form.days }}
+              {% for error in row_form.days.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>
+              <label class="row-delete">{{ row_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
+              <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <template data-rows-template="thresholds">
+      <tr data-row>
+        {{ formset.empty_form.id }}
+        <td>{{ formset.empty_form.min_days_per_week }}</td>
+        <td>{{ formset.empty_form.days }}</td>
+        <td>
+          <label class="row-delete">{{ formset.empty_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
+          <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+        </td>
+      </tr>
+    </template>
+
+    <button type="button" class="button button--secondary button--small" data-rows-add="thresholds">
+      + {% translate "Another row" %}
+    </button>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save" %}</button>
+      <a class="link-button" href="{% url 'organisation:leave-types' %}">{% translate "Back" %}</a>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/simple_rows.js' %}"></script>
+{% endblock %}

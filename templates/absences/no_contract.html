@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "No contract" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "No contract" %}{% endblock %}
+
+{% block content %}
+  {% comment %}A real state rather than an error page: an account that
+  administers the app and does not work shifts has no employee row, and the day
+  somebody in that position clicks Time off out of curiosity is not a day this
+  app should fall over. Rendered with a 200, because nothing has gone wrong.{% endcomment %}
+  <h1>{% translate "There is no contract on this account" %}</h1>
+  <p class="page-lead">
+    {% translate "Timesheets and leave belong to an employee record, and this account is not linked to one yet." %}
+  </p>
+  <div class="card">
+    <h2>{% translate "If you should have one" %}</h2>
+    <p>{% translate "Ask whoever manages the roster to add you on the Employees page. If they have already added you, the link is usually made by itself the first time you sign in — it is matched on your sign-in name, so it only fails when the directory calls you something other than what is on your record. They can also link this account to you by hand." %}</p>
+  </div>
+  <div class="card card--quiet">
+    <h2>{% translate "If you should not" %}</h2>
+    <p>{% translate "That is normal for an account that administers the app rather than working shifts. Nothing is wrong and nothing needs doing." %}</p>
+  </div>
+{% endblock %}

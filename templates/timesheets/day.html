@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static i18n hours %}
+{% block title %}{{ date|date:"d.m.Y" }} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{{ date|date:"l, d.m.Y" }}{% endblock %}
+{% block topbar_sub %}{% if not is_own %}{{ employee.full_name }}{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="day-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Hours for this day" %}</h1>
+
+  {% if shifts %}
+    <div class="card card--quiet rostered">
+      <h2>{% translate "What was rostered" %}</h2>
+      <p class="rostered-times">
+        {% for shift in shifts %}
+          <span class="timesheet-span">{{ shift.start|time:"H:i" }}–{{ shift.end|time:"H:i" }}</span>
+          {% if shift.note %}<span class="hint">{{ shift.note }}</span>{% endif %}
+        {% endfor %}
+        <span class="rostered-total">{{ planned_minutes|hours:hours_style }}&nbsp;{% translate "h" %}</span>
+      </p>
+      {% if not record %}
+        {% comment %}The one-tap path, offered here as well as on the week: this
+        page is where somebody lands when they meant to confirm and clicked
+        Edit, and making them retype what is printed above it is the app asking
+        for work it already has the answer to.{% endcomment %}
+        <form method="post" class="inline-form"
+              action="{% if is_own %}{% url 'timesheets:confirm-day' employee.pk date|date:'Y-m-d' %}{% else %}{% url 'timesheets:employee-confirm-day' employee.pk date|date:'Y-m-d' %}{% endif %}">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary button--small">
+            {% translate "I worked exactly this" %}
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="page-lead">{% translate "Nothing was rostered on this day, so enter the hours below." %}</p>
+  {% endif %}
+
+  <form method="post" id="day-form" data-unsaved-guard data-day-form>
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if formset.non_form_errors %}
+      <ul class="messages" role="status">
+        {% for error in formset.non_form_errors %}<li class="notice notice--error">{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <h2 class="form-section">{% translate "When you worked" %}</h2>
+    <p class="help">{% translate "One row per stretch of work. A split shift — in for the morning, back in the afternoon — is two rows, and the break between them is not a break you enter below: it is simply time you were not here." %}</p>
+    <p class="help">{% translate "Leave the end empty to record a start and stop later — the day then counts as still running and cannot be confirmed until it has an end. A stretch that ends at or before it starts runs past midnight, so 23:00 to 03:00 is four hours." %}</p>
+
+    {% comment %}Raised by timesheet_day.js the moment two stretches cover
+    the same minute, rather than on save. 08:30-17:30 beside 17:00-18:30 is a
+    typo somebody spots instantly when the row goes red, and an hour of hunting
+    once it comes back as a form error on a page they have already left. The
+    server checks it again in _SegmentFormSet.clean.{% endcomment %}
+    <p class="notice notice--error" data-overlap-notice hidden>
+      {% translate "Two of those stretches overlap. The overlapping time would be counted twice, so this cannot be saved until one of them is corrected." %}
+    </p>
+
+    <div class="segment-rows" data-rows="segments">
+      {% for form in formset.forms %}
+        <div class="segment-row" data-row>
+          {{ form.id }}
+          <label class="sr-only" for="{{ form.start.id_for_label }}">{% translate "From" %}</label>
+          {{ form.start }}
+          <span class="roster-dash" aria-hidden="true">–</span>
+          <label class="sr-only" for="{{ form.end.id_for_label }}">{% translate "To" %}</label>
+          {{ form.end }}
+          <span class="segment-length" data-segment-length aria-live="off"></span>
+          <label class="row-delete">
+            {{ form.DELETE }}
+            <span class="sr-only">{% translate "Remove this stretch" %}</span>
+          </label>
+          {% for field in form %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <template data-rows-template="segments">
+      <div class="segment-row" data-row>
+        {{ formset.empty_form.id }}
+        {{ formset.empty_form.start }}
+        <span class="roster-dash" aria-hidden="true">–</span>
+        {{ formset.empty_form.end }}
+        <span class="segment-length" data-segment-length aria-live="off"></span>
+        <label class="row-delete">
+          {{ formset.empty_form.DELETE }}
+          <span class="sr-only">{% translate "Remove this stretch" %}</span>
+        </label>
+      </div>
+    </template>
+
+    <button type="button" class="button button--secondary button--small" data-rows-add="segments">
+      + {% translate "Another stretch" %}
+    </button>
+
+    <h2 class="form-section">{% translate "Break" %}</h2>
+    <div class="break-block">
+      <label class="checkbox-row">
+        {{ form.automatic_break }}
+        <span>{{ form.automatic_break.label }}</span>
+      </label>
+      <p class="help">{{ form.automatic_break.help_text }}</p>
+
+      <div class="break-manual" data-break-manual>
+        <label for="{{ form.break_minutes.id_for_label }}">{{ form.break_minutes.label }} ({% translate "minutes" %})</label>
+        {{ form.break_minutes }}
+        {% for error in form.break_minutes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+
+      {% comment %}The running answer, updated as the times are typed. It is
+      the one thing on this page somebody cannot work out in their head, and
+      showing it after the save is showing it too late.{% endcomment %}
+      <dl class="break-summary" data-break-summary>
+        <div><dt>{% translate "Time here" %}</dt><dd data-summary-gross>—</dd></div>
+        <div><dt>{% translate "Break the rules require" %}</dt><dd data-summary-required>—</dd></div>
+        <div><dt>{% translate "Counted as worked" %}</dt><dd data-summary-net>—</dd></div>
+      </dl>
+    </div>
+
+    <h2 class="form-section">{% translate "Note" %}</h2>
+    <label class="sr-only" for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+    {{ form.note }}
+    {% for error in form.note.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+
+    {% if record and record.is_confirmed %}
+      <p class="notice notice--info">
+        {% translate "This day is confirmed. Saving a change here withdraws that confirmation, so the record never says somebody agreed to figures they have not seen." %}
+      </p>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save the day" %}</button>
+      <a class="link-button" href="{% if is_own %}{% url 'timesheets:mine' %}?week={{ week|date:'Y-m-d' }}{% else %}{% url 'timesheets:employee' employee.pk %}?week={{ week|date:'Y-m-d' }}{% endif %}">{% translate "Back to the week" %}</a>
+    </div>
+  </form>
+
+  {% comment %}The break table, so the page can work the answer out in the
+  browser while somebody types rather than only on save. The same rule as the
+  server's OrgSettings.required_break, and the two are checked against each
+  other by apps/timesheets/tests.py — if they ever disagree it will be about
+  the four lines in hours.js.{% endcomment %}
+  {{ break_rules_json|json_script:"break-rules" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/simple_rows.js' %}"></script>
+  <script src="{% static 'js/timesheet_day.js' %}"></script>
+{% endblock %}

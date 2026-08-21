@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Time off" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Time off" %}{% endblock %}
+{% block topbar_sub %}{{ year }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <h1>{% translate "My time off" %}</h1>
+    <form method="get" class="inline-form">
+      <label class="sr-only" for="year-select">{% translate "Year" %}</label>
+      <select id="year-select" name="year">
+        {% for option in years %}
+          <option value="{{ option }}"{% if option == year %} selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="button button--secondary button--small">{% translate "Show" %}</button>
+    </form>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-value">{{ balance.entitlement }}</span>
+      <span class="stat-label">{% translate "Days a year" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.taken }}</span>
+      <span class="stat-label">{% translate "Taken" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.remaining }}</span>
+      <span class="stat-label">{% translate "Left" %}</span>
+    </div>
+  
+  {% comment %}The line that explains the entitlement figure above. Without it,
+  somebody whose balance is 24 in one year and 29 in the next has no way to tell
+  a carry-over from a mistake — and the figure they cannot explain is the one
+  they will report as a bug. apps/absences/carryover.py holds the reasoning.
+  {% endcomment %}
+  {% if balance.carried_days or balance.carried_lost %}
+    <p class="notice{% if balance.expiring_soon %} notice--warning{% endif %}">
+      {% if balance.carried_days %}
+        {% blocktranslate with days=balance.carried_days year=year|add:"-1" %}{{ days }} day(s) were carried over from {{ year }}.{% endblocktranslate %}
+        {% if balance.expiring_soon %}
+          <strong>
+            {% blocktranslate with date=balance.expiring_soon|date:"d.m.Y" %}They lapse on {{ date }}.{% endblocktranslate %}
+          </strong>
+        {% elif balance.carried.statutory_deadline and balance.carried.expires_statutory %}
+          {% blocktranslate with date=balance.carried.statutory_deadline|date:"d.m.Y" %}They lapse on {{ date }}.{% endblocktranslate %}
+        {% else %}
+          {% translate "They do not expire." %}
+        {% endif %}
+      {% endif %}
+      {% if balance.carried_lost %}
+        {% blocktranslate with lost=balance.carried_lost date=balance.carried.forfeited_on|date:"d.m.Y" %}{{ lost }} day(s) lapsed on {{ date }} and are no longer available.{% endblocktranslate %}
+      {% endif %}
+      {% if balance.carried.extension_reason %}
+        {% blocktranslate with reason=balance.carried.extension_reason %}The deadline was extended: {{ reason }}{% endblocktranslate %}
+      {% endif %}
+    </p>
+  {% endif %}
+
+  {% if balance.pending %}
+      <div class="stat stat--pending">
+        <span class="stat-value">{{ balance.pending }}</span>
+        <span class="stat-label">{% translate "Waiting for approval" %}</span>
+      </div>
+    {% endif %}
+    {% if balance.sick_days %}
+      <div class="stat">
+        <span class="stat-value">{{ balance.sick_days }}</span>
+        <span class="stat-label">{% translate "Sick days" %}</span>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if balance.pending %}
+    <p class="help">
+      {% blocktranslate with left=balance.remaining_if_all_approved %}Days you have asked for are not taken off yet — a request that is declined has not been spent. If everything waiting is approved you will have {{ left }} left.{% endblocktranslate %}
+    </p>
+  {% endif %}
+
+  {% comment %}How the entitlement was arrived at. On the page rather than left
+  to be asked about, because "why do I have 24 and not 30" is the single most
+  common question a part-time employee has about leave, and the answer is
+  arithmetic they can check.{% endcomment %}
+  <p class="help">
+    {% blocktranslate with days=employee.working_days_per_week full=balance.settings.full_time_days_per_week entitlement=balance.settings.full_time_leave_days %}You work {{ days }} days a week. A full week here is {{ full }} days and carries {{ entitlement }} days of leave, so yours is that share of it. Days you are not due to work, and public holidays, never come out of it.{% endblocktranslate %}
+    {% blocktranslate with this_year=balance.this_year %}This year is worth {{ this_year }} days, worked out from every contract that was in force during it — so a change to your hours part-way through moves it, and so does joining or leaving part-way through.{% endblocktranslate %}
+  </p>
+
+  {% if balance.special %}
+    <h2 class="form-section">{% translate "Special leave" %}</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Type" %}</th>
+          <th scope="col" class="numeric">{% translate "Entitled" %}</th>
+          <th scope="col" class="numeric">{% translate "Taken" %}</th>
+          <th scope="col" class="numeric">{% translate "Left" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for grant, entitled, taken, left in balance.special %}
+          <tr>
+            <th scope="row">{{ grant.leave_type.name }}</th>
+            <td class="numeric">{{ entitled }}</td>
+            <td class="numeric">{{ taken }}</td>
+            <td class="numeric">{{ left }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {# ---- asking for time off ---- #}
+  <h2 class="form-section">{% translate "Ask for time off" %}</h2>
+  <details class="disclosure"{% if show_request_form or request_form.errors %} open{% endif %}>
+    <summary>{% translate "New request" %}</summary>
+    <form method="post" action="{% url 'absences:request' %}" class="stacked-form">
+      {% csrf_token %}
+      {% for error in request_form.non_field_errors %}
+        <p class="notice notice--error">{{ error }}</p>
+      {% endfor %}
+      {% for field in request_form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="button">{% translate "Send for approval" %}</button>
+      </div>
+    </form>
+  </details>
+
+  {# ---- illness ---- #}
+  <h2 class="form-section">{% translate "Sickness" %}</h2>
+  {% if open_sickness and not open_sickness.end_date %}
+    <p class="hint">{% translate "You are recorded as ill." %}</p>
+  {% endif %}
+  <p class="help">{% translate "You are telling the app, not asking it. It counts from the moment you record it: the hours for those days are credited, it does not come out of your leave, and days you were not due to work are not counted. Your manager is shown it so they know, and confirms that they have seen it — that is a receipt, not a permission." %}</p>
+  <details class="disclosure">
+    <summary>{% translate "Report sickness" %}</summary>
+    <form method="post" action="{% url 'absences:sick' %}" class="stacked-form">
+      {% csrf_token %}
+      {% for field in sick_form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="button button--secondary">{% translate "Record it" %}</button>
+      </div>
+    </form>
+  </details>
+
+  {# ---- the year ---- #}
+  <h2 class="form-section">{% translate "This year" %}</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "From" %}</th>
+        <th scope="col">{% translate "To" %}</th>
+        <th scope="col">{% translate "Reason" %}</th>
+        <th scope="col" class="numeric">{% translate "Days" %}</th>
+        <th scope="col">{% translate "State" %}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for absence in absences %}
+        <tr>
+          <td>{{ absence.start_date|date:"d.m.Y" }}</td>
+          <td>{{ absence.end_date|date:"d.m.Y" }}</td>
+          <td>
+            <span class="pill pill--{{ absence.kind }}">
+              {% if absence.kind == 'special' and absence.special_type %}{{ absence.special_type.name }}
+              {% else %}{{ absence.get_kind_display }}{% endif %}
+            </span>
+            {% if absence.reason %}<span class="hint">{{ absence.reason }}</span>{% endif %}
+            {% if absence.is_half_day %}
+              {% comment %}Marked wherever an absence is listed, not only where
+              the day count happens to show 0.5 — "0,5" in a column headed Days
+              is a number somebody reads twice, and the word beside it is what
+              stops them.{% endcomment %}
+              <span class="pill pill--muted">{% translate "half day" %}</span>
+            {% endif %}
+            {% if absence.decision_note %}
+              <span class="hint">{% translate "Reply:" %} {{ absence.decision_note }}</span>
+            {% endif %}
+          </td>
+          <td class="numeric">{{ absence.working_days }}</td>
+          <td>
+            <span class="pill pill--{% if absence.status == 'approved' %}ok{% elif absence.status == 'requested' %}pending{% else %}off{% endif %}">
+              {{ absence.get_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if absence.status == 'requested' or absence.status == 'approved' %}
+              {% if absence.kind != 'closure' and absence.kind != 'sick' %}
+                <form method="post" action="{% url 'absences:request-cancel' absence.pk %}" class="inline-form"
+                      data-confirm-title="{% translate 'Withdraw this?' %}"
+                      data-confirm="{% translate 'It stays in the list as withdrawn, so the record still shows that it was asked for.' %}"
+                      data-confirm-accept="{% translate 'Withdraw' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="link-button">{% translate "Withdraw" %}</button>
+                </form>
+              {% endif %}
+            {% endif %}
+            {% if absence.kind == 'sick' and absence.end_date >= today %}
+              <form method="post" action="{% url 'absences:sick-end' absence.pk %}" class="inline-form">
+                {% csrf_token %}
+                <label class="sr-only" for="end-{{ absence.pk }}">{% translate "Last day of illness" %}</label>
+                <input type="date" id="end-{{ absence.pk }}" name="end_date" value="{{ absence.end_date|date:'Y-m-d' }}">
+                <button type="submit" class="link-button">{% translate "Say when it ended" %}</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="hint">{% translate "Nothing recorded for this year." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

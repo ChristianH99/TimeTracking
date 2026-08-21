@@ -1,0 +1,95 @@
+# The published image, rather than one built here.
+#
+# The sibling file, `docker-compose.yml`, builds from this checkout — which is
+# still the right thing on a laptop, and was the only option before there was a
+# pipeline. This one *pulls*, and it is what belongs on the NAS: a DS723+ has
+# two cores that are already running DSM, Home Assistant and a backup, and
+# compiling a Python image on them takes minutes for a result that is a
+# guess-for-a-guess of what CI already built and tested.
+#
+# `.github/workflows/release.yml` rewrites the two placeholders below and
+# attaches the result to the release as `docker-compose.yml`, so what you
+# download is already pinned to the version you downloaded it from.
+#
+# The version is **pinned, not `latest`**. A compose file saying `latest` cannot
+# be rolled back by re-reading it: `docker compose up -d` after a bad release
+# would fetch the same bad image again, and the only way back would be to
+# remember which version was good. With the tag written down, rolling back is
+# editing one line — see DEPLOYMENT.md §7.
+#
+# config/tests.py checks that the image named here is the one the workflow
+# actually pushes. That pair drifting apart produces a release nobody can
+# deploy, and neither file looks wrong on its own.
+
+services:
+  timetracking:
+    image: __IMAGE__:__VERSION__
+    container_name: timetracking
+    restart: unless-stopped
+
+    # Bound to localhost, not 0.0.0.0. The only thing that should reach this
+    # port is the Synology reverse proxy running on the same box; published on
+    # every interface it would also be reachable directly from the LAN, on plain
+    # HTTP, bypassing the proxy and its certificate.
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    # Who the process is, and therefore what it may write in the bind mount
+    # below. The image's own answer is uid 1000 (`USER timetrack` in the
+    # Dockerfile) and this line only overrides it — the default is what you get
+    # if the two variables are unset, so nothing here has to be filled in on a
+    # machine where 1000 works.
+    #
+    # **On this NAS it does not, and the way it fails is the problem.**
+    # `/volume1/docker` is an ACL-enabled share whose ACL has no owner entry, so
+    # `chown -R 1000:1000` reports success, `ls` shows the new owner, and the
+    # container still cannot write: it comes up, prints `→ applying migrations`,
+    # and dies about three seconds later with `unable to open database file`.
+    # `restart: unless-stopped` then backs off, so it presents as a crash a
+    # minute in rather than immediately. The tell is a `+` on `drwxrwxrwx+`.
+    # The fix is to *be* an identity the ACL already grants rather than to
+    # change the folder, and on the DS723+ that is `1026:101` — 1026 is the DSM
+    # user owning the folder and **101 is `administrators`**, which is the half
+    # that matters, gid 100 (`users`) matching only the `everyone` entry.
+    #
+    # It reads them from `.env` rather than being written in here, and that is
+    # deliberate: this file is **replaced wholesale** by the next release you
+    # download, and `.env` is not. The previous version of this comment told you
+    # to re-add a hand-edited line every time, which is a step that works right
+    # up until the once it is forgotten — and forgetting it is the crash loop
+    # above, on a folder that by then holds every hour anybody has worked.
+    #
+    # Two warnings, because this is the line where a mistake is silent:
+    #
+    #   * Compose substitutes `${…}` from the `.env` sitting **beside this
+    #     file**, which is *not* the same mechanism as the `env_file:` key
+    #     further down (that one only passes variables into the container).
+    #     Both read the same file here, which is why one entry serves both.
+    #   * A variable that does not reach it falls back to 1000 and you are back
+    #     at the crash loop. Check before starting, not after:
+    #         sudo docker compose config | grep user:
+    #
+    # DEPLOYMENT.md §4.1 has the ACL dump, the one-second way to test a uid
+    # against the mount, and the alternatives that were rejected.
+    user: "${TIMETRACK_UID:-1000}:${TIMETRACK_GID:-1000}"
+
+    # Everything the app writes. A real folder on the NAS
+    # (File Station → docker → timetracking → data), so that an image update replaces
+    # the code and leaves the collection alone.
+    volumes:
+      - /volume1/docker/timetracking/data:/data
+
+    # Beside this file, not inside the repository. Rename the `env.example`
+    # attached to the release to `.env` and fill it in.
+    env_file:
+      - .env
+
+    # A container with no memory limit will happily take the whole NAS with it
+    # when something goes wrong. This is generous for two gunicorn workers.
+    mem_limit: 512m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

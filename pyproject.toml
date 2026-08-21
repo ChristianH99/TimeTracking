@@ -1,0 +1,47 @@
+[project]
+name = "timetracking"
+version = "0.1.0"
+description = "Self-hosted roster and time tracking for a small business, authenticated against Synology SSO over OIDC."
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2",
+    # The OIDC client. One identity provider, one dependency, and no
+    # social-account tables: there is exactly one provider here and a framework
+    # that could hold several would be carrying tables nobody writes to.
+    "mozilla-django-oidc>=4.0",
+    # Serves STATIC_ROOT from the app process, so the container needs no nginx.
+    "whitenoise>=6.6",
+    "gunicorn>=23.0",
+    "tzlocal>=5.2",
+    # **Unconditionally, not only on Windows.** `zoneinfo` reads the operating
+    # system's IANA database and falls back to this package when there is none —
+    # and `python:3.13-slim`, which is what deploy/Dockerfile runs, is not
+    # guaranteed to carry one. Without it `ZoneInfo("Europe/Berlin")` raises in
+    # the container, `apps/timesheets/zones.py` falls back to UTC exactly as it
+    # is designed to, and every clocked time is an hour or two out all summer in
+    # a way that looks almost right. tzlocal pulls it in on Windows already; the
+    # platform that actually matters is the one that did not.
+    "tzdata>=2024.1",
+    # Encrypts the OIDC client secret at rest (apps/accounts/secrets.py). It
+    # arrives anyway as a dependency of mozilla-django-oidc, and is named here
+    # because this app imports it directly — a transitive dependency is one
+    # somebody else may drop in a minor release.
+    "cryptography>=42.0",
+]
+
+# Deliberately *not* a dependency: anything that ships a table of German public
+# holidays. apps/absences/bankholidays.py computes them from Gauss's Easter
+# algorithm and one table of sixteen Länder, which is about ninety lines and
+# has no release cadence to track. A holiday table that goes stale silently is
+# worse than one that is wrong in a way a test can pin — and the test that pins
+# it names real dates for real years.
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]

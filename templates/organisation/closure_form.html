@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if closure %}{{ closure.name }}{% else %}{% translate "New closure" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% if closure %}{{ closure.name }}{% else %}{% translate "New closure" %}{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="closure-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Closure" %}</h1>
+  <p class="page-lead">
+    {% translate "Saving this writes an absence for everybody currently employed, and re-saving it moves them rather than adding a second set. Somebody who joins afterwards does not get one — a closure they were not here for is not theirs." %}
+  </p>
+
+  <form method="post" id="closure-form" data-unsaved-guard>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="field">
+        {% if field.name == 'deducts_leave' %}
+          <label class="checkbox-row">{{ field }}<span>{{ field.label }}</span></label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save and apply" %}</button>
+      <a class="link-button" href="{% url 'organisation:closures' %}">{% translate "Back" %}</a>
+    </div>
+  </form>
+{% endblock %}

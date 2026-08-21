@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Public holidays" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Public holidays" %}{% endblock %}
+{% block topbar_sub %}{{ year }} · {{ land_label }}{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Public holidays" %}</h1>
+  <p class="page-lead">
+    {% blocktranslate with land=land_label %}Worked out for {{ land }} — nine of the thirteen German public holidays depend on the Land, and the Land is set on the Rules page. A public holiday is never taken off anybody’s leave, and nobody is expected in on one.{% endblocktranslate %}
+  </p>
+
+  <nav class="subnav">
+    <a class="subnav-item" href="{% url 'organisation:settings' %}">{% translate "Rules" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:leave-types' %}">{% translate "Special leave" %}</a>
+    <a class="subnav-item is-current" href="{% url 'organisation:holidays' %}">{% translate "Public holidays" %}</a>
+    <a class="subnav-item" href="{% url 'organisation:closures' %}">{% translate "Closures" %}</a>
+  </nav>
+
+  <div class="list-toolbar">
+    <form method="get" class="inline-form">
+      <label class="sr-only" for="year-select">{% translate "Year" %}</label>
+      <select id="year-select" name="year">
+        {% for option in years %}
+          <option value="{{ option }}"{% if option == year %} selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="button button--secondary button--small">{% translate "Show" %}</button>
+    </form>
+    <form method="post" action="{% url 'organisation:holidays-generate' %}" class="inline-form"
+          data-confirm-title="{% translate 'Generate this year’s holidays?' %}"
+          data-confirm="{% translate 'Previously generated rows for this year are replaced. Anything you added by hand is left exactly as it is — which is how a holiday that is decided municipally, and that this app cannot know about, survives.' %}"
+          data-confirm-accept="{% translate 'Generate' %}">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <button type="submit" class="button">{% blocktranslate %}Generate {{ year }}{% endblocktranslate %}</button>
+    </form>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% translate "Date" %}</th>
+        <th scope="col">{% translate "Day" %}</th>
+        <th scope="col">{% translate "Name" %}</th>
+        <th scope="col">{% translate "Where it came from" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for holiday in holidays %}
+        <tr>
+          <td>{{ holiday.date|date:"d.m.Y" }}</td>
+          <td>{{ holiday.date|date:"l" }}</td>
+          <th scope="row">{{ holiday.name }}</th>
+          <td>
+            {% if holiday.is_generated %}
+              <span class="hint">{% translate "worked out" %}</span>
+            {% else %}
+              <span class="pill pill--gold">{% translate "added by hand" %}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="hint">{% translate "Nothing for this year yet — press Generate." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="help">
+    {% translate "Fronleichnam in parts of Saxony and Thuringia, and Mariä Himmelfahrt in Catholic Bavaria, are decided by the municipality rather than the Land. This app answers at Land level, so in those four places check the list against your own town’s and add anything missing through the Django administration — generating the year again will not remove it." %}
+  </p>
+{% endblock %}

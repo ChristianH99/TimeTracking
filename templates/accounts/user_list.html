@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "People" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "People" %}{% endblock %}
+{% block topbar_sub %}{% blocktranslate count n=active_count %}{{ n }} account can sign in{% plural %}{{ n }} accounts can sign in{% endblocktranslate %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="button" class="topbar-help" data-help-open
+          aria-label="{% translate 'Help for this page' %}" title="{% translate 'Help for this page' %}">?</button>
+{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <h1>{% translate "People" %}</h1>
+    <a class="button" href="{% url 'accounts:user-add' %}">{% translate "Add an account" %}</a>
+  </div>
+
+  {% if sso_count %}
+    <p class="hint">{% blocktranslate count n=sso_count %}{{ n }} of these signs in through SSO. Their name and e-mail come from the identity provider and are refreshed at every sign-in.{% plural %}{{ n }} of these sign in through SSO. Their names and e-mail addresses come from the identity provider and are refreshed at every sign-in.{% endblocktranslate %}</p>
+  {% endif %}
+
+  <div class="table-card">
+    <table class="people-table">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Name" %}</th>
+          <th scope="col">{% translate "Signs in with" %}</th>
+          <th scope="col">{% translate "Rights" %}</th>
+          <th scope="col">{% translate "Employee" %}</th>
+          <th scope="col">{% translate "Last seen" %}</th>
+          <th scope="col"><span class="sr-only">{% translate "Actions" %}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for person in people %}
+          <tr{% if not person.is_active %} class="is-inactive"{% endif %}>
+            <th scope="row">
+              <a href="{% url 'accounts:user-edit' person.pk %}">{% firstof person.get_full_name person.get_username %}</a>
+              {% comment %}An SSO account's username is the provider's `sub`
+              — an opaque string, never an e-mail (apps/accounts/oidc.py). Shown
+              small and only when it is not already the name above it, because
+              it is an identifier rather than something to read.{% endcomment %}
+              {% if person.get_full_name and person.get_username != person.sso_subject %}
+                <span class="people-sub">{{ person.get_username }}</span>
+              {% endif %}
+              {% if person.sso_subject %}
+                <span class="people-sub" title="{% translate 'Identity from the provider' %}">{{ person.sso_subject|truncatechars:22 }}</span>
+              {% endif %}
+              {% if person.email %}<span class="people-sub">{{ person.email }}</span>{% endif %}
+            </th>
+            <td>
+              {% comment %}Not either/or since the two can be linked: an account
+              that shares an e-mail address with a provider identity signs in
+              both ways and shows both pills.{% endcomment %}
+              {% if person.is_sso %}
+                <span class="pill pill--pine">{% translate "SSO" %}</span>
+              {% endif %}
+              {% if person.has_password %}
+                <span class="pill">{% translate "Password" %}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if person.is_superuser %}
+                <span class="pill pill--gold">{% translate "Administrator" %}</span>
+              {% elif person.is_staff %}
+                <span class="pill pill--gold">{% translate "Manages people" %}</span>
+              {% else %}
+                <span class="pill">{% translate "Signs in" %}</span>
+              {% endif %}
+              {% if not person.is_active %}<span class="pill pill--off">{% translate "switched off" %}</span>{% endif %}
+            </td>
+            <td>
+              {% comment %}The one thing this page can say that the Employees
+              page cannot. Both blanks are normal states rather than problems:
+              an account with no contract administers the app, and an employee
+              with no account has simply not signed in yet.{% endcomment %}
+              {% if person.employee %}
+                <a href="{% url 'employees:edit' person.employee.pk %}">{{ person.employee.full_name }}</a>
+              {% else %}
+                <span class="hint">{% translate "no contract" %}</span>
+              {% endif %}
+            </td>
+            <td>{% if person.last_login %}{{ person.last_login|date:"SHORT_DATE_FORMAT" }}{% else %}<span class="hint">{% translate "never" %}</span>{% endif %}</td>
+            <td class="people-actions">
+              <div class="people-actions-group">
+              <a class="link-button" href="{% url 'accounts:user-edit' person.pk %}">{% translate "Edit" %}</a>
+              {% if person.has_password %}
+                <a class="link-button" href="{% url 'accounts:user-password' person.pk %}">{% translate "Password" %}</a>
+              {% endif %}
+              {% if person.pk != user.pk %}
+                <form method="post" action="{% url 'accounts:user-active' person.pk %}"
+                      data-confirm-title="{% if person.is_active %}{% translate 'Switch this account off?' %}{% else %}{% translate 'Switch this account on?' %}{% endif %}"
+                      data-confirm="{% if person.is_active %}{% translate 'They will not be able to sign in. Every hour they have worked is kept and nothing is deleted.' %}{% else %}{% translate 'They will be able to sign in again.' %}{% endif %}"
+                      data-confirm-accept="{% if person.is_active %}{% translate 'Switch off' %}{% else %}{% translate 'Switch on' %}{% endif %}">
+                  {% csrf_token %}
+                  <button type="submit" class="link-button">{% if person.is_active %}{% translate "Switch off" %}{% else %}{% translate "Switch on" %}{% endif %}</button>
+                </form>
+                <form method="post" action="{% url 'accounts:user-delete' person.pk %}"
+                      data-confirm-title="{% translate 'Delete this account?' %}"
+                      data-confirm="{% translate 'The account is removed for good. Their employee record and every hour on it are kept, but the two are no longer linked and they cannot sign in. Switching the account off is the reversible version of this.' %}"
+                      data-confirm-accept="{% translate 'Delete' %}"
+                      data-confirm-danger>
+                  {% csrf_token %}
+                  <button type="submit" class="link-button link-button--danger">{% translate "Delete" %}</button>
+                </form>
+              {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6">{% translate "Nobody yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block help_modal %}
+  <div class="modal-overlay help-modal" hidden data-help-modal>
+    <div class="modal help-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <button type="button" class="modal-close" data-help-close aria-label="{% translate 'Close' %}">&times;</button>
+      <h2 class="modal-title" id="help-title">{% translate "Accounts in this app" %}</h2>
+      <div class="modal-body">
+        <h3>{% translate "Two kinds" %}</h3>
+        <p>{% translate "An account marked “SSO” is the local end of an identity held by the provider. Its name and e-mail are copied from there at every sign-in, so changing them here would be undone; its password lives with the provider and cannot be set from this app at all." %}</p>
+        <p>{% translate "An account marked “Password” was created here. Use one for somebody who works here but has no account with the provider — and keep one as the way back in when SSO is the thing that is broken." %}</p>
+        <h3>{% translate "Why somebody is missing" %}</h3>
+        <p>{% translate "This app has no way to read the provider’s list of accounts. An SSO account appears here the first time it signs in, and not before." %}</p>
+        <h3>{% translate "Switching off, or deleting" %}</h3>
+        <p>{% translate "Switching an account off is reversible and keeps everything. Deleting is not — but it never takes a timesheet with it: an employee record and the hours on it survive the account being removed, because somebody who has left still worked them." %}</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
