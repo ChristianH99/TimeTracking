@@ -72,6 +72,7 @@ class AbsenceRequestForm(forms.ModelForm):
             return data
 
         if start and end and self.employee:
+            self._refuse_locked_dates(start, end)
             if self._days(start, end) == 0:
                 # Not a formality: a request worth nothing is one a manager has
                 # to read, decide and explain. Refusing it here says the useful
@@ -86,6 +87,26 @@ class AbsenceRequestForm(forms.ModelForm):
                     "You already have time off recorded that overlaps these dates."
                 ))
         return data
+
+    def _refuse_locked_dates(self, start, end):
+        """No absence may be written across a day somebody has closed.
+
+        Here rather than in each view, because a status is an absence whichever
+        door it came through — the timesheet's status cell, this page's own
+        form, or a sick report — and a lock only one of them honoured would be a
+        lock anybody could walk round by using another.
+
+        The dates are named. "Part of that is locked" sends somebody hunting
+        through a fortnight for the day that is.
+        """
+        from apps.timesheets.models import DayLock
+
+        locked = sorted(DayLock.dates_between(self.employee, start, end))
+        if locked:
+            self.add_error(None, _(
+                "%(dates)s is locked, so nothing can be booked across it. Ask a "
+                "manager to unlock it."
+            ) % {"dates": ", ".join(day.strftime("%d.%m.%Y") for day in locked[:5])})
 
     def _days(self, start, end):
         """Working days in the range — the count, not the entitlement cost.
@@ -170,8 +191,15 @@ class SickForm(forms.ModelForm):
         if data.get("is_half_day") and start and end and start != end:
             self.add_error("is_half_day", _("A half day is one date."))
             return data
+        if start and end and self.employee:
+            self._refuse_locked_dates(start, end)
         data["end_date"] = end
         return data
+
+    # The same rule as the request form's, and deliberately the same words: a
+    # sick day written into a closed month changes the hours that month was
+    # signed off on, whichever form it arrived through.
+    _refuse_locked_dates = AbsenceRequestForm._refuse_locked_dates
 
     def save(self, commit=True):
         absence = super().save(commit=False)

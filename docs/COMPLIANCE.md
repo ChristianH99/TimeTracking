@@ -134,6 +134,15 @@ and it is worth being precise because the position is unusual.
 
 ---
 
+### Closing a month
+
+| | |
+|---|---|
+| **Does** | Let a manager lock a month, per person, after which no booking, status, correction or comment in it can be changed. `DayLock` is one row per closed date; `assert_unlocked` gates every write path and `DayRecord.save`/`delete` gate it again. Who locked it and when is on every row. |
+| **Does** | Refuse to lock a month with an absence still waiting for a decision in it, because approving one afterwards would change hours the month had been signed off on. |
+| **Does not** | Prevent a manager unlocking a day and changing it. That is the point of the unlock, and the row records who locked it and when — but there is no log of *what changed* while it was open. §16 ArbZG asks for the record to be kept two years; it does not ask for an edit history, and this app does not keep one. |
+| **Does not** | Stop `close_year` materialising a company closure into a locked month. It is the employer's own act on its own page, and the year it runs over is normally long shut. |
+
 ## 3. MiLoG §17 — the stricter recording duty
 
 For **minijobs** (geringfügig Beschäftigte) and for anybody in the industries

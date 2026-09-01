@@ -499,6 +499,47 @@ PAGES = {
     "Three things this table is here to show. A day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier — reading the rules the other way costs somebody break they were entitled to. A break somebody already took counts: clocking out for half an hour and back in is half an hour off the day already. But it only counts if it broke the work up — the last row is six and a half hours worked straight through with the hour off afterwards, which is still six and a half hours without a break, and a pause under fifteen minutes is not a break at all.":
         "Drei Dinge zeigt diese Tabelle. Ein Tag, der nur knapp über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe — die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zusteht. Eine bereits genommene Pause zählt: wer sich für eine halbe Stunde ausbucht und wieder einbucht, hat diese halbe Stunde schon nicht gearbeitet. Sie zählt aber nur, wenn sie die Arbeit unterbrochen hat — die letzte Zeile sind sechseinhalb Stunden am Stück und die Stunde frei danach, das bleiben sechseinhalb Stunden ohne Pause. Und eine Unterbrechung unter fünfzehn Minuten ist gar keine Pause.",
 
+
+    # -- closing a month ---------------------------------------------------
+    #
+    # "Sperren" and never "abschließen": ein Monatsabschluss ist das, was eine
+    # Buchhaltung mit dem Hauptbuch macht, und das hier ist enger — es schließt
+    # den *Stundenzettel* für Änderungen und sagt nichts über die Lohnabrechnung.
+    "Month end": "Monatsende",
+    "Closing a month": "Monat abschließen",
+    "Lock the month": "Monat sperren",
+    "Unlock the month": "Monat entsperren",
+    "Lock the month?": "Monat sperren?",
+    "Unlock the month?": "Monat entsperren?",
+    "Lock or unlock the month?": "Monat sperren oder entsperren?",
+    "Go ahead": "Weiter",
+    "Everything in this month becomes changeable again.":
+        "Alles in diesem Monat kann wieder geändert werden.",
+    "Nothing in this month can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again from its own row.":
+        "Danach kann nichts mehr in diesem Monat geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Ein einzelner Tag kann über seine eigene Zeile wieder entsperrt werden.",
+    "Locking closes that month for everybody you have ticked: nothing in it can be changed afterwards. A single day can be unlocked again on their own timesheet.":
+        "Das Sperren schließt den Monat für alle Angehakten: danach kann nichts mehr darin geändert werden. Ein einzelner Tag kann auf dem jeweiligen Stundenzettel wieder entsperrt werden.",
+    "Locking a month closes it: nothing in it can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again on that person's timesheet when something has to be put right.":
+        "Das Sperren schließt den Monat: danach kann nichts mehr darin geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Muss etwas berichtigt werden, kann ein einzelner Tag auf dem Stundenzettel der Person wieder entsperrt werden.",
+    "Open the requests": "Zu den Anträgen",
+    "Everybody": "Alle",
+    "Still open": "Noch offen",
+    "Locked": "Gesperrt",
+    "locked": "gesperrt",
+    "open": "offen",
+    "%(locked)s of %(total)s days": "%(locked)s von %(total)s Tagen",
+    "Nobody is employed at the moment.": "Zurzeit ist niemand beschäftigt.",
+
+    # -- a locked day, on the timesheet ------------------------------------
+    "Unlock this day so it can be changed": "Diesen Tag entsperren, um ihn zu ändern",
+    "Lock this day again": "Diesen Tag wieder sperren",
+    "Unlock %(date)s": "%(date)s entsperren",
+    "Lock %(date)s": "%(date)s sperren",
+    "This day is locked. Ask a manager to unlock it.":
+        "Dieser Tag ist gesperrt. Bitten Sie Ihre Leitung, ihn zu entsperren.",
+    "Locked days": "Gesperrte Tage",
+    "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards.":
+        "Ihre Leitung schließt einen Monat ab, wenn die Stunden darin vereinbart sind. Danach kann an einem gesperrten Tag nichts mehr geändert werden — weder die Buchungen noch der Status noch die Korrektur noch die Bemerkung. Muss etwas berichtigt werden, entsperrt die Leitung genau diesen einen Tag über das Schloss in seiner Zeile und sperrt ihn danach wieder.",
 }
 
 # Plural entries: msgid -> (singular msgstr, plural msgstr). German has the same
@@ -535,6 +576,23 @@ PLURALS = {
     # German inflects on the number and a single string cannot be right for
     # both, which is how a save of one day announced itself as "1 Tage".
 
+
+    "%(count)s day was locked.": (
+        "%(count)s Tag wurde gesperrt.", "%(count)s Tage wurden gesperrt.",
+    ),
+    "%(count)s day was unlocked.": (
+        "%(count)s Tag wurde entsperrt.", "%(count)s Tage wurden entsperrt.",
+    ),
+    "%(counter)s day unanswered": (
+        "%(counter)s Tag offen", "%(counter)s Tage offen",
+    ),
+    "%(counter)s waiting for a decision": (
+        "%(counter)s wartet auf Entscheidung", "%(counter)s warten auf Entscheidung",
+    ),
+    "%(counter)s absence in this month is still waiting for a decision. A month cannot be locked over it — decide it first.": (
+        "%(counter)s Abwesenheit in diesem Monat wartet noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden.",
+        "%(counter)s Abwesenheiten in diesem Monat warten noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden.",
+    ),
 }
 
 # Added when the sign-in name replaced the e-mail address, when the time parser

@@ -44,6 +44,119 @@ class EntrySource(models.TextChoices):
     MANUAL = "manual", _("entered by hand")
 
 
+class DayLock(models.Model):
+    """One date of one person's timesheet, closed to further change.
+
+    **A row per day, and not a row per month**, although a month is what a
+    manager locks. The question the app asks is always *"may this day be
+    changed"* and never *"is this month locked"* — every write path, every cell
+    on the page and every refusal is about one date. A month row with a table of
+    per-day exceptions beside it would be two representations of that one
+    answer, and the day they disagree is the day somebody edits a day they
+    should not have. A month is thirty-one of these written at once, which is
+    one query; unlocking a day is deleting one of them.
+
+    **Who and when are on every row**, because the whole point of a lock is that
+    somebody can be told who closed the month and when — and because a day
+    unlocked and locked again afterwards was genuinely locked at two different
+    moments by possibly two different people. Storing that once per month would
+    be storing the first answer for all of them.
+
+    Deleting is how a day is unlocked; there is no ``is_locked`` flag to go
+    stale. A row exists or it does not.
+    """
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="locks",
+        verbose_name=_("employee"),
+    )
+    date = models.DateField(_("date"))
+
+    locked_at = models.DateTimeField(auto_now_add=True)
+    locked_by = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="+", editable=False,
+    )
+
+    class Meta:
+        ordering = ["date"]
+        verbose_name = _("locked day")
+        verbose_name_plural = _("locked days")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "date"], name="one_lock_per_day",
+            ),
+        ]
+        indexes = [models.Index(fields=["employee", "date"])]
+
+    def __str__(self):
+        return f"{self.employee} {self.date}"
+
+    @classmethod
+    def dates_between(cls, employee, first, last):
+        """The locked dates in a range, as a set.
+
+        One query for a whole month, which is what every page drawing a month
+        needs — asking per row would be thirty-one.
+        """
+        return set(
+            cls.objects
+            .filter(employee=employee, date__gte=first, date__lte=last)
+            .values_list("date", flat=True)
+        )
+
+    @classmethod
+    def is_locked(cls, employee, date):
+        return cls.objects.filter(employee=employee, date=date).exists()
+
+    @classmethod
+    def lock(cls, employee, dates, by):
+        """Lock every one of ``dates`` that is not locked already.
+
+        ``ignore_conflicts`` rather than check-then-write: two managers pressing
+        the button in the same second would otherwise raise a unique constraint
+        error on a page that had done nothing wrong, and the second press means
+        the same thing as the first.
+
+        Returns how many rows were new, which is what the message counts.
+        """
+        existing = set(
+            cls.objects.filter(employee=employee, date__in=dates)
+            .values_list("date", flat=True)
+        )
+        fresh = [date for date in dates if date not in existing]
+        cls.objects.bulk_create(
+            [cls(employee=employee, date=date, locked_by=by) for date in fresh],
+            ignore_conflicts=True,
+        )
+        return len(fresh)
+
+
+class LockedDay(ValidationError):
+    """Raised by anything that would change a day somebody has closed.
+
+    A ``ValidationError`` and not a ``PermissionDenied``, because that is what
+    it is: the day is not somebody else's, it is *finished*. The message says
+    what to do instead, which is to ask for it to be unlocked.
+    """
+
+
+def assert_unlocked(employee, date):
+    """Refuse to touch a locked day. The one gate, called by every write path.
+
+    A function rather than a check repeated in each view, because the exposure a
+    forgotten one would create is exactly the one the lock exists to prevent —
+    and it would be invisible, since the page would simply save. ``DayRecord``
+    calls it on every save and delete as well, so a path that forgot it is
+    caught by the model rather than by nobody.
+    """
+    if DayLock.is_locked(employee, date):
+        raise LockedDay(_(
+            "%(date)s is locked and cannot be changed. Ask a manager to unlock that "
+            "day — locking a month is how the hours in it are signed off."
+        ) % {"date": date.strftime("%d.%m.%Y")})
+
+
 class DayRecord(models.Model):
     """One person, one date. At most one of these per pair.
 
@@ -124,6 +237,28 @@ class DayRecord(models.Model):
 
     def __str__(self):
         return f"{self.employee} {self.date}"
+
+    def save(self, *args, force=False, **kwargs):
+        """Refused on a locked day, unless the caller says it means it.
+
+        **The backstop, not the gate.** Every view that writes a day calls
+        ``assert_unlocked`` first, because that is where a useful message can be
+        put on the page somebody is looking at. This is here because a view that
+        forgot to would otherwise save in silence — and a lock one forgotten
+        line can be walked past is not a lock.
+
+        ``force`` is for callers that are not somebody editing a day: a fixture,
+        a data migration, or a seeder.
+        """
+        if not force:
+            assert_unlocked(self.employee, self.date)
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, force=False, **kwargs):
+        """The same. Clearing a day is a change to it — the largest one."""
+        if not force:
+            assert_unlocked(self.employee, self.date)
+        return super().delete(*args, **kwargs)
 
     def clean(self):
         """A correction with nothing saying why is refused.

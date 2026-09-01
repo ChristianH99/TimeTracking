@@ -37,8 +37,19 @@ from apps.timesheets.fields import SignedMinutesField
 from apps.timesheets.forms import DayForm, SegmentFormSet
 from apps.timesheets.hours import contracted_minutes
 from apps.timesheets.templatetags.hours import hhmm, hhmm_signed
-from apps.timesheets.models import DayRecord, EntrySource, week_monday
+from apps.timesheets.models import (
+    DayLock, DayRecord, EntrySource, assert_unlocked, week_monday,
+)
 from apps.timesheets.zones import local_today, zone_for
+
+
+# What every refusal says, in one place. The same sentence whichever door it
+# came through, because it is the same fact — and because a lock explained four
+# different ways is one nobody trusts.
+LOCKED_MESSAGE = _(
+    "%(date)s is locked and cannot be changed. Ask a manager to unlock that day — "
+    "locking a month is how the hours in it are signed off."
+)
 
 
 def _monday_from(request):
@@ -90,7 +101,10 @@ def _facts_for(employee, first, last):
         .exclude(status__in=(RequestStatus.REJECTED, RequestStatus.WITHDRAWN))
         .select_related("special_type", "closure")
     )
-    return shifts, records, holidays, absences
+    # One query for the month rather than one per row — the fifth, and the only
+    # one this added.
+    locks = DayLock.dates_between(employee, first, last)
+    return shifts, records, holidays, absences, locks
 
 
 def _day_row(employee, day, facts, settings, rules, today=None):
@@ -112,7 +126,7 @@ def _day_row(employee, day, facts, settings, rules, today=None):
     * and the figures the month's columns are: what the bookings came to, what
       the break took off, what was corrected by hand, and the saldo.
     """
-    shifts, records, holidays, absences = facts
+    shifts, records, holidays, absences, locks = facts
     today = today or dt.date.today()
 
     record = records.get(day)
@@ -240,6 +254,10 @@ def _day_row(employee, day, facts, settings, rules, today=None):
             absence.closure_id is None and absence.start_date == absence.end_date
         ),
         "is_working_day": is_working_day,
+        # **Locked: finished, and not to be changed.** Every write path checks
+        # it again — this is only what the page draws, and a row that merely
+        # *looked* locked would be a lock made of CSS.
+        "is_locked": day in locks,
         "is_today": day == today,
         "is_future": day > today,
         "is_weekend": day.weekday() >= 5,
@@ -469,6 +487,12 @@ def build_month(employee, first, settings=None):
         # happened, which is why it is named apart from `contracted_total`.
         "contracted_month": sum(row["contracted_minutes"] for row in rows),
         "is_finished": last <= today,
+        # How much of the month is closed. Three states rather than two, because
+        # "partly" is a real one: a manager unlocks a single day to correct it
+        # and the month is neither open nor shut until they lock it again.
+        "locked_days": sum(1 for row in rows if row["is_locked"]),
+        "is_locked": all(row["is_locked"] for row in rows),
+        "has_locks": any(row["is_locked"] for row in rows),
         # So the template's "show the first four" and `hidden_bookings` cannot
         # disagree about how many four is.
         "bookings_shown": BOOKINGS_SHOWN,
@@ -645,6 +669,11 @@ def clock(request, pk):
     back = _safe_next(request) or _month_url(request, employee, local_today(zone_for(employee)))
 
     try:
+        # A locked day cannot be clocked into either. Rare — it means somebody
+        # closed the month that is still running — but Start writes a record
+        # like anything else, and a lock with an exception nobody documented is
+        # not a lock.
+        assert_unlocked(employee, local_today(zone_for(employee)))
         if clocking.open_stretch(employee) is None:
             segment = clocking.start(employee, by=request.user)
             messages.success(request, _("Started at %(time)s.") % {
@@ -712,8 +741,14 @@ def day(request, pk, date):
     rules = list(settings.break_rules.all()) if settings.is_stored else None
     record = DayRecord.objects.filter(employee=employee, date=the_date).first()
     shifts = list(Shift.objects.filter(employee=employee, date=the_date))
+    locked = DayLock.is_locked(employee, the_date)
 
     if request.method == "POST":
+        if locked:
+            messages.error(request, LOCKED_MESSAGE % {
+                "date": the_date.strftime("%d.%m.%Y"),
+            })
+            return redirect(_month_url(request, employee, the_date))
         instance = record or DayRecord(employee=employee, date=the_date)
         form = DayForm(request.POST, instance=instance)
         # Bound to the instance whether or not it has been saved: an inline
@@ -769,6 +804,7 @@ def day(request, pk, date):
             employee.hours_on_weekday(the_date.weekday(), on=the_date)
         ),
         "settings": settings,
+        "locked": locked,
         "week": week_monday(the_date),
         # The break table, so the page can answer while somebody is typing
         # rather than only on save. The browser gets the *rules*, not a computed
@@ -825,6 +861,12 @@ def confirm_day(request, pk, date):
     except ValueError as error:
         raise Http404 from error
 
+    if DayLock.is_locked(employee, the_date):
+        messages.error(request, LOCKED_MESSAGE % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        })
+        return redirect(_month_url(request, employee, the_date))
+
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
     shifts = list(Shift.objects.filter(employee=employee, date=the_date))
@@ -874,11 +916,16 @@ def confirm_week(request):
         .values_list("date", flat=True)
     )
 
+    # Skipped rather than refused. This button is a bulk gesture over a week
+    # that may be half closed, and refusing the whole thing because one day of
+    # it is locked would leave nothing to press.
+    locked = DayLock.dates_between(employee, days[0], days[-1])
+
     confirmed = skipped = 0
     for day_date in days:
         if day_date > today or day_date not in shifts:
             continue
-        if day_date in existing:
+        if day_date in existing or day_date in locked:
             skipped += 1
             continue
         DayRecord.from_shifts(
@@ -1107,6 +1154,13 @@ def set_status(request, pk, date):
         raise Http404 from error
 
     back = _month_url(request, employee, the_date)
+
+    if DayLock.is_locked(employee, the_date):
+        messages.error(request, LOCKED_MESSAGE % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        })
+        return redirect(back)
+
     existing = (
         employee.absences
         .exclude(status__in=(RequestStatus.REJECTED, RequestStatus.WITHDRAWN))
@@ -1230,6 +1284,11 @@ def save_day(request, pk, date):
     except ValueError as error:
         raise Http404 from error
 
+    if DayLock.is_locked(employee, the_date):
+        return JsonResponse({"ok": False, "error": LOCKED_MESSAGE % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        }}, status=400)
+
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
     record = (
@@ -1275,6 +1334,187 @@ def save_day_mine(request, date):
     if employee is None:
         raise Http404
     return save_day(request, employee.pk, date)
+
+
+# --------------------------------------------------------------------------
+# Closing a month
+# --------------------------------------------------------------------------
+
+def _month_summary(employee, first, settings=None):
+    """One person's month as four figures and two counts, for the lock page.
+
+    Deliberately **not** ``build_month``. That walks the balance back to the
+    person's opening date to work out what they carried in, which is the one
+    expensive thing on the page and is not a question this page asks — and it
+    would ask it once per employee. What is wanted here is the month itself.
+    """
+    from apps.absences.models import RequestStatus
+
+    last = month_end(first)
+    days = [first + dt.timedelta(days=offset) for offset in range((last - first).days + 1)]
+    settings, _rules, rows = _rows_for(employee, days, settings)
+    today = dt.date.today()
+    done = [row for row in rows if row["date"] <= today]
+
+    worked = sum(row["worked_minutes"] or 0 for row in done)
+    credited = sum(row["credited_minutes"] for row in done)
+    contracted = sum(row["contracted_minutes"] for row in done)
+    locked = sum(1 for row in rows if row["is_locked"])
+
+    return {
+        "employee": employee,
+        "counted": worked + credited,
+        "contracted": contracted,
+        "difference": worked + credited - contracted,
+        # Days somebody was rostered for and has not answered. A month with any
+        # of these is one nobody should be signing off yet.
+        "awaiting": sum(1 for row in done if row["awaiting"]),
+        # **What stops the lock.** An undecided request inside the month would
+        # change the credited hours the moment it was approved — after the month
+        # had been signed off on the figures without it.
+        "waiting": employee.absences.filter(
+            status=RequestStatus.REQUESTED,
+            start_date__lte=last, end_date__gte=first,
+        ).count(),
+        "locked_days": locked,
+        "total_days": len(rows),
+        "is_locked": locked == len(rows),
+        "is_partly_locked": 0 < locked < len(rows),
+    }
+
+
+@manager_required
+def month_end_page(request):
+    """Closing a month: who is ready, and the button that shuts it.
+
+    The parallel of ``absences.year_end`` and deliberately shaped like it — a
+    periodic act a manager performs over everybody at once, with the figures
+    they need in order to decide in front of them rather than one navigation
+    away.
+    """
+    first = _month_from(request)
+    settings = OrgSettings.current()
+    people = [
+        _month_summary(employee, first, settings)
+        for employee in Employee.objects.filter(is_active=True)
+    ]
+    return render(request, "timesheets/month_end.html", {
+        "month": first,
+        "month_end": month_end(first),
+        "people": people,
+        "months": _month_choices_for_everybody(first),
+        "previous_month": month_shift(first, -1),
+        "next_month": month_shift(first, 1),
+        "this_month": month_start(dt.date.today()),
+        "locked_people": sum(1 for row in people if row["is_locked"]),
+        "waiting_total": sum(row["waiting"] for row in people),
+    })
+
+
+def _month_choices_for_everybody(current):
+    """The dropdown for a page that is about the whole team.
+
+    ``_month_choices`` starts at one employee's opening date, which is not a
+    question with an answer here. Two years back and a year forward, which is
+    the range a month is ever closed in.
+    """
+    last = max(month_shift(month_start(dt.date.today()), 12), current)
+    first = min(month_shift(last, -36), current)
+    months = []
+    step = last
+    while step >= first:
+        months.append(step)
+        step = month_shift(step, -1)
+    return months
+
+
+@manager_required
+@require_POST
+def lock_month(request):
+    """Lock — or unlock — a month for everybody who was ticked.
+
+    **Refused while anything in the month is still waiting for a decision.**
+    Approving a request afterwards would change the credited hours of a month
+    that had already been signed off without them, which is the one thing a
+    lock is supposed to make impossible. The message names who, so the fix is
+    one click away on the requests page rather than a hunt.
+
+    Unlocking has no such condition: it is the escape hatch, and a condition on
+    an escape hatch is how somebody ends up with a month they cannot correct.
+    """
+    from apps.absences.models import RequestStatus
+
+    first = _month_from(request)
+    last = month_end(first)
+    days = [first + dt.timedelta(days=offset) for offset in range((last - first).days + 1)]
+    unlocking = bool(request.POST.get("unlock"))
+
+    chosen = Employee.objects.filter(
+        pk__in=request.POST.getlist("employee"), is_active=True,
+    )
+    if not chosen:
+        messages.info(request, _("Nobody was ticked, so nothing was changed."))
+        return redirect(f"{reverse('timesheets:month-end')}?month={first:%Y-%m}")
+
+    if unlocking:
+        removed = DayLock.objects.filter(
+            employee__in=chosen, date__gte=first, date__lte=last,
+        ).delete()[0]
+        messages.success(request, ngettext(
+            "%(count)s day was unlocked.", "%(count)s days were unlocked.", removed,
+        ) % {"count": removed})
+        return redirect(f"{reverse('timesheets:month-end')}?month={first:%Y-%m}")
+
+    blocked = [
+        employee for employee in chosen
+        if employee.absences.filter(
+            status=RequestStatus.REQUESTED,
+            start_date__lte=last, end_date__gte=first,
+        ).exists()
+    ]
+    if blocked:
+        messages.error(request, _(
+            "%(names)s still have time off waiting for a decision in that month. "
+            "Decide it first — approving it afterwards would change hours the month "
+            "had already been signed off on."
+        ) % {"names": ", ".join(person.full_name for person in blocked)})
+        return redirect(f"{reverse('timesheets:month-end')}?month={first:%Y-%m}")
+
+    locked = sum(
+        DayLock.lock(employee, days, by=request.user) for employee in chosen
+    )
+    messages.success(request, ngettext(
+        "%(count)s day was locked.", "%(count)s days were locked.", locked,
+    ) % {"count": locked})
+    return redirect(f"{reverse('timesheets:month-end')}?month={first:%Y-%m}")
+
+
+@manager_required
+@require_POST
+def lock_day(request, pk, date):
+    """One day, unlocked so it can be corrected — or locked again afterwards.
+
+    The other half of "the default is to lock a whole month": a month is closed
+    in one gesture and opened one day at a time, because the reason to open one
+    is always a single day that was wrong.
+    """
+    employee = get_object_or_404(Employee, pk=pk)
+    try:
+        the_date = dt.date.fromisoformat(date)
+    except ValueError as error:
+        raise Http404 from error
+
+    if request.POST.get("unlock"):
+        DayLock.objects.filter(employee=employee, date=the_date).delete()
+        messages.success(request, _("%(date)s was unlocked and can be changed again.") % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        })
+    else:
+        DayLock.lock(employee, [the_date], by=request.user)
+        messages.success(request, _("%(date)s was locked.") % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        })
+    return redirect(_month_url(request, employee, the_date))
 
 
 def _hours_label(minutes, user):

@@ -184,6 +184,25 @@ Each of these is here because breaking it produces a page that still renders.
 
 ### This app's own
 
+- **A month is locked, and a day is unlocked.** `DayLock` is one row per closed
+  date — not one per month, although a month is what a manager closes. Every
+  question the app asks is *"may this day be changed"* and never *"is this month
+  locked"*, so a month row with a table of per-day exceptions beside it would be
+  two representations of one answer, and the day they disagree is the day
+  somebody edits a day they should not have. A month is thirty-one rows written
+  at once; unlocking is deleting one.
+- **The lock is enforced at the model as well as at every door.**
+  `assert_unlocked` is called by `save_day`, `set_status`, the day form, both
+  confirm routes, Start/Stop and both absence forms — and `DayRecord.save`/
+  `delete` call it again, because a view that forgot would otherwise save in
+  silence and a lock one forgotten line can be walked past is not a lock.
+  `apps/timesheets/test_locks.py` sweeps the doors rather than naming three of
+  them.
+- **A month with an undecided request in it cannot be locked.** Approving one
+  afterwards would change the credited hours of a month that had already been
+  signed off without them, which is the one thing a lock is for. Unlocking
+  carries no such condition — a condition on an escape hatch is how somebody
+  ends up with a month they cannot correct.
 - **A status is set from the status cell.** Sick, a day off, time in lieu —
   without opening the Time off page. `views.set_status` fills in the one date
   and hands the rest to `AbsenceRequestForm` / `SickForm`: every rule about who
@@ -644,6 +663,11 @@ targets**, so a page added next month is covered the day it lands:
 - `apps/absences/test_leave_year.py` holds half days, credited hours, the
   contract history and the whole of carry-over and expiry — including the case
   that matters most: **without a recorded reminder, nothing lapses.**
+- `apps/timesheets/test_locks.py` walks the write paths against a locked day —
+  both pop-ups, the comment, the old day form, both confirm routes, Start, and
+  every way an absence can be written. A lock is worth as much as its
+  least-guarded door, and a test naming three of them passes for exactly as long
+  as it takes somebody to add a fourth.
 - `apps/employees/test_privacy.py` walks the *whole* URLconf and refuses to let
   any route answer somebody who is not signed in, then checks each of the
   cross-employee doors by hand. Its route-reverser fails loudly on a route it

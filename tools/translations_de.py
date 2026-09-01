@@ -520,4 +520,19 @@ SINGULAR = {
     "%(date)s has no status any more.": "%(date)s hat keinen Status mehr.",
     "%(date)s was recorded as %(status)s.": "%(date)s wurde als %(status)s eingetragen.",
     "%(date)s could not be saved: %(why)s": "%(date)s konnte nicht gespeichert werden: %(why)s",
+
+    # -- locking a month ---------------------------------------------------
+    "locked day": "gesperrter Tag",
+    "locked days": "gesperrte Tage",
+    "%(date)s is locked and cannot be changed. Ask a manager to unlock that day — locking a month is how the hours in it are signed off.":
+        "%(date)s ist gesperrt und kann nicht geändert werden. Bitten Sie Ihre Leitung, den Tag zu entsperren — mit dem Sperren eines Monats werden die Stunden darin abgezeichnet.",
+    "%(dates)s is locked, so nothing can be booked across it. Ask a manager to unlock it.":
+        "%(dates)s ist gesperrt, dort kann nichts eingetragen werden. Bitten Sie Ihre Leitung, den Tag zu entsperren.",
+    "Nobody was ticked, so nothing was changed.":
+        "Es war niemand angehakt, es wurde also nichts geändert.",
+    "%(names)s still have time off waiting for a decision in that month. Decide it first — approving it afterwards would change hours the month had already been signed off on.":
+        "Bei %(names)s wartet in diesem Monat noch eine Abwesenheit auf eine Entscheidung. Bitte zuerst entscheiden — eine spätere Genehmigung würde Stunden ändern, für die der Monat bereits abgezeichnet wurde.",
+    "%(date)s was unlocked and can be changed again.":
+        "%(date)s wurde entsperrt und kann wieder geändert werden.",
+    "%(date)s was locked.": "%(date)s wurde gesperrt.",
 }

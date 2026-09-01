@@ -64,6 +64,8 @@
                href="{% url 'roster:plan' %}">{% translate "Roster" %}</a>
             <a class="shell-nav-subitem{% if 'team.timesheets' in nav_current %} active{% endif %}"
                href="{% url 'timesheets:team' %}">{% translate "Timesheets" %}</a>
+            <a class="shell-nav-subitem{% if 'team.month-end' in nav_current %} active{% endif %}"
+               href="{% url 'timesheets:month-end' %}">{% translate "Month end" %}</a>
             <a class="shell-nav-subitem{% if 'team.requests' in nav_current %} active{% endif %}"
                href="{% url 'absences:requests' %}">{% translate "Requests" %}{% if pending_request_count %}
                  <span class="nav-badge">{{ pending_request_count }}</span>{% endif %}</a>

@@ -848,6 +848,14 @@
   /* ---- the table ------------------------------------------------------- */
 
   table.addEventListener("click", (event) => {
+    /* A locked row offers nothing, and its buttons are `disabled` so this never
+       fires for one. The guard is here all the same: the row is drawn shut by
+       the server and this file must not be the thing that decides whether it
+       is — `save_day` and `set_status` refuse a locked date whatever the page
+       thinks. */
+    const row = event.target.closest("[data-day]");
+    if (row && row.classList.contains("is-locked")) return;
+
     const take = event.target.closest("[data-suggestion-take]");
     if (take) {
       /* The checkmark: the rostered times, taken and written in one press. It is
@@ -877,7 +885,7 @@
    * what stops a save on every tab through the column. */
   table.addEventListener("focusout", (event) => {
     const note = event.target.closest("[data-note]");
-    if (!note) return;
+    if (!note || note.readOnly) return;
     const stored = note.dataset.saved !== undefined ? note.dataset.saved : note.defaultValue;
     if (note.value === stored) return;
 

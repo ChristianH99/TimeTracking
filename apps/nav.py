@@ -52,6 +52,13 @@ ITEMS = {
         for name in ("team", "employee", "employee-save-day", "employee-set-status",
                      "employee-day", "employee-confirm-day", "employee-clock")
     },
+    # Closing a month, beside closing a year. Both are periodic acts a manager
+    # performs over everybody at once, and neither belongs inside the page for
+    # one person's timesheet.
+    "team.month-end": {
+        ("timesheets", name)
+        for name in ("month-end", "lock-month", "lock-day")
+    },
     "team.requests": {
         ("absences", name) for name in ("requests", "decide")
     },
@@ -96,7 +103,8 @@ ITEMS = {
 # that hides the page you are looking at is a menu that looks broken.
 PARENTS = {
     "mine": ("mine.timesheet", "mine.absences"),
-    "team": ("team.roster", "team.timesheets", "team.requests", "team.employees",
+    "team": ("team.roster", "team.timesheets", "team.month-end", "team.requests",
+             "team.employees",
              "team.year-end"),
     "settings": ("settings.me", "settings.rules", "settings.users", "settings.sso"),
 }

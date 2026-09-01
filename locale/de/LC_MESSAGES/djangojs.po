@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 18:03+0200\n"
+"POT-Creation-Date: 2026-09-01 20:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -37,7 +37,7 @@ msgstr "Kopiert"
 msgid "Press Ctrl-C"
 msgstr "Strg-C drücken"
 
-#: .\static\js\timeinput.js:65 .\static\js\timesheet_month.js:491
+#: .\static\js\timeinput.js:65 .\static\js\timesheet_month.js:497
 msgid "That is not a time this app can read. Try 8:30, 8,5 or 830."
 msgstr "Das ist keine Zeitangabe, die diese App lesen kann. Versuchen Sie 8:30, 8,5 oder 830."
 
@@ -93,35 +93,35 @@ msgstr "Zeit"
 msgid "Remove this booking"
 msgstr "Diese Buchung entfernen"
 
-#: .\static\js\timesheet_month.js:484
+#: .\static\js\timesheet_month.js:490
 msgid "Every booking has to say whether it is a coming or a going."
 msgstr "Bei jeder Buchung muss angegeben sein, ob sie ein Kommen oder ein Gehen ist."
 
-#: .\static\js\timesheet_month.js:487
+#: .\static\js\timesheet_month.js:493
 msgid "There is a booking with no time on it."
 msgstr "Es gibt eine Buchung ohne Uhrzeit."
 
-#: .\static\js\timesheet_month.js:495
+#: .\static\js\timesheet_month.js:501
 msgid "There are two comings in a row with no going between them."
 msgstr "Es stehen zwei Kommen hintereinander, ohne ein Gehen dazwischen."
 
-#: .\static\js\timesheet_month.js:501
+#: .\static\js\timesheet_month.js:507
 msgid "There is a going with no coming before it. A day starts with a coming."
 msgstr "Es gibt ein Gehen, vor dem kein Kommen steht. Ein Tag beginnt mit einem Kommen."
 
-#: .\static\js\timesheet_month.js:504
+#: .\static\js\timesheet_month.js:510
 msgid "A coming and a going at the same moment is a stretch with no length."
 msgstr "Ein Kommen und ein Gehen zum selben Zeitpunkt ist ein Abschnitt ohne Länge."
 
-#: .\static\js\timesheet_month.js:655 .\static\js\timesheet_month.js:852
-#: .\static\js\timesheet_month.js:885
+#: .\static\js\timesheet_month.js:661 .\static\js\timesheet_month.js:866
+#: .\static\js\timesheet_month.js:899
 msgid "Saved."
 msgstr "Gespeichert."
 
-#: .\static\js\timesheet_month.js:739
+#: .\static\js\timesheet_month.js:745
 msgid "That is not a length this app can read. Try 30, 0:30 or -15."
 msgstr "Das ist keine Dauer, die diese App lesen kann. Zum Beispiel 30, 0:30 oder -15."
 
-#: .\static\js\timesheet_month.js:746
+#: .\static\js\timesheet_month.js:752
 msgid "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended."
 msgstr "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt."

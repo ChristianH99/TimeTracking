@@ -1459,7 +1459,7 @@ tr.is-off > * { color: var(--text-light); }
   padding: var(--space-3) var(--space-4); vertical-align: middle;
   height: 2.5rem; overflow: hidden; white-space: nowrap;
 }
-.month-table .col-day { width: 4.5rem; }
+.month-table .col-day { width: 5.5rem; }
 .month-table .col-status { width: 9.5rem; }
 .month-table .col-bookings { width: 17rem; }
 .month-table .col-break { width: 5rem; }
@@ -1520,6 +1520,32 @@ tr.is-off > * { color: var(--text-light); }
   transition: background var(--dur-3), border-color var(--dur-3);
 }
 .status-open:hover { background: var(--pine-bg); border-color: var(--border); }
+
+/* ===== A LOCKED DAY =====
+   Quiet rather than crossed out. A closed month is the ordinary end state of
+   every month, not an error and not a warning — most of the timesheet is in it
+   most of the time, and drawing it as a problem would make the page look like
+   one. The row keeps its figures at full contrast, because they are the whole
+   reason anybody opens a month that is already shut; it is the *controls* that
+   go, and they go by not being there. */
+tr.is-locked .bookings-open,
+tr.is-locked .status-open,
+tr.is-locked .correction-open { cursor: default; }
+tr.is-locked .bookings-open:hover,
+tr.is-locked .status-open:hover,
+tr.is-locked .correction-open:hover { background: none; border-color: transparent; }
+tr.is-locked .month-note { background: transparent; border-color: transparent; }
+
+.day-lock {
+  background: none; border: 0; padding: 0 0 0 var(--space-2);
+  font-size: var(--text-xs); line-height: 1; cursor: pointer;
+}
+.day-lock--fixed { cursor: default; }
+/* The one that is *not* locked, in a month that mostly is. Faint, because it is
+   an offer rather than a state — the padlock that is shut is the one saying
+   something. */
+.day-lock--open { opacity: 0.35; }
+.day-lock--open:hover { opacity: 1; }
 
 .month-day { display: flex; align-items: baseline; gap: var(--space-3); white-space: nowrap; }
 .month-day-number { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
@@ -1588,6 +1614,9 @@ tr.is-today > * { background: var(--ember-bg); }
    fills its cell exactly, so the column's width is the cell's and not the
    text's. */
 .month-note { width: 100%; font-size: var(--text-sm); }
+
+/* ===== CLOSING A MONTH ===== */
+.tick-column { width: 2.5rem; text-align: center; }
 
 /* What a save says for itself, now that no button does. */
 .month-saved {

@@ -39,11 +39,50 @@ half of.{% endcomment %}
       {% endif %}
     </form>
 
+    {% if is_manager %}
+      {% comment %}The whole month, in one gesture — the default, and the one a
+      manager reaches for. Unlocking a single day is the padlock on its row; this
+      is the other end of it. Not offered to the person whose timesheet it is:
+      locking your own hours is not a thing you do to yourself.{% endcomment %}
+      <form method="post" action="{% url 'timesheets:lock-month' %}" class="inline-form"
+            data-confirm-title="{% if is_locked %}{% translate 'Unlock the month?' %}{% else %}{% translate 'Lock the month?' %}{% endif %}"
+            data-confirm="{% if is_locked %}{% translate 'Everything in this month becomes changeable again.' %}{% else %}{% translate 'Nothing in this month can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again from its own row.' %}{% endif %}"
+            data-confirm-accept="{% translate 'Go ahead' %}">
+        {% csrf_token %}
+        <input type="hidden" name="month" value="{{ month|date:'Y-m' }}">
+        <input type="hidden" name="employee" value="{{ employee.pk }}">
+        {% if is_locked %}
+          <button type="submit" name="unlock" value="1" class="button button--secondary button--small">
+            {% translate "Unlock the month" %}
+          </button>
+        {% else %}
+          <button type="submit" class="button button--secondary button--small">
+            {% translate "Lock the month" %}
+          </button>
+        {% endif %}
+      </form>
+    {% endif %}
+
     {% comment %}What a save says for itself, and where a refusal lands when it
     was not a pop-up that caused it. A live region, because with the Save button
     gone nothing else on the page announces that anything was written.{% endcomment %}
     <p class="month-saved" data-save-state role="status" aria-live="polite"></p>
   </div>
+
+  {% if has_locks and is_manager %}
+    {% comment %}One tiny form per row, out here rather than inside the table:
+    a form cannot be nested in another and a <tr> cannot hold one at all — the
+    padlocks reach them by `form=`, which is what that attribute is for.
+    {% endcomment %}
+    {% for row in rows %}
+      <form method="post" id="{% if row.is_locked %}unlock{% else %}lock{% endif %}-{{ row.date|date:'Y-m-d' }}"
+            action="{% url 'timesheets:lock-day' employee.pk row.date|date:'Y-m-d' %}" class="sr-only">
+        {% csrf_token %}
+        <input type="hidden" name="month" value="{{ month|date:'Y-m' }}">
+        {% if row.is_locked %}<input type="hidden" name="unlock" value="1">{% endif %}
+      </form>
+    {% endfor %}
+  {% endif %}
 
   {% comment %}Every figure on this page is hh:mm, and it is the one place in the
   app where the reader's own notation does not win. Ten columns read *down* only
@@ -93,12 +132,32 @@ half of.{% endcomment %}
         </tr>
 
         {% for row in rows %}
-          <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}"
+          <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}{% if row.is_locked %} is-locked{% endif %}"
               data-day="{{ row.date|date:'Y-m-d' }}"
               data-label="{{ row.date|date:'l, d.m.Y' }}">
             <th scope="row" class="month-day">
               <span class="month-day-number">{{ row.date|date:"d" }}</span>
               <span class="month-day-name">{{ row.date|date:"D" }}</span>
+              {% comment %}The padlock a manager turns, and only once the month
+              has been locked at all: on a month nobody has closed it would be
+              thirty-one controls for something the page head already does in
+              one. An employee sees the state and no button — unlocking is not
+              theirs, and a control that refuses is worse than none.{% endcomment %}
+              {% if row.is_locked %}
+                {% if is_manager %}
+                  <button type="submit" class="day-lock" form="unlock-{{ row.date|date:'Y-m-d' }}"
+                          title="{% translate 'Unlock this day so it can be changed' %}"
+                          aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Unlock {{ date }}{% endblocktranslate %}">🔒</button>
+                {% else %}
+                  <span class="day-lock day-lock--fixed"
+                        title="{% translate 'This day is locked. Ask a manager to unlock it.' %}"
+                        aria-label="{% translate 'locked' %}">🔒</span>
+                {% endif %}
+              {% elif is_manager and has_locks %}
+                <button type="submit" class="day-lock day-lock--open" form="lock-{{ row.date|date:'Y-m-d' }}"
+                        title="{% translate 'Lock this day again' %}"
+                        aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Lock {{ date }}{% endblocktranslate %}">🔓</button>
+              {% endif %}
             </th>
 
             {% comment %}Clicking the cell sets the day's status — sick, a day
@@ -114,6 +173,7 @@ half of.{% endcomment %}
                 data-status-note="{{ row.status_note }}"
                 data-status-editable="{% if row.status_editable %}1{% else %}0{% endif %}">
               <button type="button" class="status-open" data-status-open
+                      {% if row.is_locked %}disabled{% endif %}
                       aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Status for {{ date }}{% endblocktranslate %}">
               <span class="cell-clip">
               {% if row.holiday %}
@@ -176,6 +236,7 @@ half of.{% endcomment %}
             there is exactly one of it.{% endcomment %}
             <td class="month-bookings" data-bookings="{% for b in row.bookings %}{{ b.kind }} {{ b.time|time:'H:i' }}{% if not forloop.last %},{% endif %}{% endfor %}">
               <button type="button" class="bookings-open" data-bookings-open
+                      {% if row.is_locked %}disabled{% endif %}
                       aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Bookings for {{ date }}{% endblocktranslate %}">
                 <span class="bookings-list" data-bookings-display>
                   {% for booking in row.bookings %}
@@ -191,12 +252,13 @@ half of.{% endcomment %}
                   {% endif %}
                 </span>
               </button>
-              {% if row.shifts %}
+              {% if row.shifts and not row.is_locked %}
                 {% comment %}What the roster asked for, offered rather than
                 applied: one press takes it, and a day nobody presses stays empty
                 and visibly unanswered. Hidden once there is anything to compare
                 it against — the page must not suggest times somebody has already
-                answered.{% endcomment %}
+                answered, and gone entirely on a locked day, which has nothing to
+                answer any more.{% endcomment %}
                 <span class="bookings-suggestion" data-suggestion{% if row.bookings %} hidden{% endif %}
                       data-times="{% for shift in row.shifts %}{{ shift.start|time:'H:i' }},{{ shift.end|time:'H:i' }}{% if not forloop.last %};{% endif %}{% endfor %}">
                   <button type="button" class="suggestion-take" data-suggestion-take
@@ -225,6 +287,7 @@ half of.{% endcomment %}
                 data-correction="{{ row.correction_minutes|default:'' }}"
                 data-reason="{{ row.correction_reason }}">
               <button type="button" class="correction-open" data-correction-open
+                      {% if row.is_locked %}disabled{% endif %}
                       aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Correction for {{ date }}{% endblocktranslate %}">
                 <span data-correction-display{% if row.correction_reason %} title="{{ row.correction_reason }}"{% endif %}>
                   {% if row.correction_minutes %}{{ row.correction_minutes|hhmm_signed }}
@@ -267,9 +330,13 @@ half of.{% endcomment %}
               {% comment %}Written when the box is left, and only if it changed —
               see timesheet_month.js. No form around it: a form with no Save is a
               form somebody presses Enter in and watches reload.{% endcomment %}
+              {% comment %}`readonly` and not `disabled`: a disabled input is
+              skipped by the tab order and reads to a screen reader as though it
+              were not there, and a locked comment is still something somebody
+              needs to be able to select and read.{% endcomment %}
               <input type="text" id="note-{{ row.date|date:'Y-m-d' }}"
                      value="{{ row.note }}" maxlength="200" autocomplete="off"
-                     class="month-note" data-note>
+                     class="month-note" data-note{% if row.is_locked %} readonly{% endif %}>
             </td>
           </tr>
         {% endfor %}
@@ -489,6 +556,8 @@ half of.{% endcomment %}
         <p>{% translate "Worked out from the break rules and deducted from the bookings. A break somebody typed by hand is drawn in amber, because a break of 30 the rules produced and a break of 30 somebody entered are the same number and mean different things." %}</p>
         <h3>{% translate "Correction" %}</h3>
         <p>{% translate "Time that belongs on the day and was never read off a clock. It always needs a reason, and it is added after the break — so a correction can never push a day over a break threshold and deduct a break nobody took." %}</p>
+        <h3>{% translate "Locked days" %}</h3>
+        <p>{% translate "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards." %}</p>
         <h3>{% translate "Saldo" %}</h3>
         <p>{% translate "Actual less supposed. Green is time over the contract, red is time under it. The running column carries on from the balance brought into the month, so the last row of the month is the balance to date." %}</p>
       </div>

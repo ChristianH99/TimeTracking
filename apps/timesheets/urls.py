@@ -40,6 +40,11 @@ urlpatterns = [
 
     # The manager's view of everybody else's.
     path("team/", views.team, name="team"),
+    # Closing a month. The parallel of absences' year-end page: a periodic act
+    # over everybody at once, with the figures needed to decide on the page.
+    path("team/month-end/", views.month_end_page, name="month-end"),
+    path("team/month-end/lock/", views.lock_month, name="lock-month"),
+    path("team/<int:pk>/lock/<str:date>/", views.lock_day, name="lock-day"),
     path("team/<int:pk>/", views.employee_month, name="employee"),
     path("team/<int:pk>/save/<str:date>/", views.save_day, name="employee-save-day"),
     path("team/<int:pk>/status/<str:date>/", views.set_status, name="employee-set-status"),
