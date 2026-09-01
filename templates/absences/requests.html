@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Requests" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Requests" %}{% endblock %}
+{% block page_title %}{% translate "Time off waiting for a decision" %}{% endblock %}
 
 {% block content %}
-  <h1>{% translate "Time off waiting for a decision" %}</h1>
 
   {% if rows %}
     <div class="request-list">

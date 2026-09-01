@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% load i18n hours %}
 {% block title %}{% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Start" %}{% endblock %}
+{% block page_title %}{% blocktranslate with name=user.first_name|default:user.get_username %}Hello {{ name }}{% endblocktranslate %}{% endblock %}
 
 {% block content %}
-  <h1>{% blocktranslate with name=user.first_name|default:user.get_username %}Hello {{ name }}{% endblocktranslate %}</h1>
 
   {% if no_contract %}
     {% comment %}A real state, not an error: an administrator with an account

@@ -456,12 +456,12 @@ SINGULAR = {
     "Previous": "Zurück",
     "This week": "Diese Woche",
     "Next": "Weiter",
-    "Total": "Summe",
+
     "Difference": "Differenz",
     "Worked": "Gearbeitet",
     "Rostered": "Eingeteilt",
     "Contracted": "Vertraglich",
-    "Confirm": "Bestätigen",
+
     "Approve": "Genehmigen",
     "Decline": "Ablehnen",
     "Withdraw": "Zurückziehen",
@@ -476,4 +476,48 @@ SINGULAR = {
     "Waiting": "Wartet",
     "Actions": "Aktionen",
     "Rights": "Rechte",
+
+    # -- the timesheet: bookings, corrections, and saving a month --------
+    #
+    # "Buchung" is what a German time terminal prints and what payroll calls
+    # it; "Kommen" and "Gehen" are the two words on the terminal's own buttons,
+    # which is why static/js/timesheet_month.js takes its keyboard shortcut from
+    # the first letter of each of these two rather than hard-coding C and G.
+    "Every booking has to say whether it is a coming or a going.":
+        "Bei jeder Buchung muss angegeben sein, ob sie ein Kommen oder ein Gehen ist.",
+    "There are two comings in a row — %(first)s and %(second)s — with no going between them. Add the going, or remove one of them.":
+        "Es stehen zwei Kommen hintereinander — %(first)s und %(second)s — ohne ein Gehen dazwischen. Bitte das Gehen ergänzen oder eine der beiden Buchungen entfernen.",
+    "The going at %(time)s has no coming before it. A day starts with a coming.":
+        "Vor dem Gehen um %(time)s steht kein Kommen. Ein Tag beginnt mit einem Kommen.",
+    "The coming and the going at %(time)s are the same moment, so that stretch has no length.":
+        "Kommen und Gehen um %(time)s sind derselbe Zeitpunkt, dieser Abschnitt hat also keine Länge.",
+    "Two of those stretches overlap. The overlapping time would be counted twice, so the day cannot be added up.":
+        "Zwei dieser Abschnitte überschneiden sich. Die überschneidende Zeit würde doppelt zählen, der Tag lässt sich so nicht summieren.",
+    "There is more than one day with a coming and no going — %(dates)s. Only one stretch can be left open at a time, or Stop has no way of knowing which one it ended.":
+        "Es gibt mehr als einen Tag mit einem Kommen ohne Gehen — %(dates)s. Es darf immer nur ein Abschnitt offen sein, sonst weiß „Ende“ nicht, welchen es beendet.",
+
+    "A correction cannot be longer than a day.": "Eine Korrektur kann nicht länger als ein Tag sein.",
+    "Correction": "Korrektur",
+    "correction": "Korrektur",
+    "why": "Grund",
+    "Minutes, or 0:30. A minus takes time off the day.":
+        "Minuten oder 0:30. Ein Minus zieht Zeit vom Tag ab.",
+    "Minutes added to — or taken off — this day by hand.":
+        "Minuten, die diesem Tag von Hand hinzugefügt — oder abgezogen — werden.",
+    "Required whenever there is a correction.": "Erforderlich, sobald eine Korrektur eingetragen ist.",
+    "Say why the day was corrected.": "Bitte angeben, warum der Tag korrigiert wurde.",
+    "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
+        "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+    "There is a correction with nothing saying why. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
+        "Es gibt eine Korrektur ohne Begründung. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+
+
+    # -- a status, set from the timesheet's own cell ----------------------
+    "That day is a workplace closure, which is the employer's to declare and not something one timesheet can take back.":
+        "Dieser Tag ist eine Betriebsschließung. Die erklärt der Betrieb, und ein einzelner Stundenzettel kann sie nicht zurücknehmen.",
+    "That absence runs from %(from)s to %(to)s. Change it where it was booked — taking one day out of a range from here would have to split it, and a split nobody asked for is worse than an extra click.":
+        "Diese Abwesenheit läuft vom %(from)s bis zum %(to)s. Bitte dort ändern, wo sie eingetragen wurde — einen einzelnen Tag von hier aus herauszunehmen würde sie teilen, und eine Teilung, die niemand wollte, ist schlimmer als ein Klick mehr.",
+    "%(date)s has no status any more.": "%(date)s hat keinen Status mehr.",
+    "%(date)s was recorded as %(status)s.": "%(date)s wurde als %(status)s eingetragen.",
+    "%(date)s could not be saved: %(why)s": "%(date)s konnte nicht gespeichert werden: %(why)s",
 }

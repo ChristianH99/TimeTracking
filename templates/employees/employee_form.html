@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static i18n hours %}
 {% block title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %}{% endblock %}
+{% block page_title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{% translate "Contract" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="employee-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Contract" %}</h1>
 
   <form method="post" id="employee-form" data-unsaved-guard data-employee-form>
     {% csrf_token %}

@@ -205,6 +205,11 @@ TEMPLATES = [
                 # sidebar's Team section is drawn from it, and so is every
                 # "is this my own timesheet or somebody else's" question.
                 'apps.employees.context.who',
+                # Start and Stop. In the topbar rather than on the timesheet,
+                # because clocking in is a fact about the person and not about
+                # the page they happen to be looking at — see
+                # apps/timesheets/context.py.
+                'apps.timesheets.context.clock',
             ],
         },
     },

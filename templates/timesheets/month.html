@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+{% load static i18n hours %}
+{% block title %}{% if is_own %}{% translate "My timesheet" %}{% else %}{{ employee.full_name }}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% if is_own %}{% translate "My timesheet" %}{% else %}{{ employee.full_name }}{% endif %}{% endblock %}
+{% block page_subtitle %}{{ month|date:"F Y" }}{% endblock %}
+{% comment %}Ten columns do not fit the app's reading measure, and a grid
+that scrolls sideways at every window size is one nobody sees the right-hand
+half of.{% endcomment %}
+{% block content_class %} content--wide{% endblock %}
+
+{% block page_actions %}
+  {% comment %}No Save. Every value on this page is written when the box is left
+  or the pop-up accepted, so a Save button would be a control with nothing left
+  to do — and a page that has one teaches people to look for it before they
+  navigate away, which is exactly the habit it no longer rewards.{% endcomment %}
+  <button type="button" class="button button--secondary button--small" data-help-open>{% translate "Help" %}</button>
+{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    <form method="get" class="month-nav">
+      <a class="button button--secondary button--small" href="?month={{ previous_month|date:'Y-m' }}"
+         aria-label="{% translate 'The month before' %}">&larr;</a>
+      {% comment %}A select rather than a date picker: the page is about a month
+      and a picker would ask for a day, which is a question with no answer
+      here. It submits itself through timesheet_month.js; the button beside it is
+      what answers when script is off, and is hidden the moment script is on.{% endcomment %}
+      <label class="sr-only" for="month-picker">{% translate "Month" %}</label>
+      <select id="month-picker" name="month" class="month-picker" data-month-picker>
+        {% for choice in months %}
+          <option value="{{ choice|date:'Y-m' }}"{% if choice == month %} selected{% endif %}>{{ choice|date:"F Y" }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="button button--secondary button--small" data-month-go>{% translate "Show" %}</button>
+      <a class="button button--secondary button--small" href="?month={{ next_month|date:'Y-m' }}"
+         aria-label="{% translate 'The month after' %}">&rarr;</a>
+      {% if month != this_month %}
+        <a class="link-button" href="?month={{ this_month|date:'Y-m' }}">{% translate "This month" %}</a>
+      {% endif %}
+    </form>
+
+    {% comment %}What a save says for itself, and where a refusal lands when it
+    was not a pop-up that caused it. A live region, because with the Save button
+    gone nothing else on the page announces that anything was written.{% endcomment %}
+    <p class="month-saved" data-save-state role="status" aria-live="polite"></p>
+  </div>
+
+  {% comment %}Every figure on this page is hh:mm, and it is the one place in the
+  app where the reader's own notation does not win. Ten columns read *down* only
+  line up when each figure is the same width — 7,5 above 12,25 above 0,25 is a
+  column somebody has to read twice, and reading it once is what a column is for.
+  apps/timesheets/hours.hhmm says the same at more length.{% endcomment %}
+  <div class="month-scroll">
+    <table class="data-table month-table" data-month-table
+           data-save-url="{% if is_own %}{% url 'timesheets:save-day' '0000-00-00' %}{% else %}{% url 'timesheets:employee-save-day' employee.pk '0000-00-00' %}{% endif %}"
+           data-status-url="{% if is_own %}{% url 'timesheets:set-status' '0000-00-00' %}{% else %}{% url 'timesheets:employee-set-status' employee.pk '0000-00-00' %}{% endif %}">
+      {% comment %}Fixed widths, held by `table-layout: fixed` in the stylesheet.
+      The columns must not move when a day gains a booking: this is a grid read
+      down a column, and a column that shifts as the month fills up is one
+      somebody has to find again on every row.{% endcomment %}
+      <colgroup>
+        <col class="col-day"><col class="col-status"><col class="col-bookings">
+        <col class="col-break"><col class="col-correction"><col class="col-actual">
+        <col class="col-due"><col class="col-saldo"><col class="col-running">
+        <col class="col-comment">
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Day" %}</th>
+          <th scope="col">{% translate "Status" %}</th>
+          <th scope="col">{% translate "Bookings" %}</th>
+          <th scope="col" class="numeric">{% translate "Break" %}</th>
+          <th scope="col" class="numeric">{% translate "Correction" %}</th>
+          <th scope="col" class="numeric">{% translate "Actual" %}</th>
+          <th scope="col" class="numeric">{% translate "Supposed" %}</th>
+          <th scope="col" class="numeric">{% translate "Saldo" %}</th>
+          <th scope="col" class="numeric">{% translate "Running" %}</th>
+          <th scope="col">{% translate "Comment" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% comment %}The balance the month opens with, on its own row, so that
+        the running column reads as a continuation rather than as a figure that
+        appeared from nowhere on the second of the month.{% endcomment %}
+        <tr class="month-carried">
+          <th scope="row" colspan="8">{% translate "Brought forward" %}</th>
+          <td class="numeric">
+            <span class="saldo{% if carried < 0 %} saldo--short{% elif carried > 0 %} saldo--over{% endif %}">
+              {{ carried|hhmm_signed }}
+            </span>
+          </td>
+          <td></td>
+        </tr>
+
+        {% for row in rows %}
+          <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}"
+              data-day="{{ row.date|date:'Y-m-d' }}"
+              data-label="{{ row.date|date:'l, d.m.Y' }}">
+            <th scope="row" class="month-day">
+              <span class="month-day-number">{{ row.date|date:"d" }}</span>
+              <span class="month-day-name">{{ row.date|date:"D" }}</span>
+            </th>
+
+            {% comment %}Clicking the cell sets the day's status — sick, a day
+            off, time in lieu — without opening the absences page. The pills live
+            in a clipping wrapper because a table cell cannot clip: `overflow` on
+            a <td> is ignored, so a third pill would spill over the Buchungen
+            column rather than be cut off, and the column widths are the whole
+            point of this grid.{% endcomment %}
+            <td class="month-status"
+                data-status-kind="{{ row.status_kind }}"
+                data-status-special="{{ row.status_special }}"
+                data-status-half="{% if row.is_half_day %}1{% else %}0{% endif %}"
+                data-status-note="{{ row.status_note }}"
+                data-status-editable="{% if row.status_editable %}1{% else %}0{% endif %}">
+              <button type="button" class="status-open" data-status-open
+                      aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Status for {{ date }}{% endblocktranslate %}">
+              <span class="cell-clip">
+              {% if row.holiday %}
+                <span class="pill pill--gold pill--small" title="{{ row.holiday }}">{{ row.holiday }}</span>
+              {% endif %}
+              {% if row.absence %}
+                {% if row.absence.kind == 'special' and row.absence.special_type %}
+                  <span class="pill pill--special pill--small" title="{{ row.absence.special_type.name }}">{{ row.absence.special_type.name }}</span>
+                {% else %}
+                  <span class="pill pill--{{ row.absence.kind }} pill--small" title="{{ row.absence.get_kind_display }}">{{ row.absence.get_kind_display }}</span>
+                {% endif %}
+                {% if row.is_half_day %}
+                  <span class="pill pill--muted pill--small">{% translate "half day" %}</span>
+                {% endif %}
+                {% if row.absence.status == 'requested' %}
+                  {% comment %}Sickness is waiting to be *acknowledged*, not to
+                  be allowed — it already counts. Saying "waiting for approval"
+                  over a sick day would tell somebody their hours are in doubt
+                  when they are not.{% endcomment %}
+                  {% if row.absence.kind == 'sick' %}
+                    <span class="pill pill--pending pill--small" title="{% translate 'Reported, and not yet acknowledged by a manager. It counts either way.' %}">{% translate "not yet seen" %}</span>
+                  {% else %}
+                    <span class="pill pill--pending pill--small" title="{% translate 'Waiting for a decision. The days are not taken off a balance until it is approved.' %}">{% translate "waiting" %}</span>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+              {% comment %}The two the server rewrites after an edit; the pills
+              above are facts about the date and do not move because somebody
+              typed a time.{% endcomment %}
+              <span data-status-live>
+                {% if row.is_running %}
+                  <span class="pill pill--attention pill--small">{% translate "still running" %}</span>
+                {% endif %}
+                {% if row.differs_from_roster %}
+                  {% comment %}The line a manager reads first. Not "there are
+                  hours", but hours *different from what was asked* — a day that
+                  matches needs no attention and a day that does not is why
+                  anybody opened this page.{% endcomment %}
+                  <span class="pill pill--attention pill--small"
+                        title="{% translate 'The hours entered are not the hours rostered.' %}">{% translate "differs" %}</span>
+                {% endif %}
+              </span>
+              {% if not row.absence and not row.holiday %}
+                <span class="hint">{% translate "set" %}</span>
+              {% endif %}
+              </span>
+              </button>
+            </td>
+
+            {% comment %}**Four bookings, and never a fifth.** A day with six
+            punches on it must not be a taller row than the day beside it: this is
+            a grid read down a column, and a row that grows pushes every figure
+            below it out of the place the eye last found it. The rest sit behind a
+            count that opens the pop-up, which is where they can be read *and*
+            corrected — a second popover would show them and then still need this
+            one to change any of them.{% endcomment %}
+            {% comment %}The whole day's punches live on the cell as
+            `data-bookings` — "in 08:30,out 12:00" — and the pop-up opens from
+            there. The four chips inside are presentation; this is the day, and
+            there is exactly one of it.{% endcomment %}
+            <td class="month-bookings" data-bookings="{% for b in row.bookings %}{{ b.kind }} {{ b.time|time:'H:i' }}{% if not forloop.last %},{% endif %}{% endfor %}">
+              <button type="button" class="bookings-open" data-bookings-open
+                      aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Bookings for {{ date }}{% endblocktranslate %}">
+                <span class="bookings-list" data-bookings-display>
+                  {% for booking in row.bookings %}
+                    {% if forloop.counter <= bookings_shown %}
+                      <span class="booking booking--{{ booking.kind }}">{{ booking.time|time:"H:i" }}</span>
+                    {% endif %}
+                  {% empty %}
+                    <span class="hint">{% translate "add" %}</span>
+                  {% endfor %}
+                  {% if row.hidden_bookings %}
+                    <span class="booking-more"
+                          title="{% blocktranslate count counter=row.hidden_bookings %}{{ counter }} more booking — open the day to see it{% plural %}{{ counter }} more bookings — open the day to see them{% endblocktranslate %}">+{{ row.hidden_bookings }}</span>
+                  {% endif %}
+                </span>
+              </button>
+              {% if row.shifts %}
+                {% comment %}What the roster asked for, offered rather than
+                applied: one press takes it, and a day nobody presses stays empty
+                and visibly unanswered. Hidden once there is anything to compare
+                it against — the page must not suggest times somebody has already
+                answered.{% endcomment %}
+                <span class="bookings-suggestion" data-suggestion{% if row.bookings %} hidden{% endif %}
+                      data-times="{% for shift in row.shifts %}{{ shift.start|time:'H:i' }},{{ shift.end|time:'H:i' }}{% if not forloop.last %};{% endif %}{% endfor %}">
+                  <button type="button" class="suggestion-take" data-suggestion-take
+                          title="{% translate 'Take the rostered times' %}"
+                          aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Take the rostered times for {{ date }}{% endblocktranslate %}">✓</button>
+                </span>
+              {% endif %}
+            </td>
+
+            {% comment %}Amber when somebody typed it over the calculated one. The
+            two are the same number and mean entirely different things to whoever
+            signs this off, which is the whole reason the column exists — see
+            DayRecord.break_is_override.{% endcomment %}
+            <td class="numeric month-break">
+              <span data-break-display class="{% if row.break_is_override %}is-override{% endif %}"
+                    {% if row.break_is_override %}title="{% blocktranslate with computed=row.required_break %}Entered by hand. The rules would give {{ computed }} minutes.{% endblocktranslate %}"{% endif %}>
+                {% if row.record %}{{ row.break_minutes|hhmm }}{% else %}<span class="hint">—</span>{% endif %}
+              </span>
+            </td>
+
+            {% comment %}What the pop-up opens with, on the cell rather than in
+            hidden inputs — there is no form to post them in any more, and a
+            hidden input that nothing submits is a field waiting to be mistaken
+            for one.{% endcomment %}
+            <td class="numeric month-correction"
+                data-correction="{{ row.correction_minutes|default:'' }}"
+                data-reason="{{ row.correction_reason }}">
+              <button type="button" class="correction-open" data-correction-open
+                      aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Correction for {{ date }}{% endblocktranslate %}">
+                <span data-correction-display{% if row.correction_reason %} title="{{ row.correction_reason }}"{% endif %}>
+                  {% if row.correction_minutes %}{{ row.correction_minutes|hhmm_signed }}
+                  {% else %}<span class="hint">—</span>{% endif %}
+                </span>
+              </button>
+            </td>
+
+            <td class="numeric month-actual" data-actual>
+              {% if row.worked_minutes is not None or row.credited_minutes %}
+                {{ row.counted_minutes|hhmm }}{% if row.credited_minutes %}<span class="hint" title="{% translate 'Credited, not worked — an absence the hours are paid for.' %}">*</span>{% endif %}
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+
+            <td class="numeric month-due">
+              {% if row.contracted_minutes %}{{ row.contracted_minutes|hhmm }}
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+
+            <td class="numeric month-saldo" data-saldo-cell>
+              {% if row.saldo is not None %}
+                <span class="saldo{% if row.saldo < 0 %} saldo--short{% elif row.saldo > 0 %} saldo--over{% endif %}">
+                  {{ row.saldo|hhmm_signed }}
+                </span>
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+
+            <td class="numeric month-running" data-running-cell>
+              {% if row.running_saldo is not None %}
+                <span class="saldo{% if row.running_saldo < 0 %} saldo--short{% elif row.running_saldo > 0 %} saldo--over{% endif %}">
+                  {{ row.running_saldo|hhmm_signed }}
+                </span>
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+
+            <td class="month-comment">
+              <label class="sr-only" for="note-{{ row.date|date:'Y-m-d' }}">
+                {% blocktranslate with date=row.date|date:"d.m.Y" %}Comment for {{ date }}{% endblocktranslate %}
+              </label>
+              {% comment %}Written when the box is left, and only if it changed —
+              see timesheet_month.js. No form around it: a form with no Save is a
+              form somebody presses Enter in and watches reload.{% endcomment %}
+              <input type="text" id="note-{{ row.date|date:'Y-m-d' }}"
+                     value="{{ row.note }}" maxlength="200" autocomplete="off"
+                     class="month-note" data-note>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        {% comment %}The sum of the cells above it and nothing else, which for a
+        month still running means the days that have happened. Adding the
+        future's contracted hours in is what made an ordinary employee read as
+        176 hours short on the first of the month — and it is also what stops the
+        table adding up, because the saldo column would total one number while
+        the last row of the running column reached another.{% endcomment %}
+        <tr>
+          <th scope="row" colspan="3">{% if is_finished %}{% translate "The month" %}{% else %}{% translate "So far" %}{% endif %}</th>
+          <td class="numeric" data-total-break>{{ break_total|hhmm }}</td>
+          <td class="numeric" data-total-correction>{% if correction_total %}{{ correction_total|hhmm_signed }}{% endif %}</td>
+          <td class="numeric" data-total-counted>{{ counted_total|hhmm }}</td>
+          <td class="numeric" data-total-due>{{ contracted_total|hhmm }}</td>
+          <td class="numeric">
+            <span class="saldo{% if difference < 0 %} saldo--short{% elif difference > 0 %} saldo--over{% endif %}" data-total-saldo>
+              {{ difference|hhmm_signed }}
+            </span>
+          </td>
+          <td class="numeric">
+            <span class="saldo{% if balance_to_date < 0 %} saldo--short{% elif balance_to_date > 0 %} saldo--over{% endif %}" data-total-running>
+              {{ balance_to_date|hhmm_signed }}
+            </span>
+          </td>
+          <td></td>
+        </tr>
+        {% if not is_finished %}
+          {% comment %}What the month is contracted for altogether, future days
+          included — the one figure on the page that is about the plan rather
+          than about what has happened. In its own row rather than folded into
+          the total above it, because "what I still owe this month" and "how I am
+          doing" are different questions and a single number cannot answer
+          both.{% endcomment %}
+          <tr class="month-plan">
+            <th scope="row" colspan="6">{% translate "The whole month" %}</th>
+            <td class="numeric">{{ contracted_month|hhmm }}</td>
+            <td colspan="3"></td>
+          </tr>
+        {% endif %}
+      </tfoot>
+    </table>
+  </div>
+
+  {% if opening %}
+    <p class="help">
+      {% blocktranslate with amount=opening|hhmm_signed date=opening_on|date:"d.m.Y" %}Includes {{ amount }} brought from a previous contract, as at {{ date }}.{% endblocktranslate %}
+    </p>
+  {% endif %}
+
+  <p class="help">
+    {% translate "A holiday, a day of leave or a sick day is credited at the contracted hours, so the month comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back." %}
+  </p>
+
+  {% comment %}The bookings pop-up. One dialog for the whole page rather than one
+  per row: thirty-one hidden dialogs is thirty-one copies of the same markup, and
+  the one being filled is always the row that was clicked.{% endcomment %}
+  <div class="modal-overlay" id="bookings-modal" hidden data-bookings-modal>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="bookings-title">
+      <h2 class="modal-title" id="bookings-title" data-bookings-title></h2>
+      <p class="modal-body">
+        {% translate "One line per booking. Type the time, then say whether it is a coming or a going — the keyboard does it too: press C for coming or G for going and the line is entered." %}
+      </p>
+
+      <p class="notice notice--error" data-bookings-error hidden></p>
+
+      <div class="booking-rows" data-booking-rows></div>
+
+      <div class="booking-add">
+        <button type="button" class="button button--secondary button--small" data-booking-add>
+          + {% translate "Another booking" %}
+        </button>
+        <button type="button" class="link-button" data-booking-roster hidden>
+          {% translate "Take the rostered times" %}
+        </button>
+      </div>
+
+      {% comment %}What the day comes to, worked out here while somebody types
+      rather than only after the save. The break is the one thing on this page
+      nobody can do in their head, and showing it afterwards is showing it too
+      late to be any use.{% endcomment %}
+      <dl class="break-summary" data-booking-summary>
+        <div><dt>{% translate "Time here" %}</dt><dd data-summary-gross>—</dd></div>
+        <div><dt>{% translate "Break the rules require" %}</dt><dd data-summary-required>—</dd></div>
+        <div><dt>{% translate "Counted as worked" %}</dt><dd data-summary-net>—</dd></div>
+      </dl>
+
+      <div class="modal-actions">
+        <button type="button" class="button" data-bookings-accept>{% translate "Save" %}</button>
+        <button type="button" class="button button--secondary" data-bookings-cancel>{% translate "Cancel" %}</button>
+        <button type="button" class="link-button" data-bookings-clear>{% translate "Clear the day" %}</button>
+      </div>
+    </div>
+  </div>
+
+  {% comment %}The status pop-up. **A real form, posting and reloading**, where
+  the other two save through fetch and repaint: a status changes what the whole
+  month is worth — the credited hours, the saldo, the balance, the pills on the
+  row — and a reload is both simpler and certainly right. It is also something
+  somebody does a few times a month rather than a few times an hour.
+
+  A workplace closure is not offered. It is the employer's to declare and
+  belongs to everybody at once, so "the workplace was shut, for this one person,
+  on this one day" is not a sentence that can be true.{% endcomment %}
+  <div class="modal-overlay" id="status-modal" hidden data-status-modal>
+    <form method="post" class="modal" data-status-form>
+      {% csrf_token %}
+      <h2 class="modal-title" data-status-title></h2>
+      <p class="modal-body">
+        {% translate "What was true of this day. Time off is asked for and waits for a decision; sickness is stated and counts from the moment it is entered — your manager acknowledges it rather than allows it." %}
+      </p>
+
+      {% comment %}Shown for a closure and for a day inside a longer absence.
+      Neither can be answered from one cell, and the pop-up says which it is
+      rather than offering controls that would refuse.{% endcomment %}
+      <p class="notice notice--info" data-status-locked hidden>
+        {% translate "This day is part of something that was booked elsewhere — a workplace closure, or an absence covering several days. Change it on the Time off page." %}
+      </p>
+
+      <div class="field" data-status-fields>
+        <label for="status-kind">{% translate "Status" %}</label>
+        <select id="status-kind" name="kind" data-status-kind>
+          <option value="">{% translate "Nothing — an ordinary working day" %}</option>
+          {% for value, label in status_kinds %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% comment %}Only the types this person has been granted. A type nobody
+      granted them is not theirs — it is not "zero days of it" — and offering it
+      produces a request a manager has to decline and then explain.{% endcomment %}
+      <div class="field" data-status-special-field hidden>
+        <label for="status-special">{% translate "Which" %}</label>
+        <select id="status-special" name="special_type" data-status-special>
+          <option value="">{% translate "—" %}</option>
+          {% for type in special_types %}
+            <option value="{{ type.pk }}">{{ type.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" data-status-half-field>
+        <label class="checkbox-row">
+          <input type="checkbox" name="is_half_day" value="1" data-status-half>
+          <span>{% translate "Half a day" %}</span>
+        </label>
+      </div>
+
+      {% comment %}Never for sickness. A sick absence records that somebody was
+      ill and never why, and a free-text box beside it is where a diagnosis ends
+      up — which would turn an ordinary attendance record into a health record
+      with no lawful basis for holding it.{% endcomment %}
+      <div class="field" data-status-note-field>
+        <label for="status-note">{% translate "Note" %}</label>
+        <input type="text" id="status-note" name="reason" maxlength="200" autocomplete="off"
+               data-status-note>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="button" data-status-accept>{% translate "Save" %}</button>
+        <button type="button" class="button button--secondary" data-status-cancel>{% translate "Cancel" %}</button>
+      </div>
+    </form>
+  </div>
+
+  {% comment %}The correction pop-up. A reason is required, here and in
+  DayRecord.clean — a number added to a timesheet with nothing saying why is the
+  one entry nobody can defend afterwards.{% endcomment %}
+  <div class="modal-overlay" id="correction-modal" hidden data-correction-modal>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="correction-title">
+      <h2 class="modal-title" id="correction-title" data-correction-title></h2>
+      <p class="modal-body">
+        {% translate "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. Minutes, or 0:30. A minus takes time off." %}
+      </p>
+
+      <p class="notice notice--error" data-correction-error hidden></p>
+
+      <div class="field">
+        <label for="correction-amount">{% translate "Correction" %}</label>
+        <input type="text" id="correction-amount" autocomplete="off" spellcheck="false"
+               placeholder="30" data-correction-amount>
+      </div>
+      <div class="field">
+        <label for="correction-why">{% translate "Why" %}</label>
+        <input type="text" id="correction-why" maxlength="200" autocomplete="off" data-correction-why>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="button" data-correction-accept>{% translate "Save" %}</button>
+        <button type="button" class="button button--secondary" data-correction-cancel>{% translate "Cancel" %}</button>
+        <button type="button" class="link-button" data-correction-clear>{% translate "Remove the correction" %}</button>
+      </div>
+    </div>
+  </div>
+
+  {% comment %}The break table as plain data, so the pop-up can answer while
+  somebody is typing rather than only on save. The browser gets the *rules*, not
+  a computed answer, and applies the same formula — which is the only version
+  that stays right as the times change. `hours.js` carries the four lines and a
+  test holds the two implementations to the same answers.{% endcomment %}
+  {{ break_rules_json|json_script:"break-rules" }}
+{% endblock %}
+
+{% block help_modal %}
+  <div class="modal-overlay" id="month-help" hidden data-help-modal>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="month-help-title">
+      <h2 class="modal-title" id="month-help-title">{% translate "Reading the timesheet" %}</h2>
+      <div class="modal-body">
+        <h3>{% translate "Saving" %}</h3>
+        <p>{% translate "There is no Save button. A comment is written when you leave the box; bookings and a correction are written when you accept the pop-up. Everything the change moves — the running column and the totals — is worked out again by the server and redrawn." %}</p>
+        <h3>{% translate "Bookings" %}</h3>
+        <p>{% translate "A day is a column of comings and goings, in the order they happened. Click the cell to enter them. The cell shows the first four and counts the rest; the pop-up has all of them. A coming with no going yet is a shift still running: it is worth nothing until it has an end, because a figure that changes on every refresh is not one anybody can sign off." %}</p>
+        <h3>{% translate "Break" %}</h3>
+        <p>{% translate "Worked out from the break rules and deducted from the bookings. A break somebody typed by hand is drawn in amber, because a break of 30 the rules produced and a break of 30 somebody entered are the same number and mean different things." %}</p>
+        <h3>{% translate "Correction" %}</h3>
+        <p>{% translate "Time that belongs on the day and was never read off a clock. It always needs a reason, and it is added after the break — so a correction can never push a day over a break threshold and deduct a break nobody took." %}</p>
+        <h3>{% translate "Saldo" %}</h3>
+        <p>{% translate "Actual less supposed. Green is time over the contract, red is time under it. The running column carries on from the balance brought into the month, so the last row of the month is the balance to date." %}</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="button" data-help-close>{% translate "Close" %}</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/hours.js' %}"></script>
+  <script src="{% static 'js/timeinput.js' %}"></script>
+  <script src="{% static 'js/timesheet_month.js' %}"></script>
+{% endblock %}

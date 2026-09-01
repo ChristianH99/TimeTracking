@@ -153,16 +153,38 @@
                 aria-label="{% translate 'Toggle navigation' %}">
           <span class="shell-hamburger-icon"><span></span><span></span><span></span></span>
         </button>
-        <div class="topbar-titles">
-          <span class="topbar-page">{% block topbar_title %}{% translate "Time Tracking" %}{% endblock %}</span>
-          <span class="topbar-sub">{% block topbar_sub %}{% endblock %}</span>
-        </div>
+        {% comment %}**Nothing page-specific lives up here.** The topbar is the
+        app's, not the page's: it says which app this is, offers the one control
+        that is true wherever you are standing, and switches the language. A
+        page's own title, its subtitle and its buttons are the page's, and they
+        are rendered in `.page-head` at the top of <main> below.{% endcomment %}
+        <span class="topbar-app">{% translate "Time Tracking" %}</span>
         <div class="topbar-actions">
-          {% block topbar_actions %}{% endblock %}
+          {% include "_clock.html" %}
           {% include "_lang_switcher.html" %}
         </div>
       </header>
-      <main class="content" id="main-content">
+      {% comment %}Most pages are prose or a form and are held to one
+      reading measure. A page whose content is a wide grid — the timesheet
+      is ten columns — says so and gets the room instead of scrolling inside
+      it at every window size.{% endcomment %}
+      <main class="content{% block content_class %}{% endblock %}" id="main-content">
+        {% comment %}The page's own head: what this page is, and what can be done
+        to it. It used to be in the topbar, which made the app's chrome change
+        shape from page to page and left no room for anything that is true
+        everywhere. The heading is here rather than in each `{% block content %}`
+        so that there is exactly one of it per page and the actions can sit
+        beside it.{% endcomment %}
+        <div class="page-head">
+          <div class="page-head-text">
+            <h1 class="page-head-title">{% block page_title %}{% translate "Time Tracking" %}{% endblock %}</h1>
+            {% comment %}Empty on most pages, and `:empty` hides it — a blank
+            line under every heading is a gap that reads as a rendering
+            fault.{% endcomment %}
+            <p class="page-head-sub">{% block page_subtitle %}{% endblock %}</p>
+          </div>
+          <div class="page-head-actions">{% block page_actions %}{% endblock %}</div>
+        </div>
         {% comment %}role="status" (an aria-live="polite" region), so a message
         is announced rather than silently added to the page — it is the app's
         answer to something somebody just did. shell.js gives each one a dismiss
@@ -215,7 +237,8 @@
     </div>
   </div>
 
-  {% comment %}Page help: the topbar "?" (block topbar_actions) opens this. A
+  {% comment %}Page help: the "?" in the page head (block page_actions) opens
+  this. A
   page supplies the *whole* overlay, not just its contents — see
   templates/roster/plan.html for the shape.{% endcomment %}
   {% block help_modal %}{% endblock %}

@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "My settings" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "My settings" %}{% endblock %}
+{% block page_title %}{% translate "My settings" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="preferences-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "My settings" %}</h1>
   <p class="page-lead">{% translate "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you." %}</p>
 
   <form method="post" id="preferences-form" data-unsaved-guard>

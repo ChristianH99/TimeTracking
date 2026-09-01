@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Special leave" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Special leave" %}{% endblock %}
+{% block page_title %}{% translate "Special leave" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <a class="button button--small" href="{% url 'organisation:leave-type-add' %}">{% translate "New type" %}</a>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Special leave" %}</h1>
   <p class="page-lead">
     {% translate "Leave that is not the annual entitlement — a long-service day, a day for a child’s first school morning, whatever the agreement here says. Defining a type does not give it to anybody: it is granted on each employee’s contract, which is what makes it possible to offer it to some people and not others." %}
   </p>

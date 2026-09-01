@@ -18,6 +18,18 @@ pattern reused deliberately, so that anything built to it is recognisable as the
 same product. Treat them as settled: a change to any of them is a change to the
 house style rather than a change to this app, and it wants a reason of that size.
 
+**The topbar is the app's; the page's head is the page's.** The bar carries only
+what is true wherever somebody is standing — the app's name, Start and Stop, the
+language menu. The two figures up there tick on their own, from a timer in
+`shell.js` that adds real elapsed time to what the server rendered. It ticks
+*forward from that figure* rather than reading `new Date()`, because the
+browser's clock is the wrong one for anybody whose `Employee.time_zone` is
+filled in — which is the only case that field exists for. A page's title, subtitle and buttons are `{% block page_title %}`,
+`page_subtitle` and `page_actions`, rendered by `base.html` in `.page-head` at
+the top of `<main>`. That is what made room for the clock: it is a fact about the
+person and not about the page, and it used to be buried on the timesheet, so
+answering "am I at work?" needed a navigation first.
+
 German is the default language and the only one the staff are expected to read;
 English is offered from the topbar globe.
 
@@ -56,8 +68,9 @@ same leave** — that is the pro-rata-by-days rule, and it is the thing that loo
 like a bug until you know why.
 
 To see the app working: open the roster, drag a card to another day, press Save,
-then open that person's timesheet and confirm the day. The break should appear
-by itself.
+then open that person's timesheet — the month — and press the ✓ beside the
+rostered times on that row. There is no Save on the timesheet: the ✓ writes the
+day and the break appears by itself.
 
 Since the contract became a history, a fixture or a seeder creates an employee
 and then calls `employee.set_hours([...], valid_from=...)`. A period dated today
@@ -171,6 +184,76 @@ Each of these is here because breaking it produces a page that still renders.
 
 ### This app's own
 
+- **A status is set from the status cell.** Sick, a day off, time in lieu —
+  without opening the Time off page. `views.set_status` fills in the one date
+  and hands the rest to `AbsenceRequestForm` / `SickForm`: every rule about who
+  may ask for what, which special types are theirs and whether the dates are
+  working days at all stays in the absences app, because a second answer to "may
+  this person book this day" would disagree with the first the day either
+  changed. It is a form POST and a reload where the rest of the page saves
+  through fetch — a status changes what the whole month is worth, and it is
+  something somebody does a few times a month rather than a few times an hour.
+  A closure and a multi-day absence are read-only from a cell and say so: one
+  belongs to everybody at once, and the other would have to be split.
+- **The timesheet is a month, and it has no Save button.** Ten columns — day,
+  status, bookings, break, correction, actual, supposed, saldo, running saldo,
+  comment — and a row per date. A comment is written when the box is left; the
+  bookings and the correction when their pop-up is accepted. Each is one POST to
+  `save_day`, which **answers with the whole month recomputed** — editing the
+  third moves the running total on every row below it and all six figures in the
+  footer, so a reply carrying only the edited row would leave the column stale,
+  and the alternative is repeating the prefix sum, the break rules and the
+  credited-hours branches in JavaScript. `build_month` and `build_week` are two
+  windows onto one `_day_row`, so the timesheet, the start page and the team
+  overview cannot say different things about one Tuesday.
+- **The grid never changes shape.** `table-layout: fixed` with a width on every
+  column, a height on every cell, and **four bookings shown per day** with the
+  rest behind a `+n` that opens the pop-up (`BOOKINGS_SHOWN`, and the template
+  reads it from the context so the two cannot disagree about how many four is).
+  A day that gained a fifth chip would be a taller row, and this is a grid read
+  *down* a column — a row that grows pushes every figure below it out of the
+  place the eye last found it.
+- **Every figure on the timesheet is `hh:mm`**, and it is the one page where
+  `Preferences.hours_format` does not win. `hours.hhmm` and the `hhmm` filter;
+  `window.ttHours.hhmm` is the same function for the pop-up's running summary,
+  and `test_month.py` runs the two against each other. Ten columns read down
+  only line up when every figure is the same width, and 7,5 above 12,25 above
+  0,25 is a column somebody has to read twice. Every other page still renders
+  its durations through `format_minutes` and the preference.
+- **A day is entered as a column of comings and goings; the database keeps
+  pairs.** `apps/timesheets/bookings.py` is the one door between the two and
+  `DayRecord.bookings` is the other direction. The punch list is what somebody
+  standing at a terminal does; the pairs are what every rule in this app is
+  built on — the break thresholds, the overlap check, the comparison against the
+  roster, `elapsed_minutes` across a clock change. A flat punch table would make
+  each of those re-derive the pairing first. Two comings in a row is refused
+  rather than guessed at, and a *trailing* coming is not a special case at all:
+  it is the segment with a null `end`, which is what a running shift always was.
+- **The saldo is actual minus supposed, and the running column carries
+  forward.** Positive is green, negative red, nought black. The other sign would
+  disagree with `build_week`'s `difference`, with `hours_balance`, and with every
+  figure on the start page — one page saying +0:30 while another says −0:30 about
+  the same Tuesday is not a presentation choice. The running column starts from
+  what the person carried *into* the month, so its last row is their balance to
+  date and the same number `hours_balance` gives.
+- **The month's totals cover the days that have happened, and the whole month's
+  contracted hours are reported separately.** Summing the future's contracted
+  hours in is what made an ordinary employee read as 176 hours short on the
+  first of the month; it also stops the table adding up, because the saldo column
+  would total one number while the running column reached another. A day in the
+  future therefore has no saldo either — the same clamp `hours_balance` makes.
+- **A correction is not a booking and is stored apart from one.**
+  `DayRecord.correction_minutes` is signed and `correction_reason` is required
+  for any non-zero value, in `clean` and in both forms. The bookings are a record
+  of when somebody was demonstrably here (§16 ArbZG) and a stretch nobody stood
+  through is not that; a correction that could only add would leave a doctored
+  booking as the only way to take time off a day. **It is applied after the
+  break**, never before: a day of 5h50 plus a ten-minute correction is not a
+  six-hour day, and adding it first deducts a break the person never took.
+- **A record carrying only a comment is not an answer about hours.** The month
+  lets a note be written against any date, so `_day_row` reports `None` rather
+  than nought for such a row. "They worked none of it" and "nobody has answered
+  yet" are different statements and the page has always drawn them differently.
 - **The roster and the timesheet are separate tables, and the roster is copied
   *from*, never *into*.** A `Shift` is what the manager arranged; a `DayRecord`
   is what happened. The tempting version makes them one row — the roster writes
@@ -185,14 +268,40 @@ Each of these is here because breaking it produces a page that still renders.
   the clock-in-to-clock-out span gives a day of 6h05 a full thirty-minute break —
   but the rule is about *working* time, and 6h05 minus thirty is 5h35, which is
   not over six hours at all. Applying them to the net time instead is circular.
-  The formula is
+  Read each tier as the constraint it is — *either the working time is inside
+  the tier, or the total break reaches it* — and take the largest answer.
+- **The break needs the *shape* of the day, not its totals.** §4 ArbZG has two
+  sentences: a day over six hours needs thirty minutes altogether, **and** nobody
+  may work "länger als sechs Stunden hintereinander ohne Ruhepause". So
+  `OrgSettings.required_break` takes `(blocks, gaps)` — each unbroken stretch and
+  the time between them, from `DayRecord.shape` — and answers
 
-      required = max over rules of  min(break, max(0, gross - over))
+      inside  = Σ over stretches of max over rules of min(break, max(0, stretch - over))
+      overall = max over rules of  min(max(0, gross - over), max(0, break - taken))
+      D       = max(inside, overall)
 
-  written out in `OrgSettings.required_break`, repeated in `static/js/hours.js`
-  so the day form can answer while somebody types, and held to the same answers
-  for every length of day by `apps/timesheets/tests.py`. If the two ever drift it
-  will be about that one line.
+  Both are "D must be at least this", so the larger is the least that satisfies
+  both. It is repeated in `static/js/hours.js` so the pop-up can answer while
+  somebody types, and `apps/timesheets/tests.py` runs the two against each other
+  over a table of shapes.
+- **A break only counts if it broke the work up, and only if it is long enough.**
+  09:30–15:30 and 16:00–18:00 is eight hours with thirty minutes off in the
+  middle and owes nothing further. 08:30–15:00 and then 16:00–17:00 has the same
+  hour off and still owes thirty, because the first stretch is six and a half
+  hours worked straight through and a break taken *afterwards* cannot pay for one
+  that was never taken — that was a real bug, and it made the deduction vanish
+  the moment an evening hour was added. And a gap under `MIN_BREAK_CHUNK` (15
+  minutes, §4 s.2) is not a Ruhepause at all: it counts towards nothing and the
+  stretches either side of it are one stretch.
+- **The gaps are walked in `position` order, not clock order.** A night shift's
+  second stretch starts earlier on the clock than its first, and sorting by time
+  reads the gap as nineteen hours.
+- **`apps/organisation/tests.py` pins the deduction from three sides.** The
+  working time left is never over a tier whose break was not granted; no stretch
+  is worked through without the break its own length owes; and one minute less
+  would always have broken one of those. The first alone is satisfied by "always
+  deduct 30", and the first two together were satisfied by the version that let
+  a late break pay for an early one.
 - **An empty break table means the defaults, not "no breaks".** The one place
   this app overrides what the database literally says. The direction is the
   point: a break not deducted *overstates* hours worked, which is the side an
@@ -287,7 +396,11 @@ Each of these is here because breaking it produces a page that still renders.
   says somebody agreed to figures they have never seen, which is exactly the
   claim a timesheet exists to be able to make honestly.
 - **"Confirm the week" skips days that already have a record.** The one thing
-  that button must never do is overwrite a correction somebody made by hand.
+  that button must never do is overwrite a correction somebody made by hand. It
+  is on the *start page* now rather than on the timesheet: the month is where
+  hours are entered, and "have I confirmed" is a question the start page exists
+  to ask. Saving the month does not confirm — it withdraws confirmation on any
+  day whose hours changed, and a comment is not hours.
 - **`DayRecord.from_shifts` calls `refresh_from_db()` before applying the break
   rules.** `apply_break_rules` reads the segments through a cached relation, and
   on a record whose segments were just `bulk_create`d that cache is empty —
@@ -307,12 +420,14 @@ Each of these is here because breaking it produces a page that still renders.
   leave every year hands somebody their joining figure again each January;
   adding it to no year loses it, which is what happens when the date is null, so
   `opening_date` falls back to the start date and the form fills it in.
-- **`apps/timesheets/balance.py` and `build_week` must agree.** The running
-  balance and the week view are two readings of one thing computed by two
-  functions, and the day they drift is the day a timesheet says one number at
-  the top of the page and another in the middle. `test_opening.py` holds them to
-  it across a credited absence, a half day, a public holiday and a contract
-  change — the branches most likely to be added to one and not the other.
+- **`apps/timesheets/balance.py` and `_day_row` must agree.** The running
+  balance and the rows are two readings of one thing computed by two functions,
+  and the day they drift is the day a timesheet says one number at the top of
+  the page and another in the middle. `test_opening.py` holds them to it across
+  a credited absence, a half day, a public holiday and a contract change — the
+  branches most likely to be added to one and not the other — and
+  `test_month.py` adds the month's own version: the last row of the running
+  column must equal `hours_balance` for that date.
 - **A duration is written by `duration_clock`, a time of day by `clock`.** The
   two are wrong for each other in opposite directions and both silently:
   `clock` wraps at 24 and drops the sign, so used on a duration it renders 25
@@ -513,6 +628,12 @@ targets**, so a page added next month is covered the day it lands:
   Sunday" is something every wrong answer also does.
 - `apps/timesheets/tests.py` holds the confirm/override core, and the check that
   `static/js/hours.js` still computes the break the way Python does.
+- `apps/timesheets/test_month.py` holds the month: the pairing of comings and
+  goings and each shape it refuses, the correction landing *after* the break,
+  the saldo's sign, and the invariant that the last row of the running column
+  equals `hours_balance` for that date. Saving is per day and answers with the
+  whole month, so a refusal is checked to leave that day — and only that day —
+  exactly as it was.
 - `apps/timesheets/test_zones.py` names the two real nights the clocks move and
   asserts seven hours in March and nine in October — plus the invariant that on
   an ordinary day the zone-aware answer equals the plain subtraction, without
@@ -651,10 +772,15 @@ recognises them as decided rather than missed.
 - **No in-app export.** The database is one SQLite file under `/data`, which
   Hyper Backup already covers, and a payroll export is a format question nobody
   has asked yet. It is the obvious next feature and deliberately not guessed at.
-- **The break rules default stricter than the law, never looser.** The shipped
-  second tier is 8 h → 45 min where §4 ArbZG says 9 h. Stricter is always legal;
-  an administrator editing the table can go looser and nothing stops them, which
-  `docs/COMPLIANCE.md` lists as a gap.
+- **The break rules default to the statute exactly**: 30 minutes over six hours
+  and 45 over nine (§4 ArbZG). **This reverses an earlier decision** that made
+  the second tier eight hours, on the argument that a default about a legal
+  minimum may only err towards the employee. It reads as a wrong figure to
+  anybody who has looked the law up, and a default that has to be explained is
+  not a safe default; a house that wants 45 minutes at eight hours says so in
+  one edit on the settings page. An administrator can still edit the table
+  looser than the law and nothing stops them, which `docs/COMPLIANCE.md` lists
+  as a gap.
 - **The app holds no health data and must not start.** Sickness is a date range
   and nothing else — no diagnosis, no note on the form, no certificate. The eAU
   flow keeps that between the doctor, the insurer and payroll, which is where it

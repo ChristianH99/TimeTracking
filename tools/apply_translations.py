@@ -99,6 +99,18 @@ def _unquote(lines):
     return "".join(out).replace('\\"', '"').replace("\\n", "\n").replace("\\\\", "\\")
 
 
+def _without_fuzzy(comment):
+    """One comment line with the ``fuzzy`` flag taken out of it.
+
+    Returns ``""`` for a flag line that held nothing else, and the line
+    unchanged for anything that is not a flag line at all.
+    """
+    if not comment.startswith("#,"):
+        return comment
+    flags = [f.strip() for f in comment[2:].split(",") if f.strip() and f.strip() != "fuzzy"]
+    return "#, " + ", ".join(flags) if flags else ""
+
+
 def main():
     """Both catalogues. ``djangojs`` is separate and easy to forget.
 
@@ -161,8 +173,19 @@ def _apply(path, table, plurals):
 
         # Drop any fuzzy flag: gettext guesses a translation from a similar
         # msgid and marks it so, and a fuzzy entry is *ignored at runtime* —
-        # the string comes out in English while the file looks translated.
-        comments = [c for c in comments if c != "#, fuzzy"]
+        # the string comes out in English while the file looks translated. By
+        # the time this runs the guess has been replaced with the table's own
+        # answer, so the flag is not merely unwanted, it is untrue.
+        #
+        # **Flags share a line**, which is what the version comparing against
+        # the whole string "#, fuzzy" missed: msgmerge writes
+        # `#, fuzzy, python-format` on any entry with a placeholder in it, and
+        # that is most of the ones it guesses at. So the flag is taken out of
+        # the list rather than the line out of the block — dropping the line
+        # would take `python-format` with it, which is the flag msgfmt uses to
+        # check that a translation's placeholders match its msgid's.
+        comments = [_without_fuzzy(c) for c in comments]
+        comments = [c for c in comments if c]
 
         rebuilt = list(comments)
         if plural_lines:

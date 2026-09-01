@@ -78,7 +78,13 @@ class TestConfirmingWhatWasRostered:
         # Eight hours across two stretches — the break is a question about the
         # eight, not about either four. A per-segment break would give nought.
         assert record.gross_minutes == 480
-        assert record.break_minutes == 30
+        # **And nothing is deducted**, because the two and a half hours between
+        # the stretches is a break they demonstrably took: they went home at
+        # 11:30 and came back at 14:00. Charging the statutory thirty on top
+        # would take the same time off the day twice.
+        assert record.break_taken_minutes == 150
+        assert record.break_minutes == 0
+        assert record.worked_minutes == 480
 
     def test_it_can_say_the_entered_hours_differ_from_the_plan(self, org, anna, monday, rostered):
         """The one line a manager reads first. Not "confirmed", but confirmed
@@ -281,25 +287,58 @@ def test_the_browser_and_the_server_agree_about_breaks(org):
     # The rule as written in the browser, transcribed once here. If somebody
     # changes hours.js the string below stops matching and this fails, which is
     # the point: a silent divergence is the failure mode.
-    assert "Math.min(rule.break, Math.max(0, gross - rule.over))" in source, (
-        "hours.js no longer computes the break the way required_break does — "
-        "the two implementations have drifted"
+    assert "Math.min(rule.break, Math.max(0, stretch - rule.over))" in source, (
+        "hours.js no longer makes each stretch owe its own break"
+    )
+    assert "Math.max(0, rule.break - taken)" in source, (
+        "hours.js no longer credits a break that was already taken"
+    )
+    assert "const MIN_BREAK_CHUNK = 15;" in source, (
+        "hours.js no longer knows that a pause under a quarter of an hour is "
+        "not a break"
     )
 
     rules = [{"over": r.over_minutes, "break": r.break_minutes}
              for r in org.break_rules.all()]
 
-    def browser_version(gross):
-        required = 0
-        for rule in rules:
-            needed = min(rule["break"], max(0, gross - rule["over"]))
-            required = max(required, needed)
-        return required
+    def browser_stretches(blocks, gaps):
+        merged = []
+        for index, block in enumerate(blocks):
+            joined = index > 0 and index - 1 < len(gaps) and gaps[index - 1] < 15
+            if joined and merged:
+                merged[-1] += block
+            else:
+                merged.append(block)
+        return merged
 
-    for gross in range(0, 16 * 60, 5):
-        assert browser_version(gross) == org.required_break(gross, rules=list(org.break_rules.all())), (
-            f"the two disagree at {gross} minutes"
-        )
+    def browser_version(blocks, gaps):
+        gross = sum(max(0, block) for block in blocks)
+        taken = sum(gap for gap in gaps if gap >= 15)
+        inside = 0
+        for stretch in browser_stretches(blocks, gaps):
+            needed = 0
+            for rule in rules:
+                needed = max(needed, min(rule["break"], max(0, stretch - rule["over"])))
+            inside += needed
+        overall = 0
+        for rule in rules:
+            overall = max(overall, min(
+                max(0, gross - rule["over"]), max(0, rule["break"] - taken),
+            ))
+        return max(inside, overall)
+
+    stored = list(org.break_rules.all())
+    shapes = [([block], []) for block in range(0, 16 * 60, 5)]
+    shapes += [
+        ([first, 16 * 60 - first], [gap])
+        for first in range(0, 16 * 60, 25)
+        for gap in (0, 5, 15, 30, 60)
+    ]
+    shapes += [([180, 180, 180], [g, g]) for g in (5, 15, 30)]
+    for blocks, gaps in shapes:
+        assert browser_version(blocks, gaps) == org.required_break(
+            blocks, gaps, rules=stored,
+        ), f"the two disagree on {blocks} with gaps {gaps}"
     # And the page really hands the browser the rules rather than an answer.
     assert json.dumps(rules)
 

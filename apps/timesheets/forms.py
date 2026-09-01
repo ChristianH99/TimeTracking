@@ -14,7 +14,9 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.utils.translation import gettext_lazy as _
 
-from apps.timesheets.fields import BreakMinutesField, TimeOfDayField
+from apps.timesheets.fields import (
+    BreakMinutesField, SignedMinutesField, TimeOfDayField,
+)
 from apps.timesheets.models import DayRecord, WorkSegment
 from apps.timesheets.timeparse import clock
 from apps.timesheets.zones import nonexistent, zone_for
@@ -192,15 +194,28 @@ class DayForm(forms.ModelForm):
 
     break_minutes = BreakMinutesField(label=_("Break"))
 
+    # Time that belongs on the day and was never read off a clock. Offered here
+    # as well as in the month's pop-up because there must not be a field that
+    # can only be edited from one page — the day somebody opens the other one to
+    # fix a typo is the day they silently cannot.
+    correction_minutes = SignedMinutesField(
+        label=_("Correction"),
+        help_text=_("Minutes, or 0:30. A minus takes time off the day."),
+    )
+
     class Meta:
         model = DayRecord
-        fields = ["break_minutes", "note"]
-        widgets = {"note": forms.TextInput(attrs={"maxlength": 200})}
+        fields = ["break_minutes", "correction_minutes", "correction_reason", "note"]
+        widgets = {
+            "note": forms.TextInput(attrs={"maxlength": 200}),
+            "correction_reason": forms.TextInput(attrs={"maxlength": 200}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["note"].required = False
         self.fields["break_minutes"].required = False
+        self.fields["correction_reason"].required = False
         if self.instance and self.instance.pk:
             self.fields["automatic_break"].initial = not self.instance.break_is_override
 
@@ -209,6 +224,14 @@ class DayForm(forms.ModelForm):
         if not data.get("automatic_break") and data.get("break_minutes") is None:
             self.add_error("break_minutes", _(
                 "Enter the break, or tick the box to have it worked out."
+            ))
+        # The same rule as DayRecord.clean, said here so the message lands on
+        # the box rather than at the top of the page. A correction nobody can
+        # account for is the one entry on a timesheet that cannot be defended,
+        # and the person who has to defend it is rarely the one who typed it.
+        if data.get("correction_minutes") and not (data.get("correction_reason") or "").strip():
+            self.add_error("correction_reason", _(
+                "Say why the day was corrected."
             ))
         return data
 
@@ -229,6 +252,11 @@ class DayForm(forms.ModelForm):
         second reaches the rules.
         """
         record = super().save(commit=False)
+        # An empty box is nought, not None: the column is NOT NULL and the field
+        # hands back None for a box nobody filled in, which is most of them.
+        record.correction_minutes = self.cleaned_data.get("correction_minutes") or 0
+        if not record.correction_minutes:
+            record.correction_reason = ""
         record.break_is_override = not self.cleaned_data["automatic_break"]
         if record.break_is_override:
             record.break_minutes = self.cleaned_data.get("break_minutes") or 0

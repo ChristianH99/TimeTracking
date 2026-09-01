@@ -70,6 +70,32 @@ class DayRecord(models.Model):
         _("break entered by hand"), default=False, editable=False,
     )
 
+    # **A correction is not a booking, and it is stored apart from one.**
+    #
+    # Somebody who forgot to clock out, drove to a second site, or was sent home
+    # and paid for the afternoon has time that belongs on the day and was never
+    # read off a clock. Writing it into the bookings would be the tidier
+    # implementation and it would destroy the one thing the bookings are for:
+    # they are a record of when this person was demonstrably here (§16 ArbZG),
+    # and a stretch nobody stood through is not that.
+    #
+    # Signed, because the correction that matters most is the one that takes
+    # time *off* a day somebody over-recorded, and an unsigned field would make
+    # the only way to do that a doctored booking.
+    #
+    # **A reason is required for every non-zero value**, enforced in ``clean``
+    # and by the form. A number added to a timesheet with nothing saying why is
+    # the one entry nobody can defend afterwards, and the person who has to
+    # defend it is usually not the person who typed it.
+    correction_minutes = models.SmallIntegerField(
+        _("correction"), default=0,
+        help_text=_("Minutes added to — or taken off — this day by hand."),
+    )
+    correction_reason = models.CharField(
+        _("why"), max_length=200, blank=True,
+        help_text=_("Required whenever there is a correction."),
+    )
+
     source = models.CharField(
         max_length=10, choices=EntrySource.choices, default=EntrySource.MANUAL,
         editable=False,
@@ -99,6 +125,22 @@ class DayRecord(models.Model):
     def __str__(self):
         return f"{self.employee} {self.date}"
 
+    def clean(self):
+        """A correction with nothing saying why is refused.
+
+        Checked here rather than only on the form, because the form is not the
+        only door — a management command, a fixture or the admin can all write
+        one, and a figure on a timesheet that nobody can account for is exactly
+        the entry that gets asked about years later.
+        """
+        if self.correction_minutes and not (self.correction_reason or "").strip():
+            raise ValidationError({
+                "correction_reason": _(
+                    "Say why the day was corrected. A correction nobody can account "
+                    "for is the one entry on a timesheet that cannot be defended."
+                ),
+            })
+
     # -- what it adds up to ----------------------------------------------
 
     @property
@@ -108,6 +150,60 @@ class DayRecord(models.Model):
         A stretch still running contributes nothing — see ``WorkSegment.minutes``.
         """
         return sum(segment.minutes for segment in self.segments.all())
+
+    @property
+    def shape(self):
+        """``(blocks, gaps)`` — how the day was actually split up.
+
+        ``blocks`` is the length of each unbroken stretch of work and ``gaps``
+        is the time between them, so ``len(gaps)`` is one less than
+        ``len(blocks)``. **The break rules need the shape and not the totals**:
+        a day of 08:30–15:00 and then 16:00–17:00 has an hour off in it and
+        still contains six and a half hours worked straight through, and a
+        break taken afterwards cannot pay for one that was never taken. See
+        ``OrgSettings.required_break``.
+
+        Walked in ``position`` order — the order the stretches happened — and
+        not in clock order. A night shift's second stretch starts earlier on the
+        clock than its first, so sorting by time would put the day back to front
+        and read the gap as nineteen hours; ``position`` is a field rather than
+        an ordering by ``start`` for exactly this.
+
+        A gap that comes out negative crossed midnight and is pushed into the
+        next day, the same rule ``elapsed_minutes`` follows. A stretch with no
+        end stops the walk: it is worth nothing yet, and nothing has happened
+        after it to measure a gap to.
+        """
+        blocks, gaps = [], []
+        previous_end = None
+        for segment in self.segments.all():
+            if segment.end is None:
+                break
+            if previous_end is not None and segment.start is not None:
+                gap = (
+                    (segment.start.hour * 60 + segment.start.minute)
+                    - (previous_end.hour * 60 + previous_end.minute)
+                )
+                if gap < 0:
+                    gap += 24 * 60
+                gaps.append(gap)
+            blocks.append(segment.minutes)
+            previous_end = segment.end
+        return blocks, gaps
+
+    @property
+    def break_taken_minutes(self):
+        """Break the person demonstrably took, in minutes.
+
+        The gaps between one going and the next coming — but only those long
+        enough to *be* a break. §4 ArbZG lets one be split "in Zeitabschnitte
+        von jeweils mindestens 15 Minuten", so a five-minute pause counts
+        towards nothing. It is still not worked time: somebody who clocked out
+        was not there, and it is out of ``gross_minutes`` either way.
+        """
+        from apps.organisation.models import MIN_BREAK_CHUNK
+
+        return sum(gap for gap in self.shape[1] if gap >= MIN_BREAK_CHUNK)
 
     @property
     def running_segment(self):
@@ -124,15 +220,36 @@ class DayRecord(models.Model):
         return self.running_segment is not None
 
     @property
-    def worked_minutes(self):
-        """What actually counts: the span less the break, never below zero.
+    def net_minutes(self):
+        """The bookings less the break, never below zero.
 
         The floor matters. A break longer than the day is nonsense a manager can
         type, and letting it go negative would make a week's total quietly
         smaller than the days in it — a figure that is wrong and looks merely
         surprising.
+
+        Kept apart from ``worked_minutes`` because it is the figure the *day*
+        was measured at, before anybody corrected it — which is the column the
+        timesheet prints beside the correction so the two can be told apart.
         """
         return max(0, self.gross_minutes - self.break_minutes)
+
+    @property
+    def worked_minutes(self):
+        """What the day is worth: bookings, less the break, plus the correction.
+
+        The order is the whole of it. The break comes off the *bookings*,
+        because the break rules are thresholds on time spent here and a
+        correction is not time spent here — adding it first would push a day of
+        5h50 plus a ten-minute correction over the six-hour tier and deduct a
+        break nobody took. The correction goes on afterwards, where it reads as
+        what it is.
+
+        Floored at nought for the same reason as ``net_minutes``: a correction
+        larger than the day is a typo, and a negative day would make a month's
+        total smaller than the days in it.
+        """
+        return max(0, self.net_minutes + self.correction_minutes)
 
     def required_break(self, settings=None, rules=None):
         """What the rules say this day's break should be.
@@ -145,7 +262,8 @@ class DayRecord(models.Model):
         about the policy.
         """
         settings = settings or OrgSettings.current()
-        return settings.required_break(self.gross_minutes, rules=rules)
+        blocks, gaps = self.shape
+        return settings.required_break(blocks, gaps, rules=rules)
 
     def apply_break_rules(self, settings=None, rules=None):
         """Set the break from the rules, unless somebody has overridden it.
@@ -257,6 +375,61 @@ class DayRecord(models.Model):
         planned = sorted((s.start, s.end) for s in shifts)
         entered = sorted((s.start, s.end) for s in segments)
         return planned == entered
+
+
+    # -- bookings ---------------------------------------------------------
+    #
+    # The timesheet reads a day as a column of **bookings** — a coming, a going,
+    # a coming, a going — because that is what somebody standing at a terminal
+    # does and what a punch clock prints. The database keeps *segments*, which
+    # are the same information with the pairs already made.
+    #
+    # The two are one representation, not two: ``bookings`` derives the list
+    # from the segments and ``set_bookings`` folds a list back into them, so
+    # there is nowhere for a stored list of punches and a stored list of
+    # segments to disagree. Pairs are what everything else in this app is built
+    # on — the break rules, the overlap check, the comparison against the
+    # roster, ``elapsed_minutes`` across a clock change — and a flat punch table
+    # would have made every one of those re-derive the pairing first.
+    #
+    # A trailing coming with no going is not a special case here. It is the
+    # segment with a null ``end``, which is exactly what a shift in progress
+    # already was.
+
+    @property
+    def bookings(self):
+        """``[{"kind": "in"|"out", "time": time}, …]`` in the order they happened.
+
+        Derived, never stored. A running stretch contributes its coming and no
+        going, which is what the page draws as an open row.
+        """
+        rows = []
+        for segment in self.segments.all():
+            rows.append({"kind": "in", "time": segment.start})
+            if segment.end is not None:
+                rows.append({"kind": "out", "time": segment.end})
+        return rows
+
+    def set_bookings(self, pairs):
+        """Replace the day's segments with ``[(start, end|None), …]``.
+
+        Wholesale rather than a diff, and that is deliberate: the pop-up edits
+        the whole column of a day at once, so "these are the bookings now" is
+        the statement being made. Reconciling row by row would need a stable
+        identity for a punch, which a punch does not have — two people typing
+        08:00 twice have not edited one booking.
+
+        Refreshes afterwards for the reason ``from_shifts`` does: the cached
+        relation is stale after the write, and anything that reads it — the
+        break rules, above all — would compute from the segments that were here
+        before.
+        """
+        self.segments.all().delete()
+        WorkSegment.objects.bulk_create([
+            WorkSegment(day=self, position=index, start=start, end=end)
+            for index, (start, end) in enumerate(pairs)
+        ])
+        self.refresh_from_db()
 
 
 class WorkSegment(models.Model):

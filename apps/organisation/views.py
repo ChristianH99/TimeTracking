@@ -69,20 +69,37 @@ def settings_view(request):
 
 
 def _break_examples(settings):
-    """``[(gross label, break, net label), …]`` for four representative days.
+    """``[(shape, at work, taken, deducted, counted), …]`` for six real days.
 
-    Chosen to show the three things the naive implementation gets wrong: a day
-    just over the first threshold (which needs *part* of a break, not all of
-    it), a day just over the second (which does not reach the second tier once
-    its own break is taken off), and a long one that does.
+    Chosen to show the things somebody gets wrong reading the table on its own:
+    a day under every tier; one just over the first, which needs *part* of a
+    break and not all of it; a long one that reaches the second; **a day where
+    the break was already taken**, which has nothing further deducted; and — the
+    last row — **a day where it was taken too late**, which does. That last pair
+    is what people write in about, and the two of them together are the only way
+    to show that the app is looking at the shape of the day rather than at its
+    total.
+
+    Written as real clock times rather than as lengths, because "6 h 30 then an
+    hour off then 1 h" is a day somebody recognises and "390, 60, 60" is not.
     """
     from apps.timesheets.hours import clock
 
     rules = list(settings.break_rules.all()) if settings.is_stored else None
+    days = (
+        ("08:00–13:00", [300], []),
+        ("08:00–14:05", [365], []),
+        ("08:00–18:00", [600], []),
+        ("09:30–15:30, 16:00–18:00", [360, 120], [30]),
+        ("08:00–12:00, 12:05–14:35", [240, 150], [5]),
+        ("08:30–15:00, 16:00–17:00", [390, 60], [60]),
+    )
     rows = []
-    for gross in (300, 365, 390, 485, 600):
-        length = settings.required_break(gross, rules=rules)
-        rows.append((clock(gross), length, clock(gross - length)))
+    for label, blocks, gaps in days:
+        gross = sum(blocks)
+        taken = sum(gaps)
+        length = settings.required_break(blocks, gaps, rules=rules)
+        rows.append((label, clock(gross), taken, length, clock(gross - length)))
     return rows
 
 

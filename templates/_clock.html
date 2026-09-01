@@ -1,0 +1,54 @@
+{% load i18n hours %}
+{% comment %}Start and Stop, in the topbar, on every page.
+
+**Clocking in is a fact about the person, not about the timesheet.** It used to
+live on the timesheet, which meant the one control somebody presses twice a day
+was behind a navigation — and the moment they were looking at the roster or
+their leave, the app could not answer "am I at work?" at all. Here it is
+answered wherever they are standing.
+
+Exactly one of the two buttons, ever. A bar showing both has to be read before
+it can be used — which one am I? — and one showing one is one you press. The
+state comes from the database through `apps.timesheets.context.clock` and not
+from anything on the page, so a tab left open overnight cannot start a second
+shift. apps/timesheets/clocking.py holds the whole argument.
+
+Nothing at all for an account with no employee row behind it: there is nobody to
+clock in.{% endcomment %}
+{% if clock %}
+  <form method="post" class="topbar-clock{% if clock.running %} topbar-clock--running{% endif %}"
+        action="{% url 'timesheets:clock' clock.employee.pk %}">
+    {% csrf_token %}
+    {% comment %}Back to the page it was pressed on. Validated against the
+    host in the view — a `next` taken on trust is an open redirect, and this
+    one arrives on a POST from a form anybody can forge.{% endcomment %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    {% if clock.running %}
+      <span class="topbar-clock-state">
+        <span class="topbar-clock-dot" aria-hidden="true"></span>
+        <span class="topbar-clock-since">
+          {% blocktranslate with time=clock.since|time:"H:i" %}since {{ time }}{% endblocktranslate %}
+          {% if clock.since_date != clock.today %}<span class="hint">({{ clock.since_date|date:"d.m." }})</span>{% endif %}
+        </span>
+        <span class="topbar-clock-elapsed" data-clock-elapsed="{{ clock.minutes_so_far }}">{{ clock.minutes_so_far|hhmm }}</span>
+      </span>
+      <button type="submit" class="button button--small button--attention">{% translate "Stop" %}</button>
+    {% else %}
+      <span class="topbar-clock-state">
+        {% comment %}data-clock-now is the *employee's* wall clock as minutes
+        since midnight, and shell.js ticks it forward by real elapsed time.
+        Reading `new Date()` in the browser would be a second clock: right for
+        everybody in the office and an hour out for the colleague working
+        abroad, whose whole reason for having `Employee.time_zone` is that their
+        clock is not the server's.{% endcomment %}
+        <span class="topbar-clock-now" data-clock-now="{{ clock.now_minutes }}">{{ clock.now|time:"H:i" }}</span>
+      </span>
+      <button type="submit" class="button button--small">{% translate "Start" %}</button>
+    {% endif %}
+    {% if clock.is_elsewhere %}
+      {% comment %}Said out loud, because somebody working in another country
+      otherwise reads a start time that appears to be an hour wrong.{% endcomment %}
+      <span class="pill pill--muted pill--small" title="{% translate 'Their own clock, not the workplace’s.' %}">{{ clock.zone }}</span>
+    {% endif %}
+  </form>
+{% endif %}

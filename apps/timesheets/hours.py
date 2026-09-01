@@ -44,6 +44,27 @@ def clock(minutes):
     return f"{sign}{hours}:{rest:02d}"
 
 
+def hhmm(minutes):
+    """``455`` → ``"07:35"``; ``-45`` → ``"-00:45"``; ``0`` → ``"00:00"``.
+
+    **The timesheet's own notation, and the one place a duration is not written
+    the way the reader asked for.** Everywhere else in the app a duration goes
+    through ``format_minutes`` and comes out decimal or clock according to
+    ``Preferences.hours_format``; the month is a grid of ten columns read down
+    rather than across, and a column only lines up if every figure in it is the
+    same width. Two digits of hours does that and 7,5 beside 12,25 does not.
+
+    Padded, which ``duration_clock`` is not, and signed, which ``clock`` is not
+    — the two existing formatters are each wrong for this in one direction. It
+    does *not* wrap at 24: this is a length, so twenty-five hours is ``25:00``
+    and not ``01:00``.
+    """
+    minutes = int(minutes)
+    sign = "-" if minutes < 0 else ""
+    hours, rest = divmod(abs(minutes), 60)
+    return f"{sign}{hours:02d}:{rest:02d}"
+
+
 def decimal_hours(minutes):
     """``455`` → ``Decimal("7.58")``. Two places, which is what payroll wants."""
     return (Decimal(int(minutes)) / 60).quantize(Decimal("0.01"))
