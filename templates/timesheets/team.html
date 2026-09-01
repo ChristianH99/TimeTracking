@@ -15,11 +15,11 @@
 
   <div class="stat-row">
     <div class="stat">
-      <span class="stat-value">{{ worked_total|hours:hours_style }}</span>
+      <span class="stat-value">{{ worked_total|hhmm }}</span>
       <span class="stat-label">{% translate "Worked, everybody" %}</span>
     </div>
     <div class="stat">
-      <span class="stat-value">{{ contracted_total|hours:hours_style }}</span>
+      <span class="stat-value">{{ contracted_total|hhmm }}</span>
       <span class="stat-label">{% translate "Contracted, everybody" %}</span>
     </div>
     <div class="stat">
@@ -62,7 +62,7 @@
               {% if row.absence %}
                 <abbr title="{{ row.absence.get_kind_display }}">{{ row.absence.get_kind_display|slice:":1" }}</abbr>
               {% elif row.record %}
-                {{ row.worked_minutes|hours:hours_style }}
+                {{ row.worked_minutes|hhmm }}
               {% elif row.awaiting %}
                 <abbr title="{% translate 'Rostered, but nobody has said what was worked' %}">?</abbr>
               {% else %}
@@ -70,9 +70,9 @@
               {% endif %}
             </td>
           {% endfor %}
-          <td class="numeric">{{ week.worked_total|hours:hours_style }}</td>
+          <td class="numeric">{{ week.worked_total|hhmm }}</td>
           <td class="numeric{% if week.difference < 0 %} is-short{% elif week.difference > 0 %} is-over{% endif %}">
-            {{ week.difference|hours_signed:hours_style }}
+            {{ week.difference|hhmm_signed }}
           </td>
         </tr>
       {% empty %}

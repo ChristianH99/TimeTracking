@@ -77,7 +77,6 @@ ITEMS = {
     # same, because "which entry is current" and "who may see the entry" are
     # different questions, and conflating them is how an entry ends up marked on
     # a page nobody can reach.
-    "settings.me": {("accounts", "preferences")},
     "settings.rules": {
         ("organisation", name)
         for name in ("settings", "break-rules", "leave-types", "leave-type-add",
@@ -106,7 +105,7 @@ PARENTS = {
     "team": ("team.roster", "team.timesheets", "team.month-end", "team.requests",
              "team.employees",
              "team.year-end"),
-    "settings": ("settings.me", "settings.rules", "settings.users", "settings.sso"),
+    "settings": ("settings.rules", "settings.users", "settings.sso"),
 }
 
 

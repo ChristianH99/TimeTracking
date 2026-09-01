@@ -13,20 +13,19 @@ The contracted hours on ``Employee`` are the single exception — they are a
 and how somebody types it. ``contracted_minutes`` below is the one door between
 the two worlds, and nothing else should be doing that conversion inline.
 
-Two ways of writing the same number, chosen per person in ``accounts.Preferences``:
-
-* **decimal** — ``7,5 h``. What a payroll export and a contract speak.
-* **clock** — ``7:30 h``. What somebody who read a clock wrote on paper.
-
-Neither is a rounding of the other and both come from the same integer, so the
-figures reconcile whichever a reader has chosen.
+**One notation, everywhere: ``hh:mm``.** There used to be a per-person choice
+between ``7,5 h`` and ``7:30 h``, and it was removed rather than kept dormant.
+The timesheet is a grid of ten columns read *down*, and a column only lines up
+when every figure in it is the same width — so the month ignored the preference,
+and a Stop message saying "10,20 recorded" beside a timesheet saying 10:12 is one
+number written two ways within a second of each other. Once every page wrote
+``hh:mm`` the setting changed nothing anywhere, and a control that does nothing
+is one people press, see no effect from, and report as broken.
 """
 
 from decimal import Decimal
 
-from django.utils.formats import number_format
 
-from apps.accounts.models import HoursFormat
 
 
 def clock(minutes):
@@ -47,12 +46,12 @@ def clock(minutes):
 def hhmm(minutes):
     """``455`` → ``"07:35"``; ``-45`` → ``"-00:45"``; ``0`` → ``"00:00"``.
 
-    **The timesheet's own notation, and the one place a duration is not written
-    the way the reader asked for.** Everywhere else in the app a duration goes
-    through ``format_minutes`` and comes out decimal or clock according to
-    ``Preferences.hours_format``; the month is a grid of ten columns read down
-    rather than across, and a column only lines up if every figure in it is the
-    same width. Two digits of hours does that and 7,5 beside 12,25 does not.
+    **The app's only way of writing a duration.** It began as the timesheet's,
+    against a per-person decimal/clock preference everywhere else; the month is a
+    grid of ten columns read down rather than across, and a column only lines up
+    if every figure in it is the same width. Two digits of hours does that and
+    7,5 beside 12,25 does not — and once the messages beside the grid disagreed
+    with it, keeping two notations was keeping a bug.
 
     Padded, which ``duration_clock`` is not, and signed, which ``clock`` is not
     — the two existing formatters are each wrong for this in one direction. It
@@ -65,24 +64,6 @@ def hhmm(minutes):
     return f"{sign}{hours:02d}:{rest:02d}"
 
 
-def decimal_hours(minutes):
-    """``455`` → ``Decimal("7.58")``. Two places, which is what payroll wants."""
-    return (Decimal(int(minutes)) / 60).quantize(Decimal("0.01"))
-
-
-def format_minutes(minutes, style=HoursFormat.DECIMAL):
-    """One duration, written the way this reader asked for.
-
-    The decimal form goes through Django's ``number_format`` so that a German
-    page says ``7,58`` and an English one ``7.58``. The clock form does not and
-    must not: a colon is not a decimal separator and localising it would produce
-    ``7,35`` for seven hours thirty-five, which reads as seven and a bit.
-    """
-    if style == HoursFormat.CLOCK:
-        return clock(minutes)
-    return number_format(decimal_hours(minutes), decimal_pos=2)
-
-
 def contracted_minutes(hours):
     """A contract's ``Decimal`` hours as whole minutes.
 
@@ -92,12 +73,3 @@ def contracted_minutes(hours):
     of a minute it drops is not a quantity anybody rosters in.
     """
     return int((Decimal(hours) * 60).quantize(Decimal("1")))
-
-
-def style_for(user):
-    """Which format this account reads in. Falls back to the default for an
-    anonymous or preference-less user rather than querying for a row that is
-    usually not there — see ``Preferences.for_user``."""
-    from apps.accounts.models import Preferences
-
-    return Preferences.for_user(user).hours_format

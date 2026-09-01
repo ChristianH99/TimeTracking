@@ -157,12 +157,6 @@ SINGULAR = {
         "An ein bereits vorhandenes Konto angehängt, statt ein neues anzulegen.",
     "provider identity": "Anbieter-Identität",
     "provider identities": "Anbieter-Identitäten",
-    "decimal — 7,5 h": "dezimal — 7,5 h",
-    "clock — 7:30 h": "Uhrzeit — 7:30 h",
-    "hours": "Stunden",
-    "How durations are written on every page that shows one.":
-        "Wie Zeitdauern auf jeder Seite geschrieben werden, die eine anzeigt.",
-    "preferences": "Einstellungen",
 
     # -- accounts: sso views -------------------------------------------
     "Saved, but the endpoints could not be read from %(url)s: %(error)s. Fill them in by hand under “Enter the endpoints by hand”.":
@@ -211,7 +205,6 @@ SINGULAR = {
     "“%(name)s” was deleted.": "„%(name)s“ wurde gelöscht.",
     "“%(name)s” can sign in again.": "„%(name)s“ kann sich wieder anmelden.",
     "“%(name)s” can no longer sign in.": "„%(name)s“ kann sich nicht mehr anmelden.",
-    "Your settings were saved.": "Ihre Einstellungen wurden gespeichert.",
 
     # -- employees ------------------------------------------------------
     "They cannot leave before they started.": "Das Austrittsdatum liegt vor dem Eintritt.",
@@ -510,7 +503,6 @@ SINGULAR = {
         "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
     "There is a correction with nothing saying why. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
         "Es gibt eine Korrektur ohne Begründung. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
-
 
     # -- a status, set from the timesheet's own cell ----------------------
     "That day is a workplace closure, which is the employer's to declare and not something one timesheet can take back.":

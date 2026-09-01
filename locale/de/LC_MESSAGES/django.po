@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 20:01+0200\n"
+"POT-Creation-Date: 2026-09-01 21:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -580,26 +580,6 @@ msgstr "Anbieter-Identität"
 msgid "provider identities"
 msgstr "Anbieter-Identitäten"
 
-#: .\apps\accounts\models.py:405
-msgid "decimal — 7,5 h"
-msgstr "dezimal — 7,5 h"
-
-#: .\apps\accounts\models.py:406
-msgid "clock — 7:30 h"
-msgstr "Uhrzeit — 7:30 h"
-
-#: .\apps\accounts\models.py:426
-msgid "hours"
-msgstr "Stunden"
-
-#: .\apps\accounts\models.py:428
-msgid "How durations are written on every page that shows one."
-msgstr "Wie Zeitdauern auf jeder Seite geschrieben werden, die eine anzeigt."
-
-#: .\apps\accounts\models.py:432 .\apps\accounts\models.py:433
-msgid "preferences"
-msgstr "Einstellungen"
-
 #: .\apps\accounts\sso_views.py:96
 #, python-format
 msgid "Saved, but the endpoints could not be read from %(url)s: %(error)s. Fill them in by hand under “Enter the endpoints by hand”."
@@ -742,10 +722,6 @@ msgstr "„%(name)s“ kann sich wieder anmelden."
 #, python-format
 msgid "“%(name)s” can no longer sign in."
 msgstr "„%(name)s“ kann sich nicht mehr anmelden."
-
-#: .\apps\accounts\views.py:145
-msgid "Your settings were saved."
-msgstr "Ihre Einstellungen wurden gespeichert."
 
 #: .\apps\employees\forms.py:61
 msgid "the same as the workplace"
@@ -1694,12 +1670,11 @@ msgstr "Abwesenheit"
 #: .\templates\absences\mine.html:3 .\templates\absences\no_contract.html:3
 #: .\templates\absences\requests.html:3 .\templates\absences\year_end.html:3
 #: .\templates\accounts\login.html:6 .\templates\accounts\login.html:15
-#: .\templates\accounts\preferences.html:3
 #: .\templates\accounts\sso_settings.html:3
 #: .\templates\accounts\user_form.html:3 .\templates\accounts\user_list.html:3
 #: .\templates\accounts\user_password.html:3 .\templates\base.html:6
-#: .\templates\base.html:33 .\templates\base.html:177
-#: .\templates\base.html:198
+#: .\templates\base.html:33 .\templates\base.html:176
+#: .\templates\base.html:197
 #: .\templates\employees\employee_form.html:3
 #: .\templates\employees\employee_list.html:3
 #: .\templates\organisation\closure_form.html:3
@@ -2099,8 +2074,6 @@ msgid "Why it was extended"
 msgstr "Grund der Verlängerung"
 
 #: .\templates\absences\year_end.html:126
-#: .\templates\accounts\preferences.html:7
-#: .\templates\accounts\preferences.html:30
 #: .\templates\accounts\sso_settings.html:228
 #: .\templates\employees\employee_form.html:8
 #: .\templates\organisation\closure_form.html:7
@@ -2211,27 +2184,7 @@ msgstr "Benutzername"
 msgid "Show password (hold)"
 msgstr "Passwort anzeigen (gedrückt halten)"
 
-#: .\templates\accounts\preferences.html:3
-#: .\templates\accounts\preferences.html:4 .\templates\base.html:110
-msgid "My settings"
-msgstr "Meine Einstellungen"
-
-#: .\templates\accounts\preferences.html:11
-msgid "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you."
-msgstr "Ihre eigenen, nicht die des Betriebs. Dienstplan, Stunden und Urlaubsanspruch werden mit Ihrer Leitung vereinbart; auf dieser Seite geht es nur darum, wie die App sich für Sie liest."
-
-#: .\templates\accounts\preferences.html:16
-#: .\templates\employees\contract_change.html:80
-#: .\templates\employees\employee_form.html:122
-#: .\templates\employees\employee_list.html:26
-msgid "Hours"
-msgstr "Stunden"
-
-#: .\templates\accounts\preferences.html:17
-msgid "How a duration is written wherever this app shows one. Both say the same thing — 7,5 h and 7:30 h are one working day — so switching this never changes a total, only how you read it."
-msgstr "Wie eine Zeitdauer überall dort geschrieben wird, wo diese App eine anzeigt. Beide sagen dasselbe — 7,5 h und 7:30 h sind ein Arbeitstag — das Umstellen ändert also nie eine Summe, nur wie Sie sie lesen."
-
-#: .\templates\accounts\sso_settings.html:3 .\templates\base.html:127
+#: .\templates\accounts\sso_settings.html:3 .\templates\base.html:126
 msgid "Sign-in"
 msgstr "Anmeldung"
 
@@ -2400,8 +2353,8 @@ msgstr "Zertifikat des SSO-Servers prüfen"
 
 #: .\templates\accounts\sso_settings.html:229
 #: .\templates\accounts\user_form.html:101
-#: .\templates\accounts\user_password.html:30 .\templates\base.html:240
-#: .\templates\base.html:257 .\templates\employees\contract_change.html:69
+#: .\templates\accounts\user_password.html:30 .\templates\base.html:239
+#: .\templates\base.html:256 .\templates\employees\contract_change.html:69
 #: .\templates\timesheets\month.html:456 .\templates\timesheets\month.html:532
 #: .\templates\timesheets\month.html:562
 msgid "Cancel"
@@ -2535,7 +2488,7 @@ msgstr "Volle Rechte, einschließlich des Wegs zurück, wenn etwas nicht stimmt.
 msgid "If a provider group is configured as the administrator group, the provider decides this at every sign-in and anything set here is replaced."
 msgstr "Ist eine Anbietergruppe als Administratorgruppe konfiguriert, entscheidet der Anbieter dies bei jeder Anmeldung und überschreibt, was hier gesetzt ist."
 
-#: .\templates\accounts\user_form.html:100 .\templates\base.html:255
+#: .\templates\accounts\user_form.html:100 .\templates\base.html:254
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
@@ -2566,7 +2519,7 @@ msgid "Linked to the provider identity %(subject)s."
 msgstr "Verknüpft mit der Anbieter-Identität %(subject)s."
 
 #: .\templates\accounts\user_list.html:3 .\templates\accounts\user_list.html:4
-#: .\templates\base.html:119 .\templates\organisation\closures.html:29
+#: .\templates\base.html:118 .\templates\organisation\closures.html:29
 msgid "People"
 msgstr "Personen"
 
@@ -2779,36 +2732,36 @@ msgstr "Monatsende"
 msgid "Employees"
 msgstr "Mitarbeitende"
 
-#: .\templates\base.html:102
+#: .\templates\base.html:108
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: .\templates\base.html:117 .\templates\organisation\settings.html:3
+#: .\templates\base.html:116 .\templates\organisation\settings.html:3
 #: .\templates\organisation\settings.html:4
 msgid "Working time"
 msgstr "Arbeitszeit"
 
-#: .\templates\base.html:130
+#: .\templates\base.html:129
 msgid "Administration"
 msgstr "Verwaltung"
 
-#: .\templates\base.html:153
+#: .\templates\base.html:152
 msgid "Sign out"
 msgstr "Abmelden"
 
-#: .\templates\base.html:168
+#: .\templates\base.html:167
 msgid "Toggle navigation"
 msgstr "Navigation ein-/ausblenden"
 
-#: .\templates\base.html:252
+#: .\templates\base.html:251
 msgid "Unsaved changes"
 msgstr "Ungespeicherte Änderungen"
 
-#: .\templates\base.html:253
+#: .\templates\base.html:252
 msgid "You have unsaved changes on this page. Do you want to save them before leaving?"
 msgstr "Auf dieser Seite gibt es ungespeicherte Änderungen. Möchten Sie sie vor dem Verlassen speichern?"
 
-#: .\templates\base.html:256
+#: .\templates\base.html:255
 msgid "Discard"
 msgstr "Verwerfen"
 
@@ -2871,6 +2824,12 @@ msgstr "Gültig ab"
 #: .\templates\employees\employee_list.html:25
 msgid "Week"
 msgstr "Woche"
+
+#: .\templates\employees\contract_change.html:80
+#: .\templates\employees\employee_form.html:122
+#: .\templates\employees\employee_list.html:26
+msgid "Hours"
+msgstr "Stunden"
 
 #: .\templates\employees\contract_change.html:82
 #: .\templates\employees\employee_form.html:124
@@ -4052,6 +4011,33 @@ msgstr "abweichend vom Dienstplan"
 msgid "away"
 msgstr "abwesend"
 
+#~ msgid "decimal — 7,5 h"
+#~ msgstr "dezimal — 7,5 h"
+
+#~ msgid "clock — 7:30 h"
+#~ msgstr "Uhrzeit — 7:30 h"
+
+#~ msgid "hours"
+#~ msgstr "Stunden"
+
+#~ msgid "How durations are written on every page that shows one."
+#~ msgstr "Wie Zeitdauern auf jeder Seite geschrieben werden, die eine anzeigt."
+
+#~ msgid "preferences"
+#~ msgstr "Einstellungen"
+
+#~ msgid "Your settings were saved."
+#~ msgstr "Ihre Einstellungen wurden gespeichert."
+
+#~ msgid "My settings"
+#~ msgstr "Meine Einstellungen"
+
+#~ msgid "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you."
+#~ msgstr "Ihre eigenen, nicht die des Betriebs. Dienstplan, Stunden und Urlaubsanspruch werden mit Ihrer Leitung vereinbart; auf dieser Seite geht es nur darum, wie die App sich für Sie liest."
+
+#~ msgid "How a duration is written wherever this app shows one. Both say the same thing — 7,5 h and 7:30 h are one working day — so switching this never changes a total, only how you read it."
+#~ msgstr "Wie eine Zeitdauer überall dort geschrieben wird, wo diese App eine anzeigt. Beide sagen dasselbe — 7,5 h und 7:30 h sind ein Arbeitstag — das Umstellen ändert also nie eine Summe, nur wie Sie sie lesen."
+
 #~ msgid "Nothing was saved, so the month is exactly as it was."
 #~ msgstr "Es wurde nichts gespeichert, der Monat ist also genau so wie zuvor."
 
@@ -4123,4 +4109,3 @@ msgstr "abwesend"
 
 #~ msgid "A week that contains a holiday or a sick day shows fewer hours worked than contracted, with the reason named on the row. This app reports hours; it does not add absence back as time worked."
 #~ msgstr "Eine Woche mit einem Urlaubs- oder Krankheitstag weist weniger gearbeitete als vertragliche Stunden aus, mit dem Grund in der jeweiligen Zeile. Diese App weist Stunden nach; sie rechnet Abwesenheit nicht als Arbeitszeit zurück."
-

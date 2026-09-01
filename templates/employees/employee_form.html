@@ -172,12 +172,12 @@
         <div>
           <dt>{% translate "Balance now" %}</dt>
           <dd class="{% if running.total < 0 %}is-short{% elif running.total > 0 %}is-over{% endif %}">
-            {{ running.total|hours_signed:hours_style }}
+            {{ running.total|hhmm_signed }}
           </dd>
         </div>
         <div>
           <dt>{% translate "Of which brought with them" %}</dt>
-          <dd>{{ preview.opening_minutes|hours_signed:hours_style }}</dd>
+          <dd>{{ preview.opening_minutes|hhmm_signed }}</dd>
         </div>
       </dl>
     {% endif %}

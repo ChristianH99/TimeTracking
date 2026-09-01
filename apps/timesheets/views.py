@@ -1518,6 +1518,17 @@ def lock_day(request, pk, date):
 
 
 def _hours_label(minutes, user):
-    from apps.timesheets.hours import format_minutes, style_for
+    """A duration inside a message — "10:12 recorded for 01.09.2026 so far".
 
-    return format_minutes(minutes, style_for(user))
+    ``hhmm``, not the reader's own notation. These sentences are about the same
+    figures the timesheet prints, and a Stop message saying 10,20 beside a
+    timesheet saying 10:12 is one number written two ways in two places somebody
+    looks at within a second of each other.
+
+    ``user`` is kept in the signature although nothing reads it any more: both
+    callers pass it, and taking it out would be churn on a thing that may well
+    want a per-reader answer again.
+    """
+    from apps.timesheets.hours import hhmm
+
+    return hhmm(minutes)

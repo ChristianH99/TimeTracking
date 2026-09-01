@@ -14,7 +14,7 @@ import json
 import pytest
 
 from apps.roster.models import Shift, minutes_between
-from apps.timesheets.hours import clock, contracted_minutes, decimal_hours
+from apps.timesheets.hours import clock, contracted_minutes, hhmm
 from apps.timesheets.models import DayRecord, EntrySource, WorkSegment, week_monday
 
 
@@ -261,7 +261,7 @@ class TestTheArithmeticOfDurations:
         assert clock(minutes) == expected
 
     def test_the_two_forms_are_the_same_number(self):
-        assert decimal_hours(450) == pytest.approx(7.5)
+        assert hhmm(450) == "07:30"
         assert clock(450) == "7:30"
 
     def test_a_contract_in_hours_becomes_whole_minutes(self):

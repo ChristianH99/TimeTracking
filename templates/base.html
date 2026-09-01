@@ -90,16 +90,15 @@
         Every view behind these carries its own permission check — hiding a link
         is presentation, not access control, and a test walks the URLconf to
         make sure none of them has lost it.{% endcomment %}
-        {% if user.is_authenticated %}
+        {% comment %}Staff and superusers only. Every entry inside is about the
+        app rather than about the person, and the one that was not — "My
+        settings", which held the hours format — went when hh:mm became the only
+        notation. An empty disclosure is the same failure as a control that does
+        nothing.{% endcomment %}
+        {% if user.is_staff or user.is_superuser %}
           <details class="shell-settings" data-shell-settings{% if 'settings' in nav_current %} open{% endif %}>
             <summary class="shell-settings-summary">{% translate "Settings" %}</summary>
             <div class="shell-nav-sub shell-settings-items">
-              {% comment %}First, and for everybody: it is the only entry here
-              that is about the person rather than about the organisation, and
-              it is the only reason somebody without staff rights opens this
-              menu at all.{% endcomment %}
-              <a class="shell-nav-subitem{% if 'settings.me' in nav_current %} active{% endif %}"
-                 href="{% url 'accounts:preferences' %}">{% translate "My settings" %}</a>
               {% if user.is_staff %}
                 {% comment %}The rules the whole app computes against: break
                 thresholds, the full-time entitlement, the Land whose public

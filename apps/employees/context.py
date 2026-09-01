@@ -19,20 +19,16 @@ from apps.employees.models import Employee
 
 
 def who(request):
-    """``current_employee``, ``is_manager``, ``pending_request_count``, ``hours_style``.
+    """``current_employee``, ``is_manager``, ``pending_request_count``.
 
-    All four are cheap and two of them are needed by ``base.html`` on every
+    All three are cheap and two of them are needed by ``base.html`` on every
     page, so there is no laziness here to be clever about — except the count,
     which is skipped entirely for the people who cannot act on it.
 
-    ``hours_style`` is here rather than in each view for the same reason: the
-    ``{{ x|hours:hours_style }}`` filter is on nearly every page of the app, and
-    a view that forgot to supply it would silently fall back to the default
-    format — giving one person decimal hours on one page and clock hours on the
-    next, which reads as the figures disagreeing.
+    There was a fourth, ``hours_style``, carrying the reader's decimal-or-clock
+    preference to the ``hours`` filter. Every duration in the app is ``hh:mm``
+    now and the preference is gone with it.
     """
-    from apps.timesheets.hours import style_for
-
     user = getattr(request, "user", None)
     employee = Employee.for_user(user)
     is_manager = bool(
@@ -52,5 +48,4 @@ def who(request):
         "current_employee": employee,
         "is_manager": is_manager,
         "pending_request_count": pending,
-        "hours_style": style_for(user),
     }

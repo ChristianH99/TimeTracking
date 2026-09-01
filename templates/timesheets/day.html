@@ -18,7 +18,7 @@
           <span class="timesheet-span">{{ shift.start|time:"H:i" }}–{{ shift.end|time:"H:i" }}</span>
           {% if shift.note %}<span class="hint">{{ shift.note }}</span>{% endif %}
         {% endfor %}
-        <span class="rostered-total">{{ planned_minutes|hours:hours_style }}&nbsp;{% translate "h" %}</span>
+        <span class="rostered-total">{{ planned_minutes|hhmm }}&nbsp;{% translate "h" %}</span>
       </p>
       {% if not record %}
         {% comment %}The one-tap path, offered here as well as on the week: this

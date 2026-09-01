@@ -22,11 +22,6 @@ PAGES = {
     "Show password (hold)": "Passwort anzeigen (gedrückt halten)",
 
     # -- my settings ------------------------------------------------------
-    "My settings": "Meine Einstellungen",
-    "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you.":
-        "Ihre eigenen, nicht die des Betriebs. Dienstplan, Stunden und Urlaubsanspruch werden mit Ihrer Leitung vereinbart; auf dieser Seite geht es nur darum, wie die App sich für Sie liest.",
-    "How a duration is written wherever this app shows one. Both say the same thing — 7,5 h and 7:30 h are one working day — so switching this never changes a total, only how you read it.":
-        "Wie eine Zeitdauer überall dort geschrieben wird, wo diese App eine anzeigt. Beide sagen dasselbe — 7,5 h und 7:30 h sind ein Arbeitstag — das Umstellen ändert also nie eine Summe, nur wie Sie sie lesen.",
 
     # -- time off ---------------------------------------------------------
     "My time off": "Meine Abwesenheiten",
@@ -499,7 +494,6 @@ PAGES = {
     "Three things this table is here to show. A day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier — reading the rules the other way costs somebody break they were entitled to. A break somebody already took counts: clocking out for half an hour and back in is half an hour off the day already. But it only counts if it broke the work up — the last row is six and a half hours worked straight through with the hour off afterwards, which is still six and a half hours without a break, and a pause under fifteen minutes is not a break at all.":
         "Drei Dinge zeigt diese Tabelle. Ein Tag, der nur knapp über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe — die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zusteht. Eine bereits genommene Pause zählt: wer sich für eine halbe Stunde ausbucht und wieder einbucht, hat diese halbe Stunde schon nicht gearbeitet. Sie zählt aber nur, wenn sie die Arbeit unterbrochen hat — die letzte Zeile sind sechseinhalb Stunden am Stück und die Stunde frei danach, das bleiben sechseinhalb Stunden ohne Pause. Und eine Unterbrechung unter fünfzehn Minuten ist gar keine Pause.",
 
-
     # -- closing a month ---------------------------------------------------
     #
     # "Sperren" and never "abschließen": ein Monatsabschluss ist das, was eine
@@ -575,7 +569,6 @@ PLURALS = {
     # The month's save. Two messages rather than one carrying both counts —
     # German inflects on the number and a single string cannot be right for
     # both, which is how a save of one day announced itself as "1 Tage".
-
 
     "%(count)s day was locked.": (
         "%(count)s Tag wurde gesperrt.", "%(count)s Tage wurden gesperrt.",

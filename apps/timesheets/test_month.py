@@ -749,23 +749,17 @@ def test_the_browser_writes_a_duration_the_way_the_server_does():
 
 
 def test_every_figure_on_the_page_is_hh_mm(org, anna, client, september):
-    """The one page whose durations ignore ``Preferences.hours_format``.
+    """Ten columns read *down* only line up when every figure is the same width,
+    and 7,5 above 12,25 above 0,25 is a column somebody has to read twice.
 
-    Ten columns read *down* only line up when every figure is the same width,
-    and 7,5 above 12,25 above 0,25 is a column somebody has to read twice. The
-    preference still governs every other page, which is what this asserts from
-    both sides.
+    There is no longer a notation to choose, so this asserts the absence of the
+    other one rather than a preference being overridden.
     """
-    from apps.accounts.models import HoursFormat, Preferences
-
-    Preferences.objects.update_or_create(
-        user=anna.user, defaults={"hours_format": HoursFormat.DECIMAL},
-    )
     _record(anna, september, [((8, 0), (17, 0))])
 
     page = client.get(f"/timesheet/?month={september:%Y-%m}").content.decode()
-    assert "07:45" in page or "08:00" in page, "the month is not written in hh:mm"
-    assert "7,75" not in page, "a decimal duration reached the month"
+    assert "08:30" in page, "the month is not written in hh:mm"
+    assert "8,50" not in page, "a decimal duration reached the month"
 
 
 def test_the_month_has_no_save_button(org, anna, client):

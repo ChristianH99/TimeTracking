@@ -232,13 +232,19 @@ Each of these is here because breaking it produces a page that still renders.
   A day that gained a fifth chip would be a taller row, and this is a grid read
   *down* a column — a row that grows pushes every figure below it out of the
   place the eye last found it.
-- **Every figure on the timesheet is `hh:mm`**, and it is the one page where
-  `Preferences.hours_format` does not win. `hours.hhmm` and the `hhmm` filter;
-  `window.ttHours.hhmm` is the same function for the pop-up's running summary,
-  and `test_month.py` runs the two against each other. Ten columns read down
-  only line up when every figure is the same width, and 7,5 above 12,25 above
-  0,25 is a column somebody has to read twice. Every other page still renders
-  its durations through `format_minutes` and the preference.
+- **Every duration in the app is `hh:mm`, and there is no setting.**
+  `hours.hhmm`, the `hhmm` / `hhmm_signed` filters, and `window.ttHours.hhmm`
+  for the pop-up's running summary — `test_month.py` runs the two against each
+  other. Ten columns read down only line up when every figure is the same width,
+  and 7,5 above 12,25 above 0,25 is a column somebody has to read twice.
+  **This removed a per-person preference** (decimal `7,5 h` versus clock
+  `7:30 h`) rather than leaving it dormant: once the grid ignored it, a Stop
+  message reading "10,20 recorded" sat beside a timesheet reading 10:12, and a
+  control that changes nothing is one people press, see no effect from, and
+  report as broken. `Preferences` was its only field and "My settings" its only
+  section, so the model, the page and its sidebar entry went with it — and the
+  Settings disclosure is staff-only now, because that entry was the one reason
+  anybody else opened it.
 - **A day is entered as a column of comings and goings; the database keeps
   pairs.** `apps/timesheets/bookings.py` is the one door between the two and
   `DayRecord.bookings` is the other direction. The punch list is what somebody
@@ -447,18 +453,18 @@ Each of these is here because breaking it produces a page that still renders.
   branches most likely to be added to one and not the other — and
   `test_month.py` adds the month's own version: the last row of the running
   column must equal `hours_balance` for that date.
-- **A duration is written by `duration_clock`, a time of day by `clock`.** The
+- **A duration is written by `hhmm`, a time of day by `timeparse.clock`.** The
   two are wrong for each other in opposite directions and both silently:
   `clock` wraps at 24 and drops the sign, so used on a duration it renders 25
-  hours as `01:00` and fourteen hours *owed* as `10:00`. `static/js/hours.js`
-  makes the same split and calls its halves `clock` and `clockOfDay`.
+  hours as `01:00` and fourteen hours *owed* as `10:00`; `hhmm` pads and keeps
+  the sign, which on a time of day would print `-00:30`. `static/js/hours.js`
+  makes the same split and calls its halves `clockOfDay` and `hhmm`.
 - **Everything is whole minutes, as an integer**, from the roster to the balance.
   The one exception is the contracted hours on `Employee`, which are a `Decimal`
   of hours because that is how a contract is written;
   `apps/timesheets/hours.contracted_minutes` is the only door between the two.
-  No template divides by 60 — `{{ x|hours:hours_style }}` is the one way a
-  duration is written, and `hours_style` comes from the context processor so no
-  view can forget it.
+  No template divides by 60 — `{{ x|hhmm }}` is the one way a duration is
+  written.
 - **A duration can be negative and must format as `-1:15`, not `-1:-15`.** The
   balance column is worked minus contracted, and somebody who left early is
   legitimately below zero.
