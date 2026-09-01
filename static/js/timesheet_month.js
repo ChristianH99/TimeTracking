@@ -848,15 +848,22 @@
   /* ---- the table ------------------------------------------------------- */
 
   table.addEventListener("click", (event) => {
-    /* A locked row offers nothing, and its buttons are `disabled` so this never
-       fires for one. The guard is here all the same: the row is drawn shut by
-       the server and this file must not be the thing that decides whether it
-       is — `save_day` and `set_status` refuse a locked date whatever the page
-       thinks. */
+    /* Two states in which a row holds no hours: locked, and not yet happened.
+       Their buttons are `disabled` so this never fires for one, and the guard is
+       here all the same — the server decides, and this file must not be the
+       thing that does. It is checked per *action* rather than per row, because a
+       future row still opens its status pop-up: booking leave in advance is
+       exactly what a future row is for. */
     const row = event.target.closest("[data-day]");
-    if (row && row.classList.contains("is-locked")) return;
+    const noHours = row && row.classList.contains("no-hours");
 
     const take = event.target.closest("[data-suggestion-take]");
+    if (noHours && (take
+        || event.target.closest("[data-bookings-open]")
+        || event.target.closest("[data-correction-open]"))) {
+      return;
+    }
+
     if (take) {
       /* The checkmark: the rostered times, taken and written in one press. It is
          the one gesture on the page that needs no pop-up at all, which is the

@@ -417,3 +417,149 @@ class TestThePageDrawsItShut:
         response = client.get("/timesheet/?month=2025-09")
         assert response.context["is_locked"] is False
         assert response.context["has_locks"] is True
+
+
+# --------------------------------------------------------------------------
+# A day that has not happened
+# --------------------------------------------------------------------------
+
+@pytest.fixture
+def tomorrow():
+    return dt.date.today() + dt.timedelta(days=1)
+
+
+class TestHoursCannotBeEnteredInAdvance:
+    """A booking is a record of when somebody was demonstrably at work (§16
+    ArbZG) and nobody has been at work tomorrow.
+
+    Swept the same way the lock is, and for the same reason: the rule is worth
+    as much as its least-guarded door, and a test naming two of them passes for
+    exactly as long as it takes somebody to add a third.
+    """
+
+    def test_bookings_are_refused(self, org, anna, client, tomorrow):
+        key = tomorrow.isoformat()
+        response = client.post(f"/timesheet/save/{key}/", {
+            f"time-{key}": ["08:00", "17:00"], f"kind-{key}": ["in", "out"],
+        })
+        assert response.status_code == 400
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_a_correction_is_refused(self, org, anna, client, tomorrow):
+        key = tomorrow.isoformat()
+        response = client.post(f"/timesheet/save/{key}/", {
+            f"correction-{key}": "30", f"why-{key}": "planned",
+        })
+        assert response.status_code == 400
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_a_comment_is_refused(self, org, anna, client, tomorrow):
+        """It sits on the row and saves through the same door, so it goes with
+        the hours. A future day already has a status column to carry "Fortbildung"
+        or "Urlaub"."""
+        key = tomorrow.isoformat()
+        response = client.post(f"/timesheet/save/{key}/", {f"note-{key}": "geplant"})
+        assert response.status_code == 400
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_the_day_form_is_refused(self, org, anna, client, tomorrow):
+        response = client.post(f"/timesheet/{anna.pk}/{tomorrow.isoformat()}/", {
+            "segments-TOTAL_FORMS": "1", "segments-INITIAL_FORMS": "0",
+            "segments-MIN_NUM_FORMS": "0", "segments-MAX_NUM_FORMS": "1000",
+            "segments-0-start": "08:00", "segments-0-end": "17:00",
+            "automatic_break": "on",
+        })
+        assert response.status_code == 302
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_confirming_a_rostered_future_day_is_refused(
+        self, org, anna, client, tomorrow,
+    ):
+        """The roster runs ahead of today by design, so this is the button most
+        likely to be pressed on a day that has not happened."""
+        Shift.objects.create(
+            employee=anna, date=tomorrow, start=dt.time(8), end=dt.time(16),
+        )
+        response = client.post(f"/timesheet/{anna.pk}/{tomorrow.isoformat()}/confirm/")
+        assert response.status_code == 302
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_a_manager_cannot_either(self, org, anna, manager_client, tomorrow):
+        """Not a permission — a fact. Nobody has worked tomorrow, whatever
+        rights they hold."""
+        key = tomorrow.isoformat()
+        response = manager_client.post(f"/team/{anna.pk}/save/{key}/", {
+            f"time-{key}": ["08:00", "17:00"], f"kind-{key}": ["in", "out"],
+        })
+        assert response.status_code == 400
+        assert not DayRecord.objects.filter(employee=anna).exists()
+
+    def test_today_is_fine(self, org, anna, client):
+        """The boundary, from the inside. "Not after today" and "before today"
+        differ by exactly the day everybody is actually entering."""
+        key = dt.date.today().isoformat()
+        response = client.post(f"/timesheet/save/{key}/", {
+            f"time-{key}": ["08:00", "09:00"], f"kind-{key}": ["in", "out"],
+        })
+        assert response.status_code == 200
+        assert DayRecord.objects.filter(employee=anna, date=dt.date.today()).exists()
+
+    def test_yesterday_is_fine(self, org, anna, client):
+        """Past days stay open until a manager locks the month — which is what
+        the lock is for, and what "Confirm the week" and the roster ✓ write
+        into."""
+        key = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+        response = client.post(f"/timesheet/save/{key}/", {
+            f"time-{key}": ["08:00", "17:00"], f"kind-{key}": ["in", "out"],
+        })
+        assert response.status_code == 200
+
+
+class TestAStatusCanBeSetInAdvance:
+    """The whole point of booking leave: it is a sentence about a day that has
+    not happened."""
+
+    def test_time_off_can_be_asked_for_in_advance(self, org, anna, client, tomorrow):
+        response = client.post(f"/timesheet/status/{tomorrow.isoformat()}/", {
+            "kind": AbsenceKind.HOLIDAY,
+        })
+        assert response.status_code == 302
+        assert Absence.objects.filter(employee=anna, start_date=tomorrow).exists()
+
+    def test_and_a_long_way_ahead(self, org, anna, client):
+        far = dt.date.today() + dt.timedelta(days=120)
+        client.post(f"/timesheet/status/{far.isoformat()}/", {
+            "kind": AbsenceKind.HOLIDAY,
+        })
+        assert Absence.objects.filter(employee=anna, start_date=far).exists()
+
+    def test_but_not_over_a_locked_day(self, org, anna, client, manager):
+        """The lock still bites in the future. A manager who closed a month
+        closed it, whichever direction the day lies in."""
+        ahead = dt.date.today() + dt.timedelta(days=3)
+        DayLock.lock(anna, [ahead], by=manager.user)
+        response = client.post(f"/timesheet/status/{ahead.isoformat()}/", {
+            "kind": AbsenceKind.HOLIDAY,
+        })
+        assert response.status_code == 302
+        assert not Absence.objects.filter(employee=anna).exists()
+
+
+class TestThePageDrawsAFutureRowWithoutHours:
+    def test_a_future_row_offers_no_hours_but_keeps_its_status(
+        self, org, anna, client,
+    ):
+        first = dt.date.today().replace(day=1)
+        response = client.get(f"/timesheet/?month={first:%Y-%m}")
+        rows = {row["date"]: row for row in response.context["rows"]}
+
+        today = rows[dt.date.today()]
+        assert today["can_edit_hours"] is True
+
+        ahead = dt.date.today() + dt.timedelta(days=1)
+        if ahead in rows:                       # not on the last of the month
+            assert rows[ahead]["can_edit_hours"] is False
+            assert rows[ahead]["is_locked"] is False, (
+                "a future day is not locked — the two are different sentences "
+                "and only one of them a manager can undo"
+            )

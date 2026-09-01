@@ -132,7 +132,7 @@ half of.{% endcomment %}
         </tr>
 
         {% for row in rows %}
-          <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}{% if row.is_locked %} is-locked{% endif %}"
+          <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}{% if row.is_locked %} is-locked{% endif %}{% if not row.can_edit_hours %} no-hours{% endif %}"
               data-day="{{ row.date|date:'Y-m-d' }}"
               data-label="{{ row.date|date:'l, d.m.Y' }}">
             <th scope="row" class="month-day">
@@ -236,7 +236,7 @@ half of.{% endcomment %}
             there is exactly one of it.{% endcomment %}
             <td class="month-bookings" data-bookings="{% for b in row.bookings %}{{ b.kind }} {{ b.time|time:'H:i' }}{% if not forloop.last %},{% endif %}{% endfor %}">
               <button type="button" class="bookings-open" data-bookings-open
-                      {% if row.is_locked %}disabled{% endif %}
+                      {% if not row.can_edit_hours %}disabled{% endif %}
                       aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Bookings for {{ date }}{% endblocktranslate %}">
                 <span class="bookings-list" data-bookings-display>
                   {% for booking in row.bookings %}
@@ -252,7 +252,7 @@ half of.{% endcomment %}
                   {% endif %}
                 </span>
               </button>
-              {% if row.shifts and not row.is_locked %}
+              {% if row.shifts and row.can_edit_hours %}
                 {% comment %}What the roster asked for, offered rather than
                 applied: one press takes it, and a day nobody presses stays empty
                 and visibly unanswered. Hidden once there is anything to compare
@@ -287,7 +287,7 @@ half of.{% endcomment %}
                 data-correction="{{ row.correction_minutes|default:'' }}"
                 data-reason="{{ row.correction_reason }}">
               <button type="button" class="correction-open" data-correction-open
-                      {% if row.is_locked %}disabled{% endif %}
+                      {% if not row.can_edit_hours %}disabled{% endif %}
                       aria-label="{% blocktranslate with date=row.date|date:'d.m.Y' %}Correction for {{ date }}{% endblocktranslate %}">
                 <span data-correction-display{% if row.correction_reason %} title="{{ row.correction_reason }}"{% endif %}>
                   {% if row.correction_minutes %}{{ row.correction_minutes|hhmm_signed }}
@@ -336,7 +336,7 @@ half of.{% endcomment %}
               needs to be able to select and read.{% endcomment %}
               <input type="text" id="note-{{ row.date|date:'Y-m-d' }}"
                      value="{{ row.note }}" maxlength="200" autocomplete="off"
-                     class="month-note" data-note{% if row.is_locked %} readonly{% endif %}>
+                     class="month-note" data-note{% if not row.can_edit_hours %} readonly{% endif %}>
             </td>
           </tr>
         {% endfor %}
@@ -556,6 +556,8 @@ half of.{% endcomment %}
         <p>{% translate "Worked out from the break rules and deducted from the bookings. A break somebody typed by hand is drawn in amber, because a break of 30 the rules produced and a break of 30 somebody entered are the same number and mean different things." %}</p>
         <h3>{% translate "Correction" %}</h3>
         <p>{% translate "Time that belongs on the day and was never read off a clock. It always needs a reason, and it is added after the break — so a correction can never push a day over a break threshold and deduct a break nobody took." %}</p>
+        <h3>{% translate "Days that have not happened" %}</h3>
+        <p>{% translate "Hours can only be entered for today and for days already past — a booking is a record of when you were demonstrably at work, and nobody has been at work tomorrow. A status is different: booking leave or naming a training day in advance is exactly what a future row is for." %}</p>
         <h3>{% translate "Locked days" %}</h3>
         <p>{% translate "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards." %}</p>
         <h3>{% translate "Saldo" %}</h3>

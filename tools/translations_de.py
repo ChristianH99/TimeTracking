@@ -527,4 +527,8 @@ SINGULAR = {
     "%(date)s was unlocked and can be changed again.":
         "%(date)s wurde entsperrt und kann wieder geändert werden.",
     "%(date)s was locked.": "%(date)s wurde gesperrt.",
+
+    # -- a day that has not happened --------------------------------------
+    "%(date)s has not happened yet, so there are no hours to record for it. A status — time off, sickness — can be set for a future day; hours cannot.":
+        "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Ein Status — Abwesenheit, Krankheit — kann für einen künftigen Tag gesetzt werden, Stunden nicht.",
 }

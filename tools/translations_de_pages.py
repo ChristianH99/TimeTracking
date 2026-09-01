@@ -534,6 +534,12 @@ PAGES = {
     "Locked days": "Gesperrte Tage",
     "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards.":
         "Ihre Leitung schließt einen Monat ab, wenn die Stunden darin vereinbart sind. Danach kann an einem gesperrten Tag nichts mehr geändert werden — weder die Buchungen noch der Status noch die Korrektur noch die Bemerkung. Muss etwas berichtigt werden, entsperrt die Leitung genau diesen einen Tag über das Schloss in seiner Zeile und sperrt ihn danach wieder.",
+
+    "%(date)s has not happened yet, so there are no hours to record for it. Time off and sickness can be booked in advance from the timesheet's status column.":
+        "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Abwesenheit und Krankheit lassen sich im Voraus über die Status-Spalte des Stundenzettels eintragen.",
+    "Days that have not happened": "Tage, die noch nicht waren",
+    "Hours can only be entered for today and for days already past — a booking is a record of when you were demonstrably at work, and nobody has been at work tomorrow. A status is different: booking leave or naming a training day in advance is exactly what a future row is for.":
+        "Stunden lassen sich nur für heute und für bereits vergangene Tage eintragen — eine Buchung hält fest, wann Sie nachweislich da waren, und morgen war noch niemand da. Beim Status ist es anders: Urlaub zu beantragen oder eine Fortbildung im Voraus einzutragen ist genau das, wofür eine künftige Zeile da ist.",
 }
 
 # Plural entries: msgid -> (singular msgstr, plural msgstr). German has the same

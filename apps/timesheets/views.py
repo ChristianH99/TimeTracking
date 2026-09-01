@@ -52,6 +52,27 @@ LOCKED_MESSAGE = _(
 )
 
 
+# The twin of LOCKED_MESSAGE, and deliberately a different sentence: a locked
+# day is finished and a manager can reopen it, a future one is not yet and
+# nobody can do anything but wait.
+FUTURE_MESSAGE = _(
+    "%(date)s has not happened yet, so there are no hours to record for it. A "
+    "status — time off, sickness — can be set for a future day; hours cannot."
+)
+
+
+def _refuse_future(request, employee, date, back):
+    """``redirect`` to send back, or ``None`` when the date is fine.
+
+    Returns rather than raises so each caller keeps its own idea of where "back"
+    is — the day form and the confirm button land on different pages.
+    """
+    if date > dt.date.today():
+        messages.error(request, FUTURE_MESSAGE % {"date": date.strftime("%d.%m.%Y")})
+        return redirect(back)
+    return None
+
+
 def _monday_from(request):
     raw = request.GET.get("week") or request.POST.get("week")
     try:
@@ -260,6 +281,12 @@ def _day_row(employee, day, facts, settings, rules, today=None):
         "is_locked": day in locks,
         "is_today": day == today,
         "is_future": day > today,
+        # **Whether hours may be entered at all.** Two reasons they may not, and
+        # the page draws them the same way because the answer is the same: there
+        # is nothing to press. The *status* cell is not covered by this — a day
+        # that has not happened is exactly when leave is booked, and only a lock
+        # closes that.
+        "can_edit_hours": day not in locks and day <= today,
         "is_weekend": day.weekday() >= 5,
         # A day worth asking somebody to answer: they were rostered, it is not
         # in the future, and there is no record and no absence.
@@ -749,6 +776,11 @@ def day(request, pk, date):
                 "date": the_date.strftime("%d.%m.%Y"),
             })
             return redirect(_month_url(request, employee, the_date))
+        refused = _refuse_future(
+            request, employee, the_date, _month_url(request, employee, the_date),
+        )
+        if refused:
+            return refused
         instance = record or DayRecord(employee=employee, date=the_date)
         form = DayForm(request.POST, instance=instance)
         # Bound to the instance whether or not it has been saved: an inline
@@ -805,6 +837,7 @@ def day(request, pk, date):
         ),
         "settings": settings,
         "locked": locked,
+        "today": dt.date.today(),
         "week": week_monday(the_date),
         # The break table, so the page can answer while somebody is typing
         # rather than only on save. The browser gets the *rules*, not a computed
@@ -866,6 +899,11 @@ def confirm_day(request, pk, date):
             "date": the_date.strftime("%d.%m.%Y"),
         })
         return redirect(_month_url(request, employee, the_date))
+    refused = _refuse_future(
+        request, employee, the_date, _month_url(request, employee, the_date),
+    )
+    if refused:
+        return refused
 
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
@@ -1286,6 +1324,10 @@ def save_day(request, pk, date):
 
     if DayLock.is_locked(employee, the_date):
         return JsonResponse({"ok": False, "error": LOCKED_MESSAGE % {
+            "date": the_date.strftime("%d.%m.%Y"),
+        }}, status=400)
+    if the_date > dt.date.today():
+        return JsonResponse({"ok": False, "error": FUTURE_MESSAGE % {
             "date": the_date.strftime("%d.%m.%Y"),
         }}, status=400)
 

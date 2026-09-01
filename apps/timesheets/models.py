@@ -157,6 +157,45 @@ def assert_unlocked(employee, date):
         ) % {"date": date.strftime("%d.%m.%Y")})
 
 
+class FutureDay(ValidationError):
+    """Raised by anything that would put hours on a day that has not happened.
+
+    Separate from ``LockedDay`` because they are different sentences and the fix
+    is different: a locked day is *finished* and a manager can reopen it, while
+    a future day is *not yet* and nobody can do anything but wait.
+    """
+
+
+def assert_not_future(date, today=None):
+    """Refuse hours on a day that has not happened yet.
+
+    Bookings are a record of when somebody was demonstrably at work (§16 ArbZG)
+    and nobody has been at work tomorrow. A correction is the same claim with
+    the clock left out of it, so it is refused on the same dates — and the
+    comment goes with them, because it sits on the row and saves through the
+    same door.
+
+    **A status is not covered**, deliberately: "I am on holiday next week" is a
+    sentence about a day that has not happened and is the whole point of booking
+    leave in advance.
+
+    **Not enforced in ``DayRecord.save``**, which is where the lock's backstop
+    is, and the difference is worth stating. A lock is a promise that a signed-off
+    month cannot be altered, so it is worth catching a forgotten view from the
+    model. This is a rule about what a *person may type*: the seeder writes the
+    current week — including tomorrow, when today is a Monday — and a fixture
+    dated relative to today is not somebody entering hours in advance. Guarding
+    the model would turn that into a seeder that fails one day in seven.
+    """
+    today = today or dt.date.today()
+    if date > today:
+        raise FutureDay(_(
+            "%(date)s has not happened yet, so there are no hours to record for it. "
+            "A status — time off, sickness — can be set for a future day; hours "
+            "cannot."
+        ) % {"date": date.strftime("%d.%m.%Y")})
+
+
 class DayRecord(models.Model):
     """One person, one date. At most one of these per pair.
 

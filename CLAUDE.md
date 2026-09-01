@@ -184,6 +184,21 @@ Each of these is here because breaking it produces a page that still renders.
 
 ### This app's own
 
+- **Hours cannot be entered in advance; a status can.** A booking is a record of
+  when somebody was demonstrably at work (§16 ArbZG) and nobody has been at work
+  tomorrow, so `save_day`, the day form and `confirm_day` all refuse a date
+  after today — the correction and the comment with them, because they sit on
+  the row and go through the same door. `_day_row.can_edit_hours` is that and
+  the lock together, and it is what the three cells key off; the status cell
+  keys off the lock alone, because booking leave in advance is exactly what a
+  future row is for. `confirm_week` already skipped the future.
+- **The future rule is *not* on `DayRecord.save`, where the lock's backstop is.**
+  A lock is a promise that a signed-off month cannot be altered, so it is worth
+  catching a forgotten view from the model. This is a rule about what a *person
+  may type*: `seed_demo` writes the current week — including tomorrow, when
+  today is a Monday — and a fixture dated relative to today is not somebody
+  entering hours in advance. Guarding the model would make the seeder fail one
+  day in seven.
 - **A month is locked, and a day is unlocked.** `DayLock` is one row per closed
   date — not one per month, although a month is what a manager closes. Every
   question the app asks is *"may this day be changed"* and never *"is this month

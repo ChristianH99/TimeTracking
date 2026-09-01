@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 21:22+0200\n"
+"POT-Creation-Date: 2026-09-01 21:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,7 +20,7 @@ msgstr ""
 #: .\apps\absences\carryover.py:61 .\apps\absences\models.py:227
 #: .\apps\employees\models.py:183 .\apps\employees\models.py:610
 #: .\apps\roster\models.py:63 .\apps\timesheets\models.py:71
-#: .\apps\timesheets\models.py:171
+#: .\apps\timesheets\models.py:210
 msgid "employee"
 msgstr "Mitarbeiter/in"
 
@@ -77,7 +77,7 @@ msgid "lost on"
 msgstr "verfallen am"
 
 #: .\apps\absences\carryover.py:119 .\apps\absences\models.py:268
-#: .\apps\roster\models.py:69 .\apps\timesheets\models.py:216
+#: .\apps\roster\models.py:69 .\apps\timesheets\models.py:255
 msgid "note"
 msgstr "Anmerkung"
 
@@ -188,7 +188,7 @@ msgid "Withdrawn"
 msgstr "Zurückgezogen"
 
 #: .\apps\absences\models.py:94 .\apps\roster\models.py:65
-#: .\apps\timesheets\models.py:73 .\apps\timesheets\models.py:173
+#: .\apps\timesheets\models.py:73 .\apps\timesheets\models.py:212
 msgid "date"
 msgstr "Datum"
 
@@ -210,12 +210,12 @@ msgid "public holidays"
 msgstr "Feiertage"
 
 #: .\apps\absences\models.py:174 .\apps\absences\models.py:244
-#: .\apps\roster\models.py:66 .\apps\timesheets\models.py:583
+#: .\apps\roster\models.py:66 .\apps\timesheets\models.py:622
 msgid "from"
 msgstr "von"
 
 #: .\apps\absences\models.py:175 .\apps\absences\models.py:245
-#: .\apps\roster\models.py:67 .\apps\timesheets\models.py:592
+#: .\apps\roster\models.py:67 .\apps\timesheets\models.py:631
 msgid "to"
 msgstr "bis"
 
@@ -910,7 +910,7 @@ msgid "leave type"
 msgstr "Urlaubsart"
 
 #: .\apps\employees\models.py:690 .\apps\organisation\models.py:560
-#: .\apps\organisation\models.py:671 .\apps\timesheets\models.py:230
+#: .\apps\organisation\models.py:671 .\apps\timesheets\models.py:269
 #: .\templates\employees\employee_leave.html:94
 msgid "days"
 msgstr "Tage"
@@ -987,7 +987,7 @@ msgid "In hours. 6 means “more than six hours of work”."
 msgstr "In Stunden. 6 bedeutet „mehr als sechs Stunden Arbeit“."
 
 #: .\apps\organisation\forms.py:102 .\apps\organisation\models.py:509
-#: .\apps\timesheets\models.py:176
+#: .\apps\timesheets\models.py:215
 msgid "break"
 msgstr "Pause"
 
@@ -1167,7 +1167,7 @@ msgstr "Arbeitszeit-Einstellungen"
 msgid "In minutes. 360 is six hours."
 msgstr "In Minuten. 360 sind sechs Stunden."
 
-#: .\apps\organisation\models.py:509 .\apps\timesheets\models.py:176
+#: .\apps\organisation\models.py:509 .\apps\timesheets\models.py:215
 msgid "In minutes."
 msgstr "In Minuten."
 
@@ -1267,7 +1267,7 @@ msgstr "„%(name)s“ wurde gelöscht; die dadurch abgezogenen Tage wurden alle
 #: .\templates\absences\mine.html:169
 #: .\templates\employees\employee_leave.html:133
 #: .\templates\organisation\closures.html:26 .\templates\roster\plan.html:116
-#: .\templates\timesheets\day.html:70
+#: .\templates\timesheets\day.html:81
 msgid "From"
 msgstr "Von"
 
@@ -1275,7 +1275,7 @@ msgstr "Von"
 #: .\templates\absences\mine.html:170
 #: .\templates\employees\employee_leave.html:134
 #: .\templates\organisation\closures.html:27 .\templates\roster\plan.html:119
-#: .\templates\timesheets\day.html:73
+#: .\templates\timesheets\day.html:84
 msgid "To"
 msgstr "Bis"
 
@@ -1409,7 +1409,7 @@ msgstr "Eine Pause kann nicht länger als ein Tag sein."
 msgid "A correction cannot be longer than a day."
 msgstr "Eine Korrektur kann nicht länger als ein Tag sein."
 
-#: .\apps\timesheets\forms.py:43 .\apps\timesheets\models.py:608
+#: .\apps\timesheets\forms.py:43 .\apps\timesheets\models.py:647
 msgid "This stretch has no length."
 msgstr "Dieser Abschnitt hat keine Dauer."
 
@@ -1439,12 +1439,12 @@ msgstr "Pause aus den Regeln berechnen"
 msgid "Uncheck to enter a different break. A break entered by hand is shown in amber."
 msgstr "Haken entfernen, um eine andere Pause einzutragen. Eine von Hand eingetragene Pause wird bernsteinfarben angezeigt."
 
-#: .\apps\timesheets\forms.py:195 .\templates\timesheets\day.html:105
+#: .\apps\timesheets\forms.py:195 .\templates\timesheets\day.html:116
 #: .\templates\timesheets\month.html:119 .\templates\timesheets\month.html:586
 msgid "Break"
 msgstr "Pause"
 
-#: .\apps\timesheets\forms.py:202 .\templates\timesheets\day.html:130
+#: .\apps\timesheets\forms.py:202 .\templates\timesheets\day.html:141
 #: .\templates\timesheets\month.html:120 .\templates\timesheets\month.html:551
 #: .\templates\timesheets\month.html:588
 msgid "Correction"
@@ -1483,153 +1483,158 @@ msgstr "gesperrte Tage"
 msgid "%(date)s is locked and cannot be changed. Ask a manager to unlock that day — locking a month is how the hours in it are signed off."
 msgstr "%(date)s ist gesperrt und kann nicht geändert werden. Bitten Sie Ihre Leitung, den Tag zu entsperren — mit dem Sperren eines Monats werden die Stunden darin abgezeichnet."
 
-#: .\apps\timesheets\models.py:183
+#: .\apps\timesheets\models.py:193 .\apps\timesheets\views.py:59
+#, python-format
+msgid "%(date)s has not happened yet, so there are no hours to record for it. A status — time off, sickness — can be set for a future day; hours cannot."
+msgstr "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Ein Status — Abwesenheit, Krankheit — kann für einen künftigen Tag gesetzt werden, Stunden nicht."
+
+#: .\apps\timesheets\models.py:222
 msgid "break entered by hand"
 msgstr "Pause von Hand eingetragen"
 
-#: .\apps\timesheets\models.py:204
+#: .\apps\timesheets\models.py:243
 msgid "correction"
 msgstr "Korrektur"
 
-#: .\apps\timesheets\models.py:205
+#: .\apps\timesheets\models.py:244
 msgid "Minutes added to — or taken off — this day by hand."
 msgstr "Minuten, die diesem Tag von Hand hinzugefügt — oder abgezogen — werden."
 
-#: .\apps\timesheets\models.py:208
+#: .\apps\timesheets\models.py:247
 msgid "why"
 msgstr "Grund"
 
-#: .\apps\timesheets\models.py:209
+#: .\apps\timesheets\models.py:248
 msgid "Required whenever there is a correction."
 msgstr "Erforderlich, sobald eine Korrektur eingetragen ist."
 
-#: .\apps\timesheets\models.py:229
+#: .\apps\timesheets\models.py:268
 msgid "day"
 msgstr "Tag"
 
-#: .\apps\timesheets\models.py:274
+#: .\apps\timesheets\models.py:313
 msgid "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended."
 msgstr "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt."
 
-#: .\apps\timesheets\models.py:443
+#: .\apps\timesheets\models.py:482
 msgid "That day is still running — stop the shift first, and then confirm it."
 msgstr "Dieser Tag läuft noch — beenden Sie zuerst die Schicht und bestätigen Sie ihn dann."
 
-#: .\apps\timesheets\models.py:593
+#: .\apps\timesheets\models.py:632
 msgid "Leave empty while the shift is still running."
 msgstr "Leer lassen, solange die Schicht noch läuft."
 
-#: .\apps\timesheets\models.py:598
+#: .\apps\timesheets\models.py:637
 msgid "work segment"
 msgstr "Arbeitsabschnitt"
 
-#: .\apps\timesheets\models.py:599
+#: .\apps\timesheets\models.py:638
 msgid "work segments"
 msgstr "Arbeitsabschnitte"
 
-#: .\apps\timesheets\views.py:679
+#: .\apps\timesheets\views.py:706
 #, python-format
 msgid "Started at %(time)s."
 msgstr "Um %(time)s begonnen."
 
-#: .\apps\timesheets\views.py:685
+#: .\apps\timesheets\views.py:712
 #, python-format
 msgid "Stopped at %(time)s. %(hours)s recorded for %(date)s so far."
 msgstr "Um %(time)s beendet. Für den %(date)s sind bisher %(hours)s erfasst."
 
-#: .\apps\timesheets\views.py:788
+#: .\apps\timesheets\views.py:820
 msgid "The day was saved."
 msgstr "Der Tag wurde gespeichert."
 
-#: .\apps\timesheets\views.py:876
+#: .\apps\timesheets\views.py:914
 msgid "There is nothing rostered on that day, so there is nothing to confirm. Enter the hours instead."
 msgstr "An diesem Tag ist nichts eingeteilt, es gibt also nichts zu bestätigen. Tragen Sie die Stunden ein."
 
-#: .\apps\timesheets\views.py:884
+#: .\apps\timesheets\views.py:922
 #, python-format
 msgid "%(date)s was confirmed: %(hours)s worked."
 msgstr "%(date)s wurde bestätigt: %(hours)s gearbeitet."
 
-#: .\apps\timesheets\views.py:939
+#: .\apps\timesheets\views.py:977
 #, python-format
 msgid "%(confirmed)s days were confirmed. %(skipped)s already had hours entered and were left exactly as they are."
 msgstr "%(confirmed)s Tage wurden bestätigt. Bei %(skipped)s waren bereits Stunden eingetragen; sie blieben unverändert."
 
-#: .\apps\timesheets\views.py:943
+#: .\apps\timesheets\views.py:981
 #, python-format
 msgid "%(confirmed)s days were confirmed."
 msgstr "%(confirmed)s Tage wurden bestätigt."
 
-#: .\apps\timesheets\views.py:946
+#: .\apps\timesheets\views.py:984
 msgid "Every rostered day this week already has hours entered, so nothing was changed."
 msgstr "An jedem eingeteilten Tag dieser Woche sind bereits Stunden eingetragen; es wurde nichts geändert."
 
-#: .\apps\timesheets\views.py:949
+#: .\apps\timesheets\views.py:987
 msgid "There is nothing rostered this week to confirm."
 msgstr "Diese Woche ist nichts eingeteilt, das bestätigt werden könnte."
 
-#: .\apps\timesheets\views.py:990
+#: .\apps\timesheets\views.py:1028
 msgid "There is a correction with nothing saying why. A correction nobody can account for is the one entry on a timesheet that cannot be defended."
 msgstr "Es gibt eine Korrektur ohne Begründung. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt."
 
-#: .\apps\timesheets\views.py:1174
+#: .\apps\timesheets\views.py:1212
 msgid "That day is a workplace closure, which is the employer's to declare and not something one timesheet can take back."
 msgstr "Dieser Tag ist eine Betriebsschließung. Die erklärt der Betrieb, und ein einzelner Stundenzettel kann sie nicht zurücknehmen."
 
-#: .\apps\timesheets\views.py:1180
+#: .\apps\timesheets\views.py:1218
 #, python-format
 msgid "That absence runs from %(from)s to %(to)s. Change it where it was booked — taking one day out of a range from here would have to split it, and a split nobody asked for is worse than an extra click."
 msgstr "Diese Abwesenheit läuft vom %(from)s bis zum %(to)s. Bitte dort ändern, wo sie eingetragen wurde — einen einzelnen Tag von hier aus herauszunehmen würde sie teilen, und eine Teilung, die niemand wollte, ist schlimmer als ein Klick mehr."
 
-#: .\apps\timesheets\views.py:1200
+#: .\apps\timesheets\views.py:1238
 #, python-format
 msgid "%(date)s has no status any more."
 msgstr "%(date)s hat keinen Status mehr."
 
-#: .\apps\timesheets\views.py:1228
+#: .\apps\timesheets\views.py:1266
 #, python-format
 msgid "%(date)s could not be saved: %(why)s"
 msgstr "%(date)s konnte nicht gespeichert werden: %(why)s"
 
-#: .\apps\timesheets\views.py:1245
+#: .\apps\timesheets\views.py:1283
 #, python-format
 msgid "%(date)s was recorded as %(status)s."
 msgstr "%(date)s wurde als %(status)s eingetragen."
 
-#: .\apps\timesheets\views.py:1316
+#: .\apps\timesheets\views.py:1358
 #, python-format
 msgid "There is more than one day with a coming and no going — %(dates)s. Only one stretch can be left open at a time, or Stop has no way of knowing which one it ended."
 msgstr "Es gibt mehr als einen Tag mit einem Kommen ohne Gehen — %(dates)s. Es darf immer nur ein Abschnitt offen sein, sonst weiß „Ende“ nicht, welchen es beendet."
 
-#: .\apps\timesheets\views.py:1456
+#: .\apps\timesheets\views.py:1498
 msgid "Nobody was ticked, so nothing was changed."
 msgstr "Es war niemand angehakt, es wurde also nichts geändert."
 
-#: .\apps\timesheets\views.py:1464
+#: .\apps\timesheets\views.py:1506
 #, python-format
 msgid "%(count)s day was unlocked."
 msgid_plural "%(count)s days were unlocked."
 msgstr[0] "%(count)s Tag wurde entsperrt."
 msgstr[1] "%(count)s Tage wurden entsperrt."
 
-#: .\apps\timesheets\views.py:1477
+#: .\apps\timesheets\views.py:1519
 #, python-format
 msgid "%(names)s still have time off waiting for a decision in that month. Decide it first — approving it afterwards would change hours the month had already been signed off on."
 msgstr "Bei %(names)s wartet in diesem Monat noch eine Abwesenheit auf eine Entscheidung. Bitte zuerst entscheiden — eine spätere Genehmigung würde Stunden ändern, für die der Monat bereits abgezeichnet wurde."
 
-#: .\apps\timesheets\views.py:1487
+#: .\apps\timesheets\views.py:1529
 #, python-format
 msgid "%(count)s day was locked."
 msgid_plural "%(count)s days were locked."
 msgstr[0] "%(count)s Tag wurde gesperrt."
 msgstr[1] "%(count)s Tage wurden gesperrt."
 
-#: .\apps\timesheets\views.py:1509
+#: .\apps\timesheets\views.py:1551
 #, python-format
 msgid "%(date)s was unlocked and can be changed again."
 msgstr "%(date)s wurde entsperrt und kann wieder geändert werden."
 
-#: .\apps\timesheets\views.py:1514
+#: .\apps\timesheets\views.py:1556
 #, python-format
 msgid "%(date)s was locked."
 msgstr "%(date)s wurde gesperrt."
@@ -2374,7 +2379,7 @@ msgstr "Beide lesen den gespeicherten Stand, nicht das oben Eingetippte — spei
 
 #: .\templates\accounts\sso_settings.html:253
 #: .\templates\accounts\user_list.html:123 .\templates\roster\plan.html:197
-#: .\templates\timesheets\month.html:596
+#: .\templates\timesheets\month.html:598
 msgid "Close"
 msgstr "Schließen"
 
@@ -3331,7 +3336,7 @@ msgid "Deducted"
 msgstr "Abgezogen"
 
 #: .\templates\organisation\settings.html:137
-#: .\templates\timesheets\day.html:126 .\templates\timesheets\month.html:451
+#: .\templates\timesheets\day.html:137 .\templates\timesheets\month.html:451
 msgid "Counted as worked"
 msgstr "Als Arbeitszeit gezählt"
 
@@ -3390,7 +3395,7 @@ msgstr "beantragt"
 msgid "Shift"
 msgstr "Schicht"
 
-#: .\templates\roster\plan.html:122 .\templates\timesheets\day.html:146
+#: .\templates\roster\plan.html:122 .\templates\timesheets\day.html:157
 #: .\templates\timesheets\month.html:525
 msgid "Note"
 msgstr "Anmerkung"
@@ -3431,71 +3436,76 @@ msgstr "Die blassen Balken sind Personen, die bereits abwesend sind. Ein mit „
 msgid "Hours for this day"
 msgstr "Stunden für diesen Tag"
 
-#: .\templates\timesheets\day.html:15
+#: .\templates\timesheets\day.html:20
+#, python-format
+msgid "%(date)s has not happened yet, so there are no hours to record for it. Time off and sickness can be booked in advance from the timesheet's status column."
+msgstr "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Abwesenheit und Krankheit lassen sich im Voraus über die Status-Spalte des Stundenzettels eintragen."
+
+#: .\templates\timesheets\day.html:26
 msgid "What was rostered"
 msgstr "Was eingeteilt war"
 
-#: .\templates\timesheets\day.html:21
+#: .\templates\timesheets\day.html:32
 msgid "h"
 msgstr "Std."
 
-#: .\templates\timesheets\day.html:33
+#: .\templates\timesheets\day.html:44
 msgid "I worked exactly this"
 msgstr "Genau so habe ich gearbeitet"
 
-#: .\templates\timesheets\day.html:39
+#: .\templates\timesheets\day.html:50
 msgid "Nothing was rostered on this day, so enter the hours below."
 msgstr "An diesem Tag war nichts eingeteilt; tragen Sie die Stunden unten ein."
 
-#: .\templates\timesheets\day.html:52
+#: .\templates\timesheets\day.html:63
 msgid "When you worked"
 msgstr "Wann Sie gearbeitet haben"
 
-#: .\templates\timesheets\day.html:53
+#: .\templates\timesheets\day.html:64
 msgid "One row per stretch of work. A split shift — in for the morning, back in the afternoon — is two rows, and the break between them is not a break you enter below: it is simply time you were not here."
 msgstr "Eine Zeile je Arbeitsabschnitt. Ein geteilter Dienst — vormittags da, nachmittags wieder — sind zwei Zeilen, und die Lücke dazwischen ist keine Pause, die Sie unten eintragen: es ist schlicht Zeit, in der Sie nicht da waren."
 
-#: .\templates\timesheets\day.html:54
+#: .\templates\timesheets\day.html:65
 msgid "Leave the end empty to record a start and stop later — the day then counts as still running and cannot be confirmed until it has an end. A stretch that ends at or before it starts runs past midnight, so 23:00 to 03:00 is four hours."
 msgstr "Lassen Sie das Ende leer, um einen Beginn zu erfassen und später zu beenden — der Tag gilt dann als laufend und kann erst bestätigt werden, wenn er ein Ende hat. Ein Abschnitt, der zur Startzeit oder davor endet, läuft über Mitternacht: 23:00 bis 03:00 sind also vier Stunden."
 
-#: .\templates\timesheets\day.html:63
+#: .\templates\timesheets\day.html:74
 msgid "Two of those stretches overlap. The overlapping time would be counted twice, so this cannot be saved until one of them is corrected."
 msgstr "Zwei dieser Abschnitte überschneiden sich. Die überlappende Zeit würde doppelt gezählt; es lässt sich erst speichern, wenn einer davon korrigiert ist."
 
-#: .\templates\timesheets\day.html:78 .\templates\timesheets\day.html:96
+#: .\templates\timesheets\day.html:89 .\templates\timesheets\day.html:107
 msgid "Remove this stretch"
 msgstr "Diesen Abschnitt entfernen"
 
-#: .\templates\timesheets\day.html:102
+#: .\templates\timesheets\day.html:113
 msgid "Another stretch"
 msgstr "Weiterer Abschnitt"
 
-#: .\templates\timesheets\day.html:114
+#: .\templates\timesheets\day.html:125
 msgid "minutes"
 msgstr "Minuten"
 
-#: .\templates\timesheets\day.html:124 .\templates\timesheets\month.html:449
+#: .\templates\timesheets\day.html:135 .\templates\timesheets\month.html:449
 msgid "Time here"
 msgstr "Anwesenheit"
 
-#: .\templates\timesheets\day.html:125 .\templates\timesheets\month.html:450
+#: .\templates\timesheets\day.html:136 .\templates\timesheets\month.html:450
 msgid "Break the rules require"
 msgstr "Vorgeschriebene Pause"
 
-#: .\templates\timesheets\day.html:131
+#: .\templates\timesheets\day.html:142
 msgid "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. It is added after the break, so it can never push the day over a break threshold and deduct a break nobody took. A minus takes time off."
 msgstr "Zeit, die zu diesem Tag gehört und nie von einer Uhr abgelesen wurde — ein vergessenes Gehen, eine Fahrt zu einem zweiten Einsatzort, ein bezahlter Nachmittag. Sie wird nach der Pause aufgeschlagen und kann den Tag deshalb nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat. Ein Minus zieht Zeit ab."
 
-#: .\templates\timesheets\day.html:153
+#: .\templates\timesheets\day.html:164
 msgid "This day is confirmed. Saving a change here withdraws that confirmation, so the record never says somebody agreed to figures they have not seen."
 msgstr "Dieser Tag ist bestätigt. Eine Änderung hier zu speichern zieht die Bestätigung zurück, damit der Nachweis nie behauptet, jemand habe Zahlen zugestimmt, die er nie gesehen hat."
 
-#: .\templates\timesheets\day.html:158
+#: .\templates\timesheets\day.html:169
 msgid "Save the day"
 msgstr "Tag speichern"
 
-#: .\templates\timesheets\day.html:159
+#: .\templates\timesheets\day.html:170
 msgid "Back to the timesheet"
 msgstr "Zurück zum Stundenzettel"
 
@@ -3683,7 +3693,7 @@ msgstr "Ist"
 msgid "Supposed"
 msgstr "Soll"
 
-#: .\templates\timesheets\month.html:123 .\templates\timesheets\month.html:592
+#: .\templates\timesheets\month.html:123 .\templates\timesheets\month.html:594
 #: .\templates\timesheets\month_end.html:68
 msgid "Saldo"
 msgstr "Saldo"
@@ -3894,14 +3904,22 @@ msgid "Time that belongs on the day and was never read off a clock. It always ne
 msgstr "Zeit, die zum Tag gehört und nie von einer Uhr abgelesen wurde. Sie braucht immer eine Begründung und wird nach der Pause aufgeschlagen — eine Korrektur kann einen Tag also nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat."
 
 #: .\templates\timesheets\month.html:590
+msgid "Days that have not happened"
+msgstr "Tage, die noch nicht waren"
+
+#: .\templates\timesheets\month.html:591
+msgid "Hours can only be entered for today and for days already past — a booking is a record of when you were demonstrably at work, and nobody has been at work tomorrow. A status is different: booking leave or naming a training day in advance is exactly what a future row is for."
+msgstr "Stunden lassen sich nur für heute und für bereits vergangene Tage eintragen — eine Buchung hält fest, wann Sie nachweislich da waren, und morgen war noch niemand da. Beim Status ist es anders: Urlaub zu beantragen oder eine Fortbildung im Voraus einzutragen ist genau das, wofür eine künftige Zeile da ist."
+
+#: .\templates\timesheets\month.html:592
 msgid "Locked days"
 msgstr "Gesperrte Tage"
 
-#: .\templates\timesheets\month.html:591
+#: .\templates\timesheets\month.html:593
 msgid "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards."
 msgstr "Ihre Leitung schließt einen Monat ab, wenn die Stunden darin vereinbart sind. Danach kann an einem gesperrten Tag nichts mehr geändert werden — weder die Buchungen noch der Status noch die Korrektur noch die Bemerkung. Muss etwas berichtigt werden, entsperrt die Leitung genau diesen einen Tag über das Schloss in seiner Zeile und sperrt ihn danach wieder."
 
-#: .\templates\timesheets\month.html:593
+#: .\templates\timesheets\month.html:595
 msgid "Actual less supposed. Green is time over the contract, red is time under it. The running column carries on from the balance brought into the month, so the last row of the month is the balance to date."
 msgstr "Ist minus Soll. Grün ist Zeit über dem Vertrag, Rot ist Zeit darunter. Die laufende Spalte setzt den Übertrag in den Monat fort, die letzte Zeile des Monats ist also der Saldo bis heute."
 

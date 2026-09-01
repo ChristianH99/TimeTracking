@@ -1528,13 +1528,18 @@ tr.is-off > * { color: var(--text-light); }
    one. The row keeps its figures at full contrast, because they are the whole
    reason anybody opens a month that is already shut; it is the *controls* that
    go, and they go by not being there. */
-tr.is-locked .bookings-open,
-tr.is-locked .status-open,
-tr.is-locked .correction-open { cursor: default; }
-tr.is-locked .bookings-open:hover,
-tr.is-locked .status-open:hover,
-tr.is-locked .correction-open:hover { background: none; border-color: transparent; }
-tr.is-locked .month-note { background: transparent; border-color: transparent; }
+tr.is-locked .status-open { cursor: default; }
+tr.is-locked .status-open:hover { background: none; border-color: transparent; }
+
+/* A row that holds no hours — locked, or not yet happened. The two are drawn
+   the same way in these three cells because the answer is the same: there is
+   nothing to press. A future row's *status* cell is untouched, because booking
+   leave in advance is exactly what it is for. */
+tr.no-hours .bookings-open,
+tr.no-hours .correction-open { cursor: default; }
+tr.no-hours .bookings-open:hover,
+tr.no-hours .correction-open:hover { background: none; border-color: transparent; }
+tr.no-hours .month-note { background: transparent; border-color: transparent; }
 
 .day-lock {
   background: none; border: 0; padding: 0 0 0 var(--space-2);

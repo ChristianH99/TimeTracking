@@ -134,6 +134,13 @@ and it is worth being precise because the position is unusual.
 
 ---
 
+### Recording in advance
+
+| | |
+|---|---|
+| **Does not** | Accept hours on a day that has not happened. §16 ArbZG asks for a record of the time actually worked, and a booking dated tomorrow is not one — so bookings, corrections and the day's comment are refused after today, at `save_day`, the day form and `confirm_day` alike. |
+| **Does** | Accept a *status* for any future date. Booking leave or recording a training day in advance is the ordinary use of a roster, and it is a statement about a plan rather than about hours worked. |
+
 ### Closing a month
 
 | | |

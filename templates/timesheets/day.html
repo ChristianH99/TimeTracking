@@ -10,6 +10,16 @@
 
 {% block content %}
 
+  {% if date > today %}
+    {% comment %}Said before the form rather than after the Save. A booking is a
+    record of when somebody was demonstrably at work and nobody has been at work
+    tomorrow — but a *status* can be set for a future day, which is where this
+    sends them.{% endcomment %}
+    <p class="notice notice--info">
+      {% blocktranslate with date=date|date:"d.m.Y" %}{{ date }} has not happened yet, so there are no hours to record for it. Time off and sickness can be booked in advance from the timesheet's status column.{% endblocktranslate %}
+    </p>
+  {% endif %}
+
   {% if shifts %}
     <div class="card card--quiet rostered">
       <h2>{% translate "What was rostered" %}</h2>
