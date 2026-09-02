@@ -282,7 +282,12 @@ class SignedMinutesField(forms.Field):
 
     def __init__(self, **kwargs):
         kwargs.setdefault(
-            "widget", _TextTimeWidget("signed-minutes", {"placeholder": "30"}),
+            # `0:30` and not `30`. Both are read as thirty minutes — bare digits
+            # are minutes in this box, as the docstring above says — but a
+            # placeholder is an example of the answer, and every duration this
+            # app prints is hh:mm. "30" beside a column of 0:30 reads as thirty
+            # of something the column never shows.
+            "widget", _TextTimeWidget("signed-minutes", {"placeholder": "0:30"}),
         )
         kwargs.setdefault("required", False)
         super().__init__(**kwargs)

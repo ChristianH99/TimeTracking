@@ -4,7 +4,7 @@
 {% block page_title %}{% if person %}{% firstof person.get_full_name person.get_username %}{% else %}{% translate "New account" %}{% endif %}{% endblock %}
 
 {% block content %}
-  <a class="back-link" href="{% url 'accounts:user-list' %}">&larr; {% translate "All people" %}</a>
+  <a class="back-link" href="{% url 'accounts:user-list' %}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>{% translate "All people" %}</a>
 
 
   {% comment %}Three states, not two. An account can sign in with a password, or

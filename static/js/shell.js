@@ -257,12 +257,21 @@ window.modalController = function modalController(modal, options) {
   });
 })();
 
-// Page help: any [data-help-open] button opens the page's [data-help-modal].
+/* Page help: the "?" in the topbar opens the page's [data-help-modal].
+ *
+ * The button is in base.html on every page and rendered `hidden`, and this is
+ * what reveals it — on the pages that turn out to have a help modal, and only
+ * those. The server cannot tell: whether a page has help is whether it filled
+ * in a template block, which is not a question the topbar can ask while it is
+ * being rendered. Doing it here also means the button is never a control that
+ * does nothing, which is what it would be with script off.
+ */
 (function () {
   const openers = document.querySelectorAll("[data-help-open]");
   const modal = document.querySelector("[data-help-modal]");
   if (!openers.length || !modal) return;
   const controller = window.modalController(modal);
+  openers.forEach((btn) => { btn.hidden = false; });
   openers.forEach((btn) => btn.addEventListener("click", controller.open));
   modal.addEventListener("click", (event) => {
     if (event.target.closest("[data-help-close]")) controller.close();

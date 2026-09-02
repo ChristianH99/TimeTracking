@@ -470,7 +470,7 @@ class TestTimeOffInLieu:
         from apps.absences.models import Absence, AbsenceKind, RequestStatus
 
         future = monday + dt.timedelta(days=30)
-        response = client.post("/absences/request/", {
+        response = client.post("/absences/book/", {
             "kind": AbsenceKind.OVERTIME,
             "start_date": future.isoformat(),
             "end_date": future.isoformat(),

@@ -4,10 +4,6 @@
 {% block page_title %}{% translate "People" %}{% endblock %}
 {% block page_subtitle %}{% blocktranslate count n=active_count %}{{ n }} account can sign in{% plural %}{{ n }} accounts can sign in{% endblocktranslate %}{% endblock %}
 
-{% block page_actions %}
-  <button type="button" class="topbar-help" data-help-open
-          aria-label="{% translate 'Help for this page' %}" title="{% translate 'Help for this page' %}">?</button>
-{% endblock %}
 
 {% block content %}
   <div class="list-toolbar">

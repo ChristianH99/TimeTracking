@@ -40,9 +40,13 @@ def who(request):
     if is_manager:
         # Imported here rather than at module scope: this module is loaded from
         # the settings' context-processor list, and absences imports employees.
-        from apps.absences.models import Absence, RequestStatus
+        from apps.absences.models import Absence, UNDECIDED
 
-        pending = Absence.objects.filter(status=RequestStatus.REQUESTED).count()
+        # Everything still waiting on this manager, which is requests *and*
+        # cancellations: one sitting unanswered is exactly as unfinished as the
+        # other, and a badge that counted only half of them would send somebody
+        # to a page with more on it than the number promised.
+        pending = Absence.objects.filter(status__in=UNDECIDED).count()
 
     return {
         "current_employee": employee,

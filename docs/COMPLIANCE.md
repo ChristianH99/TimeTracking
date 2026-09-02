@@ -271,7 +271,7 @@ the health insurer and the employee no longer hands over paper.
 
 | | |
 |---|---|
-| **Does** | Records sick days, self-reported, approved on arrival, costing no leave. Counts them per year. |
+| **Does** | Records sick days: reported by the employee, decided by a manager, costing no leave. Counts them per year. |
 | **Does not** | Track the six-week entitlement, distinguish one illness from another, or know about certificates at all. |
 
 **Not tracking certificates is deliberate and should stay that way.** A
@@ -370,7 +370,8 @@ out level rather than showing a shortfall.
 | | |
 |---|---|
 | **Does** | Credit at the contracted hours for the day, halved for a half day (`Absence.credited_minutes`). The credited figure is kept in its own column beside the worked one, so a timesheet can still say "you were ill" and "you worked eight hours" as different sentences. |
-| **Does** | Credit a reported sick day **immediately**, before any manager has acknowledged it. Illness is a fact, not a permission; waiting for a button would show a fortnight's flu as eighty hours of shortfall for as long as the manager was away. Only a positive refusal, with a written reason, withholds the credit. |
+| **Does** | Credit a sick day once it is approved, exactly as it credits a day of leave. |
+| **Does not** | Credit it before then. **This reverses an earlier decision** that credited a reported sick day immediately, on the argument that illness is a fact rather than a permission. That made sickness the one absence type behaving unlike every other, and the price was paid on the timesheet, which had to say two different things about what a waiting day was worth. The cost of the reversal is real and is stated here rather than hidden: between reporting an illness and a manager answering, the month shows a shortfall — and that figure is **not** a debt the employee owes under §3 EFZG. The mitigation is that the request is on the manager's list the moment it is made. |
 | **Does not** | Credit time off in lieu, deliberately — that shortfall *is* the overtime being taken back. |
 | **Does not** | Use the §11 BUrlG *Lohnausfallprinzip* reference period (the last thirteen weeks' average earnings). It credits the **contracted** hours, which is the right figure for an hours report and not necessarily the right one for a payslip. This app reports hours; it does not run payroll. |
 

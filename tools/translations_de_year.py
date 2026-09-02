@@ -55,18 +55,7 @@ YEAR_END = {
     "half day": "halber Tag",
 
     # -- sickness as a report, not a request -------------------------------
-    "Your manager has already seen that. Ask them to correct the dates.":
-        "Ihre Leitung hat das bereits gesehen. Bitten Sie sie, die Daten zu korrigieren.",
-    "Recorded, and your manager has been shown it. It counts from now — it does not come out of your leave, the hours are credited, and the days you were not due to work are not counted.":
-        "Erfasst, und Ihrer Leitung angezeigt. Es zählt ab sofort — es geht nicht von Ihrem Urlaub ab, die Stunden werden gutgeschrieben, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt.",
-    "%(who)s’s sickness was acknowledged.":
-        "Die Krankmeldung von %(who)s wurde zur Kenntnis genommen.",
-    "%(who)s’s sickness was recorded as not accepted, and they were told why. Those days no longer count as time worked.":
-        "Die Krankmeldung von %(who)s wurde als nicht anerkannt erfasst, mit Begründung. Diese Tage zählen nicht mehr als Arbeitszeit.",
-    "not yet seen": "noch nicht gesehen",
 
-    "You are telling the app, not asking it. It counts from the moment you record it: the hours for those days are credited, it does not come out of your leave, and days you were not due to work are not counted. Your manager is shown it so they know, and confirms that they have seen it — that is a receipt, not a permission.":
-        "Sie teilen es der App mit, Sie fragen nicht. Es zählt ab dem Moment der Erfassung: die Stunden dieser Tage werden gutgeschrieben, es geht nicht von Ihrem Urlaub ab, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt. Ihre Leitung sieht es und bestätigt, dass sie es zur Kenntnis genommen hat — das ist eine Empfangsbestätigung, keine Genehmigung.",
 
     # -- the year-end messages ---------------------------------------------
     "%(count)s people are carrying days into %(next_year)s.":

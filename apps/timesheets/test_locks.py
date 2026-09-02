@@ -190,18 +190,25 @@ class TestNoDoorIsLeftOpen:
         assert not WorkSegment.objects.filter(day__employee=anna).exists()
 
     def test_asking_for_time_off_across_it_is_refused(self, org, anna, client, locked):
-        """The absences page has its own form, and a lock only the timesheet
-        honoured would be one anybody could walk round by using the other."""
-        response = client.post("/absences/request/", {
+        """The absences page has its own door, and a lock only the timesheet
+        honoured would be one anybody could walk round by using the other.
+
+        A redirect and not a re-rendered form: `absences.book` answers a refusal
+        with a message and a reload, because the page behind its pop-up is a
+        whole year. What the assertion is actually about is the row that was
+        not written.
+        """
+        response = client.post("/absences/book/", {
             "kind": AbsenceKind.HOLIDAY,
             "start_date": locked.isoformat(),
             "end_date": locked.isoformat(),
         })
-        assert response.status_code == 200
+        assert response.status_code == 302
         assert not Absence.objects.filter(employee=anna).exists()
 
     def test_reporting_sickness_across_it_is_refused(self, org, anna, client, locked):
-        response = client.post("/absences/sick/", {
+        response = client.post("/absences/book/", {
+            "kind": AbsenceKind.SICK,
             "start_date": locked.isoformat(), "end_date": locked.isoformat(),
         })
         assert response.status_code == 302
@@ -212,12 +219,12 @@ class TestNoDoorIsLeftOpen:
     ):
         """Named in the message, because "part of that is locked" sends somebody
         hunting through a fortnight for the day that is."""
-        response = client.post("/absences/request/", {
+        response = client.post("/absences/book/", {
             "kind": AbsenceKind.HOLIDAY,
             "start_date": locked.isoformat(),
             "end_date": (locked + dt.timedelta(days=4)).isoformat(),
         })
-        assert response.status_code == 200
+        assert response.status_code == 302
         assert not Absence.objects.filter(employee=anna).exists()
 
     def test_a_manager_is_refused_as_well(self, org, anna, manager_client, locked):

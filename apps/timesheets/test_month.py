@@ -26,7 +26,9 @@ from apps.roster.models import Shift
 from apps.timesheets import bookings
 from apps.timesheets.balance import hours_balance
 from apps.timesheets.models import DayRecord, WorkSegment
-from apps.timesheets.views import build_month, month_end, month_shift, month_start
+from apps.timesheets.views import (
+    build_month, month_end, month_shift, month_start, status_value,
+)
 
 
 @pytest.fixture
@@ -262,7 +264,7 @@ class TestTheColumns:
         Absence.objects.create(
             employee=anna, kind=AbsenceKind.SICK,
             start_date=dt.date(2025, 9, 2), end_date=dt.date(2025, 9, 2),
-            status=RequestStatus.REQUESTED,
+            status=RequestStatus.APPROVED,
         )
         row = build_month(anna, september)["rows"][1]
         assert row["credited_minutes"] == 480
@@ -311,9 +313,12 @@ class TestTheRunningColumn:
         anna.opening_balance_on = dt.date(2025, 1, 1)
         anna.save()
 
+        # Asked of `hours_balance` rather than read off the page: the row that
+        # announced the opening figure at the top of the table has gone, and the
+        # column carrying it forward silently is exactly what is being checked.
+        carried = hours_balance(anna, until=dt.date(2025, 8, 31))["total"]
         month = build_month(anna, dt.date(2025, 9, 1))
-        assert month["carried"] == hours_balance(anna, until=dt.date(2025, 8, 31))["total"]
-        assert month["rows"][0]["running_saldo"] == month["carried"] + month["rows"][0]["saldo"]
+        assert month["rows"][0]["running_saldo"] == carried + month["rows"][0]["saldo"]
 
     def test_the_last_row_is_the_balance_to_date(self, org, anna):
         """The invariant that makes the column worth having. If these two ever
@@ -330,9 +335,11 @@ class TestTheRunningColumn:
         """A contract that says eight hours next Tuesday is not a debt anybody
         has already failed to pay. `hours_balance` clamps at today and this has
         to make the same clamp or the two disagree by the rest of the month."""
-        month = build_month(anna, month_start(dt.date.today() + dt.timedelta(days=45)))
+        first = month_start(dt.date.today() + dt.timedelta(days=45))
+        month = build_month(anna, first)
         assert all(row["running_saldo"] is None for row in month["rows"])
-        assert month["balance_to_date"] == month["carried"]
+        carried = hours_balance(anna, until=first - dt.timedelta(days=1))["total"]
+        assert month["balance_to_date"] == carried
 
 
 # --------------------------------------------------------------------------
@@ -709,12 +716,25 @@ class TestThePageItself:
         row = response.context["rows"][0]
         assert row["shifts"] and not row["bookings"]
 
-    def test_the_dropdown_always_offers_the_month_being_looked_at(self, org, anna, client):
-        """Otherwise a link to an old month renders a select whose selected
-        option is not in it, and the browser shows the first entry instead —
-        a picker that disagrees with the page it is on."""
+    def test_the_picker_opens_on_the_year_being_looked_at(self, org, anna, client):
+        """However old the link, the grid is the twelve months of *that* year
+        with that month marked in it.
+
+        The select this replaced had to have the month being looked at forced
+        into its list, because a select whose selected option is missing shows
+        the first entry instead — a picker that quietly disagrees with the page
+        it is on. A year and a grid cannot have that fault: there is no list to
+        fall out of.
+        """
         response = client.get("/timesheet/?month=2019-04")
-        assert dt.date(2019, 4, 1) in response.context["months"]
+        cells = response.context["year_months"]
+        assert len(cells) == 12
+        assert cells[0] == dt.date(2019, 1, 1)
+        assert dt.date(2019, 4, 1) in cells
+        # The arrows above the grid keep the month and move the year, so they
+        # are real links to a real month and work with no script at all.
+        assert response.context["previous_year"] == dt.date(2018, 4, 1)
+        assert response.context["next_year"] == dt.date(2020, 4, 1)
 
 
 # --------------------------------------------------------------------------
@@ -781,7 +801,7 @@ class TestSettingAStatusFromTheCell:
     date the cell is on, so there is no second answer to "may this person book
     this day"."""
 
-    def test_a_sick_day_can_be_stated(self, org, anna, september, client):
+    def test_a_sick_day_is_asked_for_like_any_other(self, org, anna, september, client):
         response = client.post(f"/timesheet/status/{september.isoformat()}/", {
             "kind": AbsenceKind.SICK,
         })
@@ -789,10 +809,10 @@ class TestSettingAStatusFromTheCell:
         absence = Absence.objects.get(employee=anna)
         assert absence.kind == AbsenceKind.SICK
         assert (absence.start_date, absence.end_date) == (september, september)
-        # Waiting to be *acknowledged*, not to be allowed — and it credits the
-        # hours from the moment it is entered.
+        # Sickness used to count from the moment it was entered. It waits like
+        # everything else now, and credits nothing until somebody answers.
         assert absence.status == RequestStatus.REQUESTED
-        assert build_month(anna, september)["rows"][0]["credited_minutes"] == 480
+        assert build_month(anna, september)["rows"][0]["credited_minutes"] == 0
 
     def test_time_off_is_asked_for_rather_than_taken(
         self, org, anna, september, client,
@@ -808,14 +828,19 @@ class TestSettingAStatusFromTheCell:
         )
 
     def test_a_half_day_is_half_a_day(self, org, anna, september, client):
-        """Sickness, because it is the one that counts immediately: a holiday
-        set here is still only *asked for*, and a request that has not been
-        decided credits nothing — otherwise one that is later declined would
-        take hours off a timesheet retrospectively."""
+        """Approved by hand, because nothing set from this cell approves itself
+        and a request that has not been decided credits nothing — otherwise one
+        that was later declined would take hours off a timesheet
+        retrospectively."""
         client.post(f"/timesheet/status/{september.isoformat()}/", {
             "kind": AbsenceKind.SICK, "is_half_day": "1",
         })
-        assert Absence.objects.get(employee=anna).is_half_day
+        absence = Absence.objects.get(employee=anna)
+        assert absence.is_half_day
+        assert build_month(anna, september)["rows"][0]["credited_minutes"] == 0
+
+        absence.status = RequestStatus.APPROVED
+        absence.save(update_fields=["status"])
         assert build_month(anna, september)["rows"][0]["credited_minutes"] == 240
 
     def test_time_off_credits_nothing_until_it_is_decided(
@@ -918,11 +943,73 @@ class TestSettingAStatusFromTheCell:
         assert response.status_code == 302
         assert Absence.objects.filter(employee=other, kind=AbsenceKind.SICK).exists()
 
-    def test_the_cell_says_what_the_pop_up_should_open_on(
+    def test_clearing_an_approved_day_asks_rather_than_withdraws(
         self, org, anna, september, client,
     ):
-        """The row carries the day's status so the pop-up opens on it rather
-        than empty — and says whether it may be edited from here at all."""
+        """The same line `absences.request_cancel` draws, drawn from the cell.
+
+        An employee may take back what nobody has answered; an approved absence
+        is a day the roster was built around, so choosing "nothing" against one
+        asks for it to be cancelled and leaves it booked until somebody says.
+        """
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=september, end_date=september,
+            status=RequestStatus.APPROVED,
+        )
+        client.post(f"/timesheet/status/{september.isoformat()}/", {"kind": ""})
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.CANCELLING
+        assert build_month(anna, september)["rows"][0]["credited_minutes"] == 480
+
+    def test_an_approved_day_cannot_be_swapped_for_another_from_the_cell(
+        self, org, anna, september, client,
+    ):
+        """One cell cannot both cancel and book. Silently withdrawing the
+        approved one to make room is the version that loses somebody's holiday
+        without ever saying so."""
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=september, end_date=september,
+            status=RequestStatus.APPROVED,
+        )
+        client.post(f"/timesheet/status/{september.isoformat()}/", {
+            "kind": AbsenceKind.SICK,
+        })
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.APPROVED
+        assert absence.kind == AbsenceKind.HOLIDAY
+        assert anna.absences.count() == 1
+
+    def test_a_manager_takes_it_off_outright(
+        self, org, manager, manager_client, september, db,
+    ):
+        """A manager who would otherwise be answering their own request one
+        press later. It is still recorded against them — "who took this off" is
+        the same question as "who agreed to it"."""
+        from apps.employees.models import Employee
+
+        other = Employee.objects.create(first_name="Other", username="other.cancel")
+        other.set_hours([8, 8, 8, 8, 8, 0, 0], valid_from=dt.date(2000, 1, 1))
+        absence = Absence.objects.create(
+            employee=other, kind=AbsenceKind.HOLIDAY,
+            start_date=september, end_date=september,
+            status=RequestStatus.APPROVED,
+        )
+        manager_client.post(f"/team/{other.pk}/status/{september.isoformat()}/", {"kind": ""})
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.WITHDRAWN
+        assert absence.decided_by == manager.user
+
+    def test_the_cell_says_which_entry_of_the_dropdown_the_day_is_on(
+        self, org, anna, september, client,
+    ):
+        """The row carries the key of the option the dropdown must open on —
+        and whether there is a dropdown on that row at all.
+
+        A range is read-only from a cell: taking one date out of it would have
+        to split it.
+        """
         Absence.objects.create(
             employee=anna, kind=AbsenceKind.SICK,
             start_date=september, end_date=september + dt.timedelta(days=3),
@@ -931,5 +1018,58 @@ class TestSettingAStatusFromTheCell:
         rows = build_month(anna, september)["rows"]
         assert rows[0]["status_kind"] == AbsenceKind.SICK
         assert rows[0]["status_editable"] is False
-        assert rows[10]["status_kind"] == ""
+        assert rows[10]["status_value"] == ""
         assert rows[10]["status_editable"] is True
+
+    def test_a_half_day_opens_on_the_half_day_entry(
+        self, org, anna, september, client,
+    ):
+        """**The row's key must name an option the list actually has.**
+
+        Checked against the rendered option list rather than against a string
+        typed here, because a literal would go on passing on the day the two
+        spellings drifted apart — and the symptom is not an error: a `<select>`
+        whose selected value is missing shows its *first* option instead, so the
+        cell would quietly claim a booked half day was an ordinary working day.
+        """
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=september, end_date=september, is_half_day=True,
+            status=RequestStatus.APPROVED,
+        )
+        response = client.get(f"/timesheet/?month={september:%Y-%m}")
+        offered = {
+            option["value"]
+            for option in response.context["status_options"]
+            + response.context["status_special_options"]
+        }
+        row = response.context["rows"][0]
+        assert row["status_value"] in offered
+        assert row["status_value"] != status_value(AbsenceKind.HOLIDAY)
+        assert row["status_value"] == status_value(AbsenceKind.HOLIDAY, half=True)
+
+    def test_an_undecided_absence_carries_the_note_the_dotted_edge_explains(
+        self, org, anna, september, client,
+    ):
+        """The pill is drawn with a dotted edge and the title says which kind of
+        waiting it is — sickness waits to be *acknowledged* and counts already,
+        where a day off waits to be allowed. Built per row in Python because
+        `{% translate … as x %}` does not unset itself between rows of a loop.
+        """
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=september, end_date=september,
+            status=RequestStatus.REQUESTED,
+        )
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.SICK,
+            start_date=september + dt.timedelta(days=1),
+            end_date=september + dt.timedelta(days=1),
+            status=RequestStatus.APPROVED,
+        )
+        rows = build_month(anna, september)["rows"]
+        assert rows[0]["status_pending_note"]
+        # Decided, so nothing to say — and the row after an undecided one is the
+        # one a leaking template variable would have got wrong.
+        assert rows[1]["status_pending_note"] == ""
+        assert rows[10]["status_pending_note"] == ""

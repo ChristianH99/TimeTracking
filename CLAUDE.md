@@ -18,17 +18,37 @@ pattern reused deliberately, so that anything built to it is recognisable as the
 same product. Treat them as settled: a change to any of them is a change to the
 house style rather than a change to this app, and it wants a reason of that size.
 
-**The topbar is the app's; the page's head is the page's.** The bar carries only
-what is true wherever somebody is standing — the app's name, Start and Stop, the
-language menu. The two figures up there tick on their own, from a timer in
-`shell.js` that adds real elapsed time to what the server rendered. It ticks
-*forward from that figure* rather than reading `new Date()`, because the
-browser's clock is the wrong one for anybody whose `Employee.time_zone` is
-filled in — which is the only case that field exists for. A page's title, subtitle and buttons are `{% block page_title %}`,
-`page_subtitle` and `page_actions`, rendered by `base.html` in `.page-head` at
-the top of `<main>`. That is what made room for the clock: it is a fact about the
-person and not about the page, and it used to be buried on the timesheet, so
-answering "am I at work?" needed a navigation first.
+**The topbar says where you are; the page head says what can be done to it.**
+The bar carries the page's heading and its subtitle as one line — "My timesheet
+– September 2026" — plus the "?" for the page's help, Start and Stop, and the
+language menu. `{% block page_title %}` and `{% block page_subtitle %}` are what
+fill it, and it is the page's `<h1>`: **the heading is not written anywhere
+else.** It said "Time Tracking" until the day somebody noticed the brand in the
+corner of the sidebar was already saying that two inches away, so the one strip
+of chrome that is on screen at every moment was spending it repeating itself
+rather than answering which page this is. The subtitle is a second span with
+`:empty` on it — which is why base.html leaves no whitespace inside that tag,
+and why the " – " between them is drawn by CSS.
+
+The help button is rendered by `base.html` on *every* page and `hidden`;
+`shell.js` reveals it on the pages that turn out to define `{% block help_modal %}`.
+The server cannot tell whether a page has help — that is whether a template
+block was filled in — and without script the button could not open anything, so
+revealing it from the script is the one place that knows both.
+
+`{% block page_actions %}` is what is left of `.page-head`: a right-aligned row
+of buttons at the top of `<main>`, taken away entirely by `:empty` on the pages
+that have none. A page's own *controls* — the month picker, the week
+navigation — are not in the bar: they change what the page is showing, and the
+bar is a statement about where you are standing.
+
+The two figures up there tick on their own, from a timer in `shell.js` that adds
+real elapsed time to what the server rendered. It ticks *forward from that
+figure* rather than reading `new Date()`, because the browser's clock is the
+wrong one for anybody whose `Employee.time_zone` is filled in — which is the
+only case that field exists for. The bar is where clocking lives because it is a
+fact about the person and not about the page: it used to be buried on the
+timesheet, so answering "am I at work?" needed a navigation first.
 
 German is the default language and the only one the staff are expected to read;
 English is offered from the topbar globe.
@@ -218,17 +238,59 @@ Each of these is here because breaking it produces a page that still renders.
   signed off without them, which is the one thing a lock is for. Unlocking
   carries no such condition — a condition on an escape hatch is how somebody
   ends up with a month they cannot correct.
-- **A status is set from the status cell.** Sick, a day off, time in lieu —
-  without opening the Time off page. `views.set_status` fills in the one date
-  and hands the rest to `AbsenceRequestForm` / `SickForm`: every rule about who
-  may ask for what, which special types are theirs and whether the dates are
-  working days at all stays in the absences app, because a second answer to "may
-  this person book this day" would disagree with the first the day either
-  changed. It is a form POST and a reload where the rest of the page saves
-  through fetch — a status changes what the whole month is worth, and it is
-  something somebody does a few times a month rather than a few times an hour.
-  A closure and a multi-day absence are read-only from a cell and say so: one
-  belongs to everybody at once, and the other would have to be split.
+- **A status is set from the status cell, and the cell *is* the control.** Sick,
+  a day off, time in lieu — without opening the Time off page and without a
+  dialog. A `<select>` is laid over the cell at zero opacity, so what is read is
+  the pills and what is clicked is the dropdown: opacity does not affect hit
+  testing, and the option list is drawn by the browser over the page regardless
+  of the opacity of the control it belongs to. `.status-cell--editable` is what
+  the hover and the focus ring key off — **the ring has to be redrawn on the
+  cell**, because the app's own `:focus-visible` outline lands on something
+  transparent.
+- **Every status in the list has its half day directly under it, and each
+  granted special leave type is its own option.** That pair of decisions is what
+  let the dialog go: special leave cannot be saved without naming which
+  entitlement it comes from, so a single "Sonderurlaub" entry would be the one
+  choice the form always refuses, and "half a day" was a checkbox that needed a
+  dialog to hold it. Both are entries now — thirteen for a house with three
+  special types, which is a long list and still shorter than the dialog. The
+  halves sit *beside* the wholes rather than in a section of their own, so a
+  half day is found where the whole day is.
+- **What is posted comes off the option, never out of its value.** Each carries
+  `data-kind`, `data-special` and `data-half` — the three fields `set_status`
+  already read. `views.status_value` writes the option's value *and* the row's
+  `status_value`, and it is an opaque key: it exists so the template can mark
+  the current entry and so `data-saved` can tell "changed" from "arrowed away
+  and back". One function writes both ends of that comparison, because the day
+  they are spelled differently is the day the dropdown opens on the wrong entry
+  with nothing on the page to show it. **A note is still not offered from the
+  cell** and is written on the Time off page.
+- **`views.set_status` fills in the one date and hands the rest to
+  `AbsenceRequestForm` / `SickForm`.** Every rule about who may ask for what,
+  which special types are theirs and whether the dates are working days at all
+  stays in the absences app, because a second answer to "may this person book
+  this day" would disagree with the first the day either changed. It is a form
+  POST and a reload where the rest of the page saves through fetch — a status
+  changes what the whole month is worth, and it is something somebody does a few
+  times a month rather than a few times an hour. **One form for the table**, not
+  one per row: the dropdown points its action at the day and posts it.
+  A closure and a multi-day absence are read-only from a cell and say so in a
+  `title` — they are rendered with no dropdown at all, so there is no control
+  that could refuse. One belongs to everybody at once, and the other would have
+  to be split. A locked day is the same shape; `can_set_status` is
+  `status_editable` and the lock together, the way `can_edit_hours` is.
+- **An undecided absence is a dotted edge on its own pill, not a second pill
+  beside it.** "waiting" was a word costing most of a column nine and a half
+  rems wide, and it pushed the thing it qualified out of sight — a state belongs
+  to the thing it is a state of. `.pill.is-pending` draws it as an *inset
+  outline* rather than a border, so the pill is not two pixels taller than a
+  settled one on a grid whose rows are a fixed height, and in `currentColor` so
+  it comes out in each kind's own colour. The `title` still distinguishes the
+  two, because they are not the same statement: sickness is waiting to be
+  *acknowledged* and counts already, where a day off is waiting to be allowed.
+  **`status_pending_note` is built in `_day_row`, not in the template** —
+  `{% translate … as x %}` does not unset itself between rows of a loop, so the
+  first undecided day would make every day after it look undecided too.
 - **The timesheet is a month, and it has no Save button.** Ten columns — day,
   status, bookings, break, correction, actual, supposed, saldo, running saldo,
   comment — and a row per date. A comment is written when the box is left; the
@@ -246,7 +308,11 @@ Each of these is here because breaking it produces a page that still renders.
   reads it from the context so the two cannot disagree about how many four is).
   A day that gained a fifth chip would be a taller row, and this is a grid read
   *down* a column — a row that grows pushes every figure below it out of the
-  place the eye last found it.
+  place the eye last found it. Saturday and Sunday have a ground of their own,
+  `--weekend-bg`, and not `--snow`: snow is the page's own background, which
+  against a white table is a difference of two or three values, so the weekends
+  were marked in the markup and could not actually be seen. They are the pair
+  the eye uses to find its place down thirty-one rows.
 - **Every duration in the app is `hh:mm`, and there is no setting.**
   `hours.hhmm`, the `hhmm` / `hhmm_signed` filters, and `window.ttHours.hhmm`
   for the pop-up's running summary — `test_month.py` runs the two against each
@@ -260,6 +326,47 @@ Each of these is here because breaking it produces a page that still renders.
   section, so the model, the page and its sidebar entry went with it — and the
   Settings disclosure is staff-only now, because that entry was the one reason
   anybody else opened it.
+- **A figure is set in `--font-numeric` with `tabular-nums`, never in
+  `--font-mono`.** The two tokens are for different things and the mono one is
+  for *machine text* — a version string, a callback URL, an endpoint: strings
+  that are copied rather than read, where a character mistaken for another one
+  is a support call. What a column of durations needs is not a typewriter, it is
+  digits of one fixed width, and Inter has them; using the mono stack for them
+  put a terminal transcript in the middle of a typeset page, which on Windows
+  meant Consolas. Both halves of the pair are load-bearing: the family alone
+  gives proportional digits and 7:30 stops lining up over 12:15, and
+  `tabular-nums` on the mono family is a terminal with aligned digits.
+- **An empty cell says it can be filled with colour, not with a word.** The
+  status and bookings cells printed "set" and "add" in every empty row, which is
+  thirty-one words saying what an empty cell already says, in German wider than
+  the column, in a grid whose columns cannot move. `is-empty` draws the wash and
+  the dashed edge instead — **on all three cells that can be filled**, the
+  correction with them, because it was the one clickable cell on the row with
+  nothing to show that it was one. `:not(:disabled)` in the stylesheet is what
+  keeps it honest — a locked day and a day that has not happened cannot be
+  filled in, and inviting somebody to press a control that refuses is worse than
+  an empty cell. `--fillable-bg` is the one translucent
+  value in the token block: the rows under it are three different grounds, and a
+  flat tint pale enough for white is *lighter* than a weekend row, so the same
+  marking read as a shaded box on a Tuesday and a white one on a Saturday.
+- **The running column has no opening row.** It carries the balance into the
+  month for itself — the first of the month is last month's total plus that day
+  — and a "Brought forward" row above it announced the same figure a second
+  time while costing a line of a grid that is read down. The figure has not
+  gone: it is what the column starts from, and the last row of it is still
+  `hours_balance`.
+- **The month is chosen from a year and a grid, not from a list.** Twelve links
+  in three columns with a year above them (`templates/_month_picker.html`,
+  `static/js/monthpicker.js`), used by the timesheet and by month end. It
+  replaced a `<select>` of a bounded window of months, and the bound was the
+  fault: the month being looked at had to be forced into the list, because a
+  select whose selected option is missing silently shows the first entry
+  instead. **Everything in the picker is a link and the panel is a
+  `<details>`**, so the whole control works before any script has run; the year
+  arrows point at the same month in the adjacent year for that reason, and the
+  script only stops them navigating and redraws the twelve hrefs in place. It
+  writes no text, which is what keeps month names out of the JavaScript
+  catalogue.
 - **A day is entered as a column of comings and goings; the database keeps
   pairs.** `apps/timesheets/bookings.py` is the one door between the two and
   `DayRecord.bookings` is the other direction. The punch list is what somebody
@@ -372,6 +479,106 @@ Each of these is here because breaking it produces a page that still renders.
   is declined watches their days come back, which reads as the app having lost
   them. `Balance.remaining` and `Balance.remaining_if_all_approved` are both on
   the page, side by side.
+- **Time off is a year, and the square is the control.** Twelve month blocks, a
+  week to a line, and clicking a day is how time off is asked for — the same
+  argument the timesheet's status cell makes. A form with two date boxes cannot
+  answer the question somebody actually has when they open the page, which is
+  never "what is 14 March" but always "what does this fortnight look like and
+  what have I already got". `_year_calendar` builds it and `_day_cell` decides
+  each square, in Python for the reason `_day_row` is: a cell has to know six
+  things at once — working day, public holiday, locked, what is booked on it,
+  whether that is settled, whether it is half — and six nested `{% if %}`s is
+  logic no test can reach. `apps/absences/tests.py::TestTheYearAsAGrid` asserts
+  on the cell dictionary and never on the markup.
+- **Three figures at the top and the middle one is not part of the first.** Off
+  days, extra off days, unused off days. `special_entitled` is a total across
+  the granted types rather than one stat per type, because a house with three
+  of them would push the figure people came for off the end of the row.
+- **A day that costs nothing is drawn as costing nothing, whatever covers it.**
+  A weekend, a public holiday and a date the contract gives no hours are the
+  three subtractions `Absence.working_days` makes, so a fortnight booked over
+  Christmas comes out as blocks of colour with the holidays and the Sundays
+  pale between them — which is exactly what was spent. Painting the whole
+  stretch one colour would be the grid claiming days the balance never took,
+  and the page would then be arguing with itself.
+- **Extra off days are a button and not a fourth radio.** Sonderurlaub is not
+  chosen by looking at a year — the date is whatever the funeral or the move
+  forces — and it asks a question none of the other three does: *which*
+  entitlement it comes out of, without which it cannot be saved at all. A
+  fourth radio would be the one choice the form always refused until a second
+  control had been answered. No grant, no button: a form whose only possible
+  outcome is a refusal is worse than nothing at all.
+- **`views.book` is one door and the forms are still two.** `kind` decides
+  which of `AbsenceRequestForm` and `SickForm` answers, exactly as
+  `timesheets.views.set_status` decides it, and nothing else is added. It
+  replaced `request` and `sick`, which differed only in the form they built:
+  the calendar's pop-up offers holiday, time in lieu and sickness from one set
+  of radio buttons, and a dialog posting to a different URL depending on which
+  was ticked is a dialog with two ways to be wrong. A refusal is a message and
+  a reload — rebuilding a year through a POST to say one sentence is a lot of
+  machinery for a sentence.
+- **A blank end date is refused, never defaulted to the start.** An absence
+  with no end is what "off sick from Tuesday, I will say when it stops" used to
+  write, and it was the one row nothing else in the app could count. Both dates
+  are `required` in the pop-up and both arrive filled in, so a blank one
+  reaching `book` means something is wrong rather than something is unknown.
+- **`static/js/absences_year.js` writes no text.** Every sentence the dialogs
+  say is rendered by the template and shown or hidden from the script — the
+  same choice `monthpicker.js` makes about month names — so the German stays in
+  one catalogue and reads as prose rather than as fragments glued together. The
+  squares are also the *only* representation of the year: no array, no JSON
+  beside the grid, because two representations is the bug where the picture and
+  the booking disagree.
+- **Days booked together are drawn together and can only be taken back
+  together.** An absence is one row, one decision and one thing to withdraw, so
+  its days are joined into a bar with two rounded ends rather than drawn as a
+  line of separate tiles saying the opposite. `_join_runs` marks the middles
+  per week row and compares on *identity* — the run is "the same `Absence`",
+  which is exactly the unit that can be withdrawn, so two consecutive holidays
+  stay two bars because they are two decisions. A run breaks at a weekend or a
+  public holiday inside it, which is not a gap in the booking but the booking
+  not having been charged for those days — the same thing `working_days` says.
+  The pop-up follows: it is titled by the *span* rather than by the date that
+  was clicked, and it says out loud that the whole booking is what goes.
+  Somebody who clicked the Wednesday of a week off and pressed Withdraw
+  expecting to lose a Wednesday has lost a week.
+- **A run's inner edge is made transparent, never removed.** Every square
+  reserves a 2px border — three things want an edge (waiting, today, the ends
+  of a run) and a square that grows one only when it needs it is a square that
+  moves two pixels when it does. Taking the *width* away at a join would shift
+  the content box and wobble the number inside every middle day; taking the
+  colour away costs nothing and does the same job. It is the opposite of
+  `.pill.is-pending`'s choice for a reason: a pill's height comes from its
+  padding, and a square's is written down.
+- **Holiday and special leave share the green.** They are asked for through
+  different controls and counted against different entitlements, but neither of
+  those is something a square can say — what a square says is "you were off" —
+  and a second green claiming to be a distinction is a colour somebody has to
+  look up in order to learn it means nothing they can act on. For the same
+  reason neither Sonderurlaub nor "a day you were not due to work" is in the
+  key: one would be a duplicate swatch, and the other explains the page's own
+  background to somebody who has just seen three hundred of them.
+- **On the year grid, exactly one square may be positioned, and it is the
+  focused one.** A ring drawn *outside* an adjacent table cell has to escape
+  its own box to be seen, and escaping means depending on paint order against
+  the neighbour it spills into — cells paint in document order, so the ring's
+  right-hand two pixels were painted over by the next day and the focus ring
+  came out with three sides. `position: relative` on `:focus-visible` lifts it
+  above every sibling's background and the ring closes. Positioning the
+  *hovered* square as well, which has the same geometry and had the same bug,
+  fixed it standing still and broke it moving: among positioned siblings
+  document order decides again, and because `box-shadow` is transitioned the
+  square the pointer was resting on stayed positioned and kept clipping for
+  `--dur-3` after focus had left it. So the hover ring is `inset` instead and
+  never leaves its own cell. The answer to a clipped ring is one element
+  allowed to escape, not two fighting about it — and never a z-index, which
+  would claim a relationship to the sidebar and the modals this has nothing to
+  do with.
+- **Today is drawn on the border every square already has, never with an
+  `outline`.** `outline` is what the focus ring uses, so a rule for today would
+  have taken the ring off exactly one square of the year — the one somebody is
+  most likely to be standing on. Colour only, so a day that is both today and
+  still waiting keeps its dotted line and gets it in ember.
 - **The contract is seven columns, not a weekly total.** A weekly total cannot
   answer either question the app is built on: whether a given date is a working
   day for this person, and how long that day is. "20 hours a week" is 8/8/4 for
@@ -593,15 +800,45 @@ Each of these is here because breaking it produces a page that still renders.
   preference: the first version showed a fortnight's flu as eighty hours of
   shortfall, which is a debt German law says outright the employee does not owe.
   A half day credits half, through the same `portion_of` the balance uses, so
-  the hours and the days cannot disagree.
-- **A sick day counts from the moment it is reported, not from the moment a
-  manager acknowledges it.** Sickness is now `REQUESTED` so it appears on the
-  manager's list, but `credits_hours` returns True for anything not
-  `REJECTED` — the acknowledgement is a *receipt*, not a permission. An employer
-  does not grant illness. The one thing that withholds the credit is the
-  employer positively refusing to accept the absence, which requires a written
-  reason. A version that waited for the button would show somebody off with flu
-  as eighty hours short for as long as their manager was on holiday.
+  the hours and the days cannot disagree. **An absence credits nothing until it
+  is approved** — that is `IN_FORCE` and it is one rule for every kind.
+- **Sickness is asked for and decided like every other absence, and the only
+  thing left that is different about it is that it costs no leave.** This
+  **reverses** the rule that used to sit here, under which a sick day was
+  *reported* rather than requested, credited its hours the moment it was
+  entered, and was stopped only by a positive refusal — the manager's button
+  being a receipt rather than a permission. One absence type behaving unlike
+  every other cost more than it bought: the timesheet had to say two different
+  things about what a waiting day was worth, and a report against the wrong
+  dates credited hours until somebody noticed.
+  So `SickForm` saves `REQUESTED`, `credits_hours` is `status in IN_FORCE` for
+  every kind but time off in lieu, `end_date` is required, and there is no
+  open-ended sickness and no "say when it ended" route. **The cost is real and
+  is written down in `docs/COMPLIANCE.md` rather than hidden**: between an
+  illness being reported and a manager answering, the month shows a shortfall,
+  and under §3 EFZG that figure is not a debt the employee owes.
+- **What is not yet decided is the employee's; what has been approved is
+  asked about.** `request_cancel` withdraws a `REQUESTED` absence outright and
+  turns an `APPROVED` one into `CANCELLING`, which is a fifth status and not a
+  flag: it is **still in force** — crediting its hours, still costing the leave
+  — until a manager answers, because a cancellation that took effect on the
+  press would move the balance before anybody had responded. `IN_FORCE` is
+  `{APPROVED, CANCELLING}` and `UNDECIDED` is `{REQUESTED, CANCELLING}`; both
+  are written once because the places that ask are places to forget the second
+  half. Refusing a cancellation returns it to `APPROVED` rather than inventing
+  "approved, but somebody once asked" — a state nothing else could read.
+  `decide_cancellation` is a separate method from `decide` for the reason the
+  buttons are relabelled on that card: on a cancellation, yes means the absence
+  *stops* happening, and answering it with `decide` would approve the very thing
+  somebody asked to remove.
+- **From the timesheet cell the same line is drawn, and who is pressing decides
+  which side of it they are on.** An employee clearing an approved day asks for
+  a cancellation; a manager on somebody else's row takes it off outright through
+  `Absence.cancel`, which still records who. On their own row a manager is the
+  employee — a self-approving shortcut is exactly the audit trail this app
+  keeps. An approved day cannot be *swapped* for another status from the cell at
+  all: silently withdrawing it to make room is the version that loses somebody's
+  holiday without ever saying so.
 - **A half day is one date, and only one date.** `Absence.is_half_day` is
   refused on a range, by `clean` and by both forms. The general version — half at
   the start of a range, half at the end — is four more states and every one has
@@ -632,9 +869,10 @@ Each of these is here because breaking it produces a page that still renders.
 - **A sick absence records that somebody was ill and never why.** There is no
   diagnosis field and no note on the sickness form, and adding one would turn an
   ordinary attendance record into a health record.
-- **Sickness is stated, not requested.** An employer does not grant it, so there
-  is no route by which a sick day becomes `REQUESTED` and no button a manager
-  can press to refuse one.
+- **A sick absence is still only dates.** It is requested and decided like
+  anything else now, but nothing about that added a field: no diagnosis, no
+  note on the sickness form, no certificate, and a refusal's written reason is
+  the manager's sentence rather than the employee's.
 - **The OIDC client secret is in the database**, encrypted at rest with a key
   derived from `DJANGO_SECRET_KEY`, never rendered back to a browser, and behind
   a superuser-only page. `apps/accounts/models.py` states the trade at length;

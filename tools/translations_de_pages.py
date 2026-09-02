@@ -31,19 +31,74 @@ PAGES = {
         "Beantragte Tage sind noch nicht abgezogen — ein abgelehnter Antrag hat nichts verbraucht. Wenn alles Wartende genehmigt wird, bleiben Ihnen %(left)s.",
     "You work %(days)s days a week. A full week here is %(full)s days and carries %(entitlement)s days of leave, so yours is that share of it. Days you are not due to work, and public holidays, never come out of it.":
         "Sie arbeiten %(days)s Tage pro Woche. Eine volle Woche sind hier %(full)s Tage und bringt %(entitlement)s Urlaubstage; Ihr Anspruch ist der entsprechende Anteil davon. Tage, an denen Sie nicht eingeteilt sind, und Feiertage gehen nie davon ab.",
-    "Ask for time off": "Abwesenheit beantragen",
-    "New request": "Neuer Antrag",
     "Send for approval": "Zur Genehmigung senden",
-    "Sickness": "Krankheit",
-    "You are recorded as ill.": "Sie sind als krank eingetragen.",
-    "Report sickness": "Krankheit melden",
-    "Record it": "Eintragen",
     "This year": "Dieses Jahr",
+
+    # -- time off: the year as a calendar ---------------------------------
+    #
+    # The three figures at the top of the page, and they are the reason the
+    # German matters here more than anywhere else: "Urlaubstage",
+    # "Sonderurlaubstage" and "Resturlaub" are the words people will use with
+    # payroll about them, so they are fixed here and not varied for reading.
+    "Off days": "Urlaubstage",
+    "Extra off days": "Sonderurlaubstage",
+    "Unused off days": "Resturlaub",
+    "Ask for extra off days": "Sonderurlaub beantragen",
+    "Everything asked for this year": "Alles, was in diesem Jahr beantragt wurde",
+    "Click a day to ask for it off, or to say you were ill. A day drawn in a solid colour has been approved; a dotted one is still with your manager. Weekends, public holidays and days your contract gives no hours are not squares you can book, because they cost you nothing.":
+        "Klicken Sie auf einen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Ein Tag in kräftiger Farbe ist genehmigt, ein gepunkteter liegt noch bei Ihrer Leitung. Wochenenden, Feiertage und Tage, für die Ihr Vertrag keine Stunden vorsieht, lassen sich nicht buchen — sie kosten Sie ohnehin nichts.",
+
+    # -- time off: the day pop-up -----------------------------------------
+    "What is it": "Worum geht es",
+    "Comes out of your leave.": "Geht von Ihrem Urlaub ab.",
+    "Costs no leave. The day reads as a shortfall against your contracted hours, and that shortfall is the overtime being taken back.":
+        "Kostet keinen Urlaub. Der Tag erscheint als Minus gegenüber Ihren vertraglichen Stunden — und genau dieses Minus ist der Abbau der Überstunden.",
+    "Costs no leave, and dates are all it records. There is no note and never a diagnosis — your manager is shown that you were ill, not why.":
+        "Kostet keinen Urlaub, und festgehalten werden nur die Daten. Es gibt keine Notiz und niemals eine Diagnose — Ihre Leitung sieht, dass Sie krank waren, nicht warum.",
+    "Half a day": "Halber Tag",
+    "Only when the two dates are the same one.": "Nur wenn beide Daten derselbe Tag sind.",
+    "Optional, and read by whoever decides it.":
+        "Freiwillig, und wird von der entscheidenden Person gelesen.",
+    "Booked": "Gebucht",
+    "When": "Wann",
+    "These days were booked together and can only be taken back together — the whole booking goes, not the day you clicked.":
+        "Diese Tage wurden zusammen gebucht und können nur zusammen zurückgenommen werden — es geht die ganze Buchung, nicht der angeklickte Tag.",
+    "Nobody has decided this yet, so it is still yours to take back. It stays in the record as withdrawn, which is what shows that it was asked for at all.":
+        "Darüber ist noch nicht entschieden, also können Sie es selbst zurückziehen. Es bleibt als zurückgezogen im Verlauf stehen — nur so ist überhaupt noch zu sehen, dass es beantragt wurde.",
+    "This is approved and the roster has been built around it, so your manager decides. It stays booked until they answer — the days stay spent and the hours stay credited.":
+        "Das ist genehmigt und der Dienstplan baut darauf auf, also entscheidet Ihre Leitung. Bis zur Antwort bleibt es gebucht — die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Your manager has been asked to cancel this and has not answered yet. There is nothing further to press.":
+        "Ihre Leitung wurde um die Rücknahme gebeten und hat noch nicht geantwortet. Hier gibt es nichts weiter zu drücken.",
+
+    # -- time off: the extra-off-days pop-up ------------------------------
+    "Days that come out of an entitlement of their own — a funeral, a move, a wedding. Which one it is has to be named, or the days cannot be counted against anything.":
+        "Tage aus einem eigenen Anspruch — eine Beerdigung, ein Umzug, eine Hochzeit. Welcher Anspruch es ist, muss benannt werden, sonst lassen sich die Tage nirgends anrechnen.",
+    "Which": "Welche Art",
+    "The figure in brackets is what is left of that type.":
+        "Die Zahl in Klammern ist der Rest dieser Art.",
+
+    # -- time off: the help panel -----------------------------------------
+    "Reading this page": "Diese Seite lesen",
+    "The three figures": "Die drei Zahlen",
+    "Off days is what this year is worth to you, including anything carried over from last year. Extra off days are the separate entitlements — a funeral, a move — and they are not part of the first figure. Unused off days is what is left once the approved days have come off; days still waiting are not taken off, because a request that is declined was never spent.":
+        "Urlaubstage ist das, was Ihnen dieses Jahr zusteht, einschließlich allem, was aus dem Vorjahr übertragen wurde. Sonderurlaubstage sind eigene Ansprüche — eine Beerdigung, ein Umzug — und in der ersten Zahl nicht enthalten. Resturlaub ist das, was nach Abzug der genehmigten Tage bleibt; Tage, über die noch nicht entschieden ist, werden nicht abgezogen, denn ein abgelehnter Antrag hat nie etwas verbraucht.",
+    "The calendar": "Der Kalender",
+    "A solid square is approved. A dotted one is still with your manager and counts for nothing yet. A square filled diagonally is half a day. A pale square is a day you were not due to work anyway — a weekend, a public holiday, or a day your contract gives no hours — and booking one would cost you nothing, so it cannot be clicked.":
+        "Ein ausgefülltes Feld ist genehmigt. Ein gepunktetes liegt noch bei Ihrer Leitung und zählt noch nichts. Ein diagonal gefülltes Feld ist ein halber Tag. Ein blasses Feld ist ein Tag, an dem Sie ohnehin nicht eingeteilt waren — ein Wochenende, ein Feiertag oder ein Tag ohne vertragliche Stunden — und ihn zu buchen würde Sie nichts kosten, deshalb lässt er sich nicht anklicken.",
+    "Click any other day to ask for it off or to say you were ill. The pop-up opens on that date at both ends; change the second one to ask for a run of days.":
+        "Klicken Sie auf jeden anderen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Das Fenster öffnet sich mit diesem Datum an beiden Enden; ändern Sie das zweite, um mehrere Tage am Stück zu beantragen.",
+    "Taking something back": "Etwas zurücknehmen",
+    "Click a day that is already booked. Anything your manager has not answered yet is yours to withdraw outright. Anything approved is a day the roster has been built around, so you ask instead and it stays booked — the days stay spent and the hours stay credited — until they answer.":
+        "Klicken Sie auf einen bereits gebuchten Tag. Alles, was Ihre Leitung noch nicht beantwortet hat, können Sie selbst zurückziehen. Alles Genehmigte ist ein Tag, auf dem der Dienstplan aufbaut, also bitten Sie darum — und bis zur Antwort bleibt es gebucht, die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Days asked for together are one booking and are drawn as one bar. They come back together too: clicking the Wednesday of a week off acts on the whole week, not on the Wednesday. To give back part of a booking, take the whole thing back and ask for the days you are keeping.":
+        "Zusammen beantragte Tage sind eine Buchung und werden als ein Balken gezeichnet. Sie kommen auch zusammen zurück: Ein Klick auf den Mittwoch einer freien Woche betrifft die ganze Woche, nicht den Mittwoch. Wenn Sie nur einen Teil zurückgeben möchten, nehmen Sie die ganze Buchung zurück und beantragen Sie die Tage, die Sie behalten wollen.",
+    "What each kind costs": "Was die einzelnen Arten kosten",
+    "Holiday and extra off days come out of an entitlement. Sickness never does, and it is paid as though you had worked the day. Time off in lieu costs no leave either, and is the one kind that credits no hours — that shortfall against your contracted hours is the overtime being taken back.":
+        "Urlaub und Sonderurlaub gehen von einem Anspruch ab. Krankheit nie — sie wird bezahlt, als hätten Sie den Tag gearbeitet. Überstundenabbau kostet ebenfalls keinen Urlaub und ist die einzige Art, die keine Stunden gutschreibt: das Minus gegenüber Ihren vertraglichen Stunden ist genau der Abbau.",
+
     "Withdraw this?": "Diesen Antrag zurückziehen?",
     "It stays in the list as withdrawn, so the record still shows that it was asked for.":
         "Er bleibt als zurückgezogen in der Liste, damit der Vorgang nachvollziehbar bleibt.",
-    "Last day of illness": "Letzter Krankheitstag",
-    "Say when it ended": "Ende eintragen",
     "Nothing recorded for this year.": "Für dieses Jahr ist nichts eingetragen.",
 
     # -- no contract ------------------------------------------------------
@@ -228,6 +283,20 @@ PAGES = {
     "Only what this person has been given. A type that exists in the organisation but is not listed here is not theirs — it is not “zero days of it”.":
         "Nur, was dieser Person gewährt wurde. Eine Art, die es im Betrieb gibt und die hier nicht steht, gehört ihr nicht — es sind nicht „null Tage davon“.",
     "Days instead of the rule": "Tage abweichend von der Regel",
+    # -- time off: asking an approved absence back ------------------------
+    "Ask to cancel this?": "Rücknahme beantragen?",
+    "Your manager decides it. It stays booked until they answer — the days stay spent and the hours stay credited.":
+        "Ihre Leitung entscheidet darüber. Bis zur Antwort bleibt der Eintrag bestehen — die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Ask": "Beantragen",
+    "Ask to cancel": "Rücknahme beantragen",
+    "Your manager has it": "Liegt bei Ihrer Leitung",
+    # On the manager's card. „Approve“ over a cancellation would be a button
+    # whose word says the opposite of its effect, so both are named for what
+    # they do.
+    "asked to cancel": "Rücknahme beantragt",
+    "Cancel it": "Zurücknehmen",
+    "Keep it booked": "Bestehen lassen",
+
     "Grant a special leave type": "Sonderurlaubsart gewähren",
     "Save the contract": "Vertrag speichern",
     "Leave balance": "Urlaubskonto",
@@ -409,7 +478,11 @@ PAGES = {
     "Back to the timesheet": "Zurück zum Stundenzettel",
     "The month before": "Vorheriger Monat",
     "The month after": "Nächster Monat",
-    "Month": "Monat",
+    # The picker: a year above three columns of months. "Monat" on its own was
+    # the label of the select this replaced and has gone with it.
+    "The year before": "Vorheriges Jahr",
+    "The year after": "Nächstes Jahr",
+    "Choose a month": "Monat wählen",
     "This month": "Dieser Monat",
     "Status": "Status",
     "Bookings": "Buchungen",
@@ -418,7 +491,6 @@ PAGES = {
     "Saldo": "Saldo",
     "Running": "Laufend",
     "Comment": "Bemerkung",
-    "Brought forward": "Übertrag",
     "So far": "Bis heute",
     "The whole month": "Ganzer Monat",
     # -- the timesheet saves itself ---------------------------------------
@@ -429,7 +501,6 @@ PAGES = {
         "Ein Tag ist eine Spalte aus Kommen und Gehen, in der Reihenfolge, in der sie stattgefunden haben. Zum Eintragen auf die Zelle klicken. Die Zelle zeigt die ersten vier und zählt den Rest; im Fenster stehen alle. Ein Kommen ohne Gehen ist eine noch laufende Schicht: Sie zählt null, solange sie kein Ende hat — eine Zahl, die sich bei jedem Neuladen ändert, kann niemand abzeichnen.",
     "The month": "Der Monat",
 
-    "add": "eintragen",
     "Bookings for %(date)s": "Buchungen für %(date)s",
     "Comment for %(date)s": "Bemerkung zu %(date)s",
     "Correction for %(date)s": "Korrektur für %(date)s",
@@ -450,8 +521,15 @@ PAGES = {
     # An English "C and G" here would name keys that do nothing in German.
     "One line per booking. Type the time, then say whether it is a coming or a going — the keyboard does it too: press C for coming or G for going and the line is entered.":
         "Eine Zeile je Buchung. Zeit eintippen und dann angeben, ob es ein Kommen oder ein Gehen ist — über die Tastatur geht das auch: K für Kommen oder G für Gehen, und die Zeile ist eingetragen.",
-    "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. Minutes, or 0:30. A minus takes time off.":
-        "Zeit, die zu diesem Tag gehört und nie von einer Uhr abgelesen wurde — ein vergessenes Gehen, eine Fahrt zu einem zweiten Einsatzort, ein bezahlter Nachmittag. Minuten oder 0:30. Ein Minus zieht Zeit ab.",
+    # The pop-up's whole explanation, in one line. It was three sentences with
+    # three examples, read by somebody who has already decided to type a number
+    # and is looking for the box; the one thing it has to say is what a minus
+    # does, because that is the half nobody guesses. The long version below is
+    # the *day form's* and stays — that page is a form with room, and it carries
+    # the fact that a correction lands after the break, which is written down
+    # nowhere else on it.
+    "Time that was never clocked. A minus takes time off.":
+        "Zeit, die nie an einer Uhr erfasst wurde. Ein Minus zieht Zeit ab.",
     "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. It is added after the break, so it can never push the day over a break threshold and deduct a break nobody took. A minus takes time off.":
         "Zeit, die zu diesem Tag gehört und nie von einer Uhr abgelesen wurde — ein vergessenes Gehen, eine Fahrt zu einem zweiten Einsatzort, ein bezahlter Nachmittag. Sie wird nach der Pause aufgeschlagen und kann den Tag deshalb nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat. Ein Minus zieht Zeit ab.",
 
@@ -468,23 +546,30 @@ PAGES = {
     "Status for %(date)s": "Status für %(date)s",
     # What a clipped pill says on hover. The status column is nine and a half
     # rems and a day can carry three pills, so every one of them names itself.
-    "Reported, and not yet acknowledged by a manager. It counts either way.":
-        "Gemeldet und von der Leitung noch nicht zur Kenntnis genommen. Es zählt so oder so.",
-    "Waiting for a decision. The days are not taken off a balance until it is approved.":
-        "Wartet auf eine Entscheidung. Die Tage werden erst bei Genehmigung vom Konto abgezogen.",
-    # The word in an empty status cell. Lower case and quiet: it is an
-    # invitation, not a heading, and it sits in a column of pills.
-    #
-    # **Not "eintragen".** That is what the bookings cell beside it says, and two
-    # adjacent columns offering the same word is two columns nobody can tell
-    # apart at a glance — which on a grid read down a column is the whole
-    # problem.
-    "set": "festlegen",
-    "Which": "Welcher",
-    "Half a day": "Ein halber Tag",
+    # The first entry in the status cell's dropdown, and the one that clears a
+    # day. "Which special leave?" went with the dialog: each granted type is its
+    # own option now. The dialog's opening paragraph did not go — it is a fact
+    # about how leave and sickness are treated rather than about the control,
+    # and it moved to the Help pop-up.
     "Nothing — an ordinary working day": "Nichts — ein normaler Arbeitstag",
-    "What was true of this day. Time off is asked for and waits for a decision; sickness is stated and counts from the moment it is entered — your manager acknowledges it rather than allows it.":
-        "Was an diesem Tag war. Abwesenheit wird beantragt und wartet auf eine Entscheidung; Krankheit wird gemeldet und zählt ab dem Eintragen — Ihre Leitung nimmt sie zur Kenntnis, sie genehmigt sie nicht.",
+    # The dotted edge's explanation. One sentence for every kind now: sickness
+    # used to count before anybody had answered and needed its own.
+    "Waiting for a decision. Nothing is credited and no days are spent until it is approved.":
+        "Wartet auf eine Entscheidung. Bis zur Genehmigung wird nichts angerechnet und werden keine Tage verbraucht.",
+    "Booked, and waiting for a manager to answer a request to cancel it.":
+        "Eingetragen, und wartet auf die Antwort der Leitung auf einen Rücknahmeantrag.",
+    "%(date)s is already booked and approved. Ask for that to be cancelled first — this cell cannot swap one for another.":
+        "Für %(date)s ist bereits etwas genehmigt eingetragen. Bitte zuerst die Rücknahme beantragen — diese Zelle kann nicht das eine gegen das andere tauschen.",
+    "Your manager has been asked to cancel %(date)s. It stays booked until they answer.":
+        "Ihre Leitung wurde um die Rücknahme für %(date)s gebeten. Bis zur Antwort bleibt der Eintrag bestehen.",
+    # Every status in the list has one of these directly under it, so the half
+    # day is found where the whole day is. Parenthesised rather than a second
+    # group, and lower case inside the brackets the way German writes it.
+    "%(status)s (half day)": "%(status)s (halber Tag)",
+    "What was true of this day. Everything here is asked for and waits for your manager to decide it — sickness too. Nothing is credited and no leave is spent until they have.":
+        "Was an diesem Tag war. Alles hier wird beantragt und wartet auf die Entscheidung Ihrer Leitung — Krankheit ebenso. Bis dahin wird nichts angerechnet und kein Urlaub verbraucht.",
+    "Click the status cell and choose from the list. Every status has its half day directly under it, and each kind of special leave you have been granted is its own entry. A day still waiting for a decision is drawn with a dotted edge — so is one you have asked to have cancelled, which stays booked until your manager answers.":
+        "Auf die Status-Zelle klicken und aus der Liste wählen. Zu jedem Status steht der halbe Tag direkt darunter, und jede Sonderurlaubsart, die Ihnen gewährt wurde, ist ein eigener Eintrag. Ein Tag, über den noch nicht entschieden ist, wird mit gepunktetem Rand gezeichnet — ebenso einer, dessen Rücknahme Sie beantragt haben und der bis zur Antwort Ihrer Leitung bestehen bleibt.",
     "This day is part of something that was booked elsewhere — a workplace closure, or an absence covering several days. Change it on the Time off page.":
         "Dieser Tag gehört zu etwas, das an anderer Stelle eingetragen wurde — einer Betriebsschließung oder einer Abwesenheit über mehrere Tage. Bitte auf der Seite „Abwesenheit“ ändern.",
 
@@ -648,7 +733,6 @@ JAVASCRIPT = {
     "Coming": "Kommen",
     "Going": "Gehen",
     "Time": "Zeit",
-    "add": "eintragen",
     "Remove this booking": "Diese Buchung entfernen",
 
     # The month writes as it goes, so these are the sentences that replace a

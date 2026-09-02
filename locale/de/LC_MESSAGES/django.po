@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 21:48+0200\n"
+"POT-Creation-Date: 2026-09-02 20:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: .\apps\absences\carryover.py:61 .\apps\absences\models.py:227
+#: .\apps\absences\carryover.py:61 .\apps\absences\models.py:250
 #: .\apps\employees\models.py:183 .\apps\employees\models.py:610
 #: .\apps\roster\models.py:63 .\apps\timesheets\models.py:71
 #: .\apps\timesheets\models.py:210
@@ -76,7 +76,7 @@ msgstr "verfallene zusätzliche Tage"
 msgid "lost on"
 msgstr "verfallen am"
 
-#: .\apps\absences\carryover.py:119 .\apps\absences\models.py:268
+#: .\apps\absences\carryover.py:119 .\apps\absences\models.py:291
 #: .\apps\roster\models.py:69 .\apps\timesheets\models.py:255
 msgid "note"
 msgstr "Anmerkung"
@@ -97,12 +97,12 @@ msgstr "Bitte begründen. Eine Verlängerung, die niemand erklären kann, kann a
 msgid "Those days have already lapsed. Grant new days instead — moving the deadline now would erase the record of when they went."
 msgstr "Diese Tage sind bereits verfallen. Gewähren Sie stattdessen neue Tage — die Frist jetzt zu verschieben würde den Nachweis löschen, wann sie verfallen sind."
 
-#: .\apps\absences\forms.py:51 .\templates\timesheets\month.html:505
+#: .\apps\absences\forms.py:51
 msgid "—"
 msgstr "—"
 
-#: .\apps\absences\forms.py:59 .\apps\absences\forms.py:189
-#: .\apps\absences\models.py:191 .\apps\absences\models.py:294
+#: .\apps\absences\forms.py:59 .\apps\absences\forms.py:186
+#: .\apps\absences\models.py:214 .\apps\absences\models.py:317
 msgid "The end is before the start."
 msgstr "Das Ende liegt vor dem Anfang."
 
@@ -127,28 +127,24 @@ msgstr "Für diesen Zeitraum ist bei Ihnen bereits eine Abwesenheit eingetragen.
 msgid "%(dates)s is locked, so nothing can be booked across it. Ask a manager to unlock it."
 msgstr "%(dates)s ist gesperrt, dort kann nichts eingetragen werden. Bitten Sie Ihre Leitung, den Tag zu entsperren."
 
-#: .\apps\absences\forms.py:181
-msgid "Leave empty if you do not know yet — you can say when it ended later."
-msgstr "Leer lassen, wenn es noch nicht absehbar ist — das Ende können Sie später nachtragen."
-
-#: .\apps\absences\forms.py:192
+#: .\apps\absences\forms.py:189
 msgid "A half day is one date."
 msgstr "Ein halber Tag ist ein einzelnes Datum."
 
-#: .\apps\absences\forms.py:229 .\apps\absences\models.py:276
+#: .\apps\absences\forms.py:224 .\apps\absences\models.py:299
 msgid "reply"
 msgstr "Antwort"
 
-#: .\apps\absences\forms.py:237
+#: .\apps\absences\forms.py:232
 msgid "Say why. Somebody whose time off is declined without a reason has to come and ask for one."
 msgstr "Bitte begründen. Wer eine Absage ohne Grund bekommt, muss nachfragen kommen."
 
-#: .\apps\absences\models.py:45
+#: .\apps\absences\models.py:45 .\templates\absences\mine.html:194
+#: .\templates\absences\mine.html:411
 msgid "Holiday"
 msgstr "Urlaub"
 
-#: .\apps\absences\models.py:46 .\templates\absences\mine.html:94
-#: .\templates\employees\employee_form.html:188
+#: .\apps\absences\models.py:46 .\templates\employees\employee_form.html:188
 #: .\templates\employees\employee_leave.html:100
 #: .\templates\organisation\closures.html:17
 #: .\templates\organisation\holidays.html:14
@@ -156,22 +152,26 @@ msgstr "Urlaub"
 #: .\templates\organisation\leave_types.html:4
 #: .\templates\organisation\leave_types.html:17
 #: .\templates\organisation\settings.html:17
+#: .\templates\timesheets\month.html:285
 msgid "Special leave"
 msgstr "Sonderurlaub"
 
-#: .\apps\absences\models.py:47
+#: .\apps\absences\models.py:47 .\templates\absences\mine.html:196
+#: .\templates\absences\mine.html:419
 msgid "Sick"
 msgstr "Krank"
 
-#: .\apps\absences\models.py:48
+#: .\apps\absences\models.py:48 .\templates\absences\mine.html:197
 msgid "Workplace closed"
 msgstr "Betrieb geschlossen"
 
-#: .\apps\absences\models.py:52
+#: .\apps\absences\models.py:52 .\templates\absences\mine.html:195
+#: .\templates\absences\mine.html:415
 msgid "Time off in lieu"
 msgstr "Überstundenausgleich"
 
-#: .\apps\absences\models.py:56 .\templates\absences\mine.html:66
+#: .\apps\absences\models.py:56 .\templates\absences\mine.html:70
+#: .\templates\absences\mine.html:198
 msgid "Waiting for approval"
 msgstr "Wartet auf Genehmigung"
 
@@ -179,207 +179,212 @@ msgstr "Wartet auf Genehmigung"
 msgid "Approved"
 msgstr "Genehmigt"
 
-#: .\apps\absences\models.py:58
+#: .\apps\absences\models.py:65
+msgid "Cancellation requested"
+msgstr "Rücknahme beantragt"
+
+#: .\apps\absences\models.py:66
 msgid "Declined"
 msgstr "Abgelehnt"
 
-#: .\apps\absences\models.py:59
+#: .\apps\absences\models.py:67
 msgid "Withdrawn"
 msgstr "Zurückgezogen"
 
-#: .\apps\absences\models.py:94 .\apps\roster\models.py:65
+#: .\apps\absences\models.py:117 .\apps\roster\models.py:65
 #: .\apps\timesheets\models.py:73 .\apps\timesheets\models.py:212
 msgid "date"
 msgstr "Datum"
 
-#: .\apps\absences\models.py:95 .\apps\absences\models.py:173
+#: .\apps\absences\models.py:118 .\apps\absences\models.py:196
 #: .\apps\organisation\models.py:554
 msgid "name"
 msgstr "Name"
 
-#: .\apps\absences\models.py:98
+#: .\apps\absences\models.py:121
 msgid "Generated rows are replaced when the year is generated again; added ones are not."
 msgstr "Berechnete Einträge werden beim erneuten Erzeugen des Jahres ersetzt, von Hand hinzugefügte nicht."
 
-#: .\apps\absences\models.py:103
+#: .\apps\absences\models.py:126
 msgid "public holiday"
 msgstr "Feiertag"
 
-#: .\apps\absences\models.py:104
+#: .\apps\absences\models.py:127
 msgid "public holidays"
 msgstr "Feiertage"
 
-#: .\apps\absences\models.py:174 .\apps\absences\models.py:244
+#: .\apps\absences\models.py:197 .\apps\absences\models.py:267
 #: .\apps\roster\models.py:66 .\apps\timesheets\models.py:622
 msgid "from"
 msgstr "von"
 
-#: .\apps\absences\models.py:175 .\apps\absences\models.py:245
+#: .\apps\absences\models.py:198 .\apps\absences\models.py:268
 #: .\apps\roster\models.py:67 .\apps\timesheets\models.py:631
 msgid "to"
 msgstr "bis"
 
-#: .\apps\absences\models.py:177 .\templates\organisation\closures.html:41
+#: .\apps\absences\models.py:200 .\templates\organisation\closures.html:41
 msgid "comes out of their leave"
 msgstr "geht vom Urlaub ab"
 
-#: .\apps\absences\models.py:178
+#: .\apps\absences\models.py:201
 msgid "Off for a day the employer closes and pays for."
 msgstr "Aus, wenn der Betrieb schließt und den Tag bezahlt."
 
-#: .\apps\absences\models.py:183
+#: .\apps\absences\models.py:206
 msgid "closure"
 msgstr "Schließzeit"
 
-#: .\apps\absences\models.py:184
+#: .\apps\absences\models.py:207
 msgid "closures"
 msgstr "Schließzeiten"
 
-#: .\apps\absences\models.py:230
+#: .\apps\absences\models.py:253
 msgid "reason"
 msgstr "Anmerkung"
 
-#: .\apps\absences\models.py:237
+#: .\apps\absences\models.py:260
 msgid "which"
 msgstr "welcher"
 
-#: .\apps\absences\models.py:260
+#: .\apps\absences\models.py:283
 msgid "half a day"
 msgstr "halber Tag"
 
-#: .\apps\absences\models.py:261
+#: .\apps\absences\models.py:284
 msgid "Half of that one day. Only for a single date."
 msgstr "Die Hälfte dieses einen Tages. Nur für ein einzelnes Datum."
 
-#: .\apps\absences\models.py:265
+#: .\apps\absences\models.py:288
 msgid "status"
 msgstr "Status"
 
-#: .\apps\absences\models.py:280
+#: .\apps\absences\models.py:303
 msgid "absence"
 msgstr "Abwesenheit"
 
-#: .\apps\absences\models.py:281
+#: .\apps\absences\models.py:304
 msgid "absences"
 msgstr "Abwesenheiten"
 
-#: .\apps\absences\models.py:297
+#: .\apps\absences\models.py:320
 msgid "Say which special leave this is, or it cannot be counted."
 msgstr "Bitte angeben, um welchen Sonderurlaub es sich handelt — sonst kann er nicht angerechnet werden."
 
-#: .\apps\absences\models.py:302
+#: .\apps\absences\models.py:325
 msgid "A half day is one date. Book the whole days as one absence and the half day as another."
 msgstr "Ein halber Tag ist ein einzelnes Datum. Erfassen Sie die ganzen Tage als eine Abwesenheit und den halben Tag als eine zweite."
 
-#: .\apps\absences\models.py:311
+#: .\apps\absences\models.py:334
 msgid "Only special leave names a leave type."
 msgstr "Nur Sonderurlaub nennt eine Urlaubsart."
 
-#: .\apps\absences\views.py:96
+#: .\apps\absences\views.py:303
+msgid "This day has been locked and nothing can be booked on it."
+msgstr "Dieser Tag ist gesperrt; darauf lässt sich nichts buchen."
+
+#: .\apps\absences\views.py:305
+msgid "You are not due to work on this day."
+msgstr "An diesem Tag sind Sie nicht eingeteilt."
+
+#: .\apps\absences\views.py:376
+#, python-format
+msgid "That could not be saved: %(why)s"
+msgstr "Das konnte nicht gespeichert werden: %(why)s"
+
+#: .\apps\absences\views.py:390
+msgid "Recorded, and your manager has been shown it. It shows as waiting until they decide — it does not come out of your leave either way, and the days you were not due to work are not counted."
+msgstr "Eingetragen, und Ihrer Leitung angezeigt. Der Eintrag steht auf „wartet“, bis sie entscheidet — vom Urlaub geht er so oder so nicht ab, und Tage, an denen Sie ohnehin nicht eingeteilt waren, zählen nicht mit."
+
+#: .\apps\absences\views.py:396
 msgid "Your request was sent for approval. It shows as waiting until your manager decides, and the days are not taken off your balance before then."
 msgstr "Ihr Antrag wurde zur Genehmigung weitergeleitet. Er steht auf „wartet“, bis Ihre Leitung entscheidet; bis dahin werden die Tage nicht von Ihrem Guthaben abgezogen."
 
-#: .\apps\absences\views.py:115
+#: .\apps\absences\views.py:424
 msgid "That is not something you can withdraw."
 msgstr "Das können Sie nicht zurückziehen."
 
-#: .\apps\absences\views.py:123
-msgid "Your manager has already seen that. Ask them to correct the dates."
-msgstr "Ihre Leitung hat das bereits gesehen. Bitten Sie sie, die Daten zu korrigieren."
-
-#: .\apps\absences\views.py:128
-msgid "That time off has already started. Ask your manager to change it."
-msgstr "Diese Abwesenheit hat bereits begonnen. Bitte wenden Sie sich an Ihre Leitung."
-
-#: .\apps\absences\views.py:134
+#: .\apps\absences\views.py:430
 msgid "The request was withdrawn."
 msgstr "Der Antrag wurde zurückgezogen."
 
-#: .\apps\absences\views.py:150
-msgid "Recorded, and your manager has been shown it. It counts from now — it does not come out of your leave, the hours are credited, and the days you were not due to work are not counted."
-msgstr "Erfasst, und Ihrer Leitung angezeigt. Es zählt ab sofort — es geht nicht von Ihrem Urlaub ab, die Stunden werden gutgeschrieben, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt."
+#: .\apps\absences\views.py:437
+msgid "Your manager has been asked to cancel it. It stays booked until they answer — the days are still spent and the hours still credited."
+msgstr "Ihre Leitung wurde um die Rücknahme gebeten. Bis zur Antwort bleibt der Eintrag bestehen — die Tage sind weiterhin verbraucht und die Stunden weiterhin angerechnet."
 
-#: .\apps\absences\views.py:155
-msgid "Those dates could not be read."
-msgstr "Diese Daten konnten nicht gelesen werden."
+#: .\apps\absences\views.py:443 .\apps\timesheets\views.py:1344
+msgid "You have already asked for that to be cancelled."
+msgstr "Sie haben die Rücknahme bereits beantragt."
 
-#: .\apps\absences\views.py:175
-msgid "That date could not be read."
-msgstr "Dieses Datum konnte nicht gelesen werden."
+#: .\apps\absences\views.py:446
+msgid "That has already been decided."
+msgstr "Darüber wurde bereits entschieden."
 
-#: .\apps\absences\views.py:179
-msgid "That is before the illness started."
-msgstr "Das liegt vor dem Beginn der Krankheit."
-
-#: .\apps\absences\views.py:184
-msgid "Thank you — the sickness is recorded as ended."
-msgstr "Danke — die Krankheit ist als beendet eingetragen."
-
-#: .\apps\absences\views.py:237
+#: .\apps\absences\views.py:499
 msgid "That request has already been decided."
 msgstr "Über diesen Antrag wurde bereits entschieden."
 
-#: .\apps\absences\views.py:242
+#: .\apps\absences\views.py:504
 msgid "That could not be saved."
 msgstr "Das konnte nicht gespeichert werden."
 
-#: .\apps\absences\views.py:255
+#: .\apps\absences\views.py:519
 #, python-format
-msgid "%(who)s’s sickness was acknowledged."
-msgstr "Die Krankmeldung von %(who)s wurde zur Kenntnis genommen."
+msgid "%(who)s’s absence was cancelled."
+msgstr "Die Abwesenheit von %(who)s wurde zurückgenommen."
 
-#: .\apps\absences\views.py:260
+#: .\apps\absences\views.py:522
 #, python-format
-msgid "%(who)s’s sickness was recorded as not accepted, and they were told why. Those days no longer count as time worked."
-msgstr "Die Krankmeldung von %(who)s wurde als nicht anerkannt erfasst, mit Begründung. Diese Tage zählen nicht mehr als Arbeitszeit."
+msgid "%(who)s’s absence stays booked, and they were told why."
+msgstr "Die Abwesenheit von %(who)s bleibt bestehen, mit Begründung."
 
-#: .\apps\absences\views.py:264
+#: .\apps\absences\views.py:528
 #, python-format
 msgid "%(who)s’s time off was approved."
 msgstr "Die Abwesenheit von %(who)s wurde genehmigt."
 
-#: .\apps\absences\views.py:268
+#: .\apps\absences\views.py:531
 #, python-format
 msgid "%(who)s’s request was declined and they were told why."
 msgstr "Der Antrag von %(who)s wurde abgelehnt, mit Begründung."
 
-#: .\apps\absences\views.py:373
+#: .\apps\absences\views.py:635
 #, python-format
 msgid "%(count)s people are carrying days into %(next_year)s."
 msgstr "%(count)s Personen nehmen Resttage mit in das Jahr %(next_year)s."
 
-#: .\apps\absences\views.py:379
+#: .\apps\absences\views.py:641
 msgid "No reminder date was recorded, so the statutory days are treated as not expiring. Tell each person what they have left and that it will lapse, then record the date here."
 msgstr "Es wurde kein Hinweisdatum erfasst, daher gelten die gesetzlichen Tage als nicht verfallend. Teilen Sie jeder Person mit, wie viele Tage offen sind und dass diese verfallen, und tragen Sie das Datum hier ein."
 
-#: .\apps\absences\views.py:384
+#: .\apps\absences\views.py:646
 #, python-format
 msgid "Nobody has days left over from %(year)s."
 msgstr "Aus %(year)s sind bei niemandem Tage offen geblieben."
 
-#: .\apps\absences\views.py:404
+#: .\apps\absences\views.py:666
 #, python-format
 msgid "The deadline is %(date)s and it has not passed. Those days are still theirs to take."
 msgstr "Die Frist ist der %(date)s und noch nicht abgelaufen. Diese Tage stehen weiterhin zu."
 
-#: .\apps\absences\views.py:412
+#: .\apps\absences\views.py:674
 #, python-format
 msgid "%(count)s people lost carried-over days, and each row records what went and when."
 msgstr "Bei %(count)s Personen sind übertragene Tage verfallen; jede Zeile hält fest, wie viele und wann."
 
-#: .\apps\absences\views.py:416
+#: .\apps\absences\views.py:678
 msgid "There was nothing left to lapse."
 msgstr "Es war nichts mehr da, was verfallen konnte."
 
-#: .\apps\absences\views.py:442
+#: .\apps\absences\views.py:704
 msgid "The reminder date was recorded."
 msgstr "Das Hinweisdatum wurde erfasst."
 
-#: .\apps\absences\views.py:444
+#: .\apps\absences\views.py:706
 msgid "No new date was given, so nothing was changed."
 msgstr "Es wurde kein neues Datum angegeben, daher wurde nichts geändert."
 
-#: .\apps\absences\views.py:453
+#: .\apps\absences\views.py:715
 #, python-format
 msgid "%(who)s’s deadline was moved, and the reason recorded."
 msgstr "Die Frist von %(who)s wurde verschoben, mit Begründung."
@@ -387,8 +392,8 @@ msgstr "Die Frist von %(who)s wurde verschoben, mit Begründung."
 #: .\apps\accounts\forms.py:86 .\templates\accounts\login.html:63
 #: .\templates\accounts\user_form.html:58
 #: .\templates\accounts\user_form.html:61
-#: .\templates\accounts\user_list.html:60
-#: .\templates\accounts\user_list.html:90
+#: .\templates\accounts\user_list.html:56
+#: .\templates\accounts\user_list.html:86
 #: .\templates\accounts\user_password.html:19
 msgid "Password"
 msgstr "Passwort"
@@ -423,7 +428,7 @@ msgstr "Sie können sich das Administratorrecht nicht selbst entziehen."
 msgid "This is the last active administrator. Give somebody else the right first."
 msgstr "Das ist der letzte aktive Administrator. Geben Sie das Recht zuerst jemand anderem."
 
-#: .\apps\accounts\forms.py:258 .\templates\accounts\sso_settings.html:169
+#: .\apps\accounts\forms.py:258 .\templates\accounts\sso_settings.html:165
 msgid "Client secret"
 msgstr "Client-Secret"
 
@@ -488,7 +493,7 @@ msgid "user info endpoint"
 msgstr "Benutzerinfo-Endpunkt"
 
 #: .\apps\accounts\models.py:96 .\apps\accounts\sso_views.py:328
-#: .\templates\accounts\sso_settings.html:153
+#: .\templates\accounts\sso_settings.html:149
 msgid "JWKS endpoint"
 msgstr "JWKS-Endpunkt"
 
@@ -1264,17 +1269,19 @@ msgid "“%(name)s” was deleted and the days it took off everybody were given 
 msgstr "„%(name)s“ wurde gelöscht; die dadurch abgezogenen Tage wurden allen zurückgegeben."
 
 #: .\apps\roster\forms.py:28 .\apps\timesheets\forms.py:29
-#: .\templates\absences\mine.html:169
+#: .\templates\absences\mine.html:250 .\templates\absences\mine.html:429
+#: .\templates\absences\mine.html:497
 #: .\templates\employees\employee_leave.html:133
-#: .\templates\organisation\closures.html:26 .\templates\roster\plan.html:116
+#: .\templates\organisation\closures.html:26 .\templates\roster\plan.html:121
 #: .\templates\timesheets\day.html:81
 msgid "From"
 msgstr "Von"
 
 #: .\apps\roster\forms.py:29 .\apps\timesheets\forms.py:33
-#: .\templates\absences\mine.html:170
+#: .\templates\absences\mine.html:251 .\templates\absences\mine.html:433
+#: .\templates\absences\mine.html:501
 #: .\templates\employees\employee_leave.html:134
-#: .\templates\organisation\closures.html:27 .\templates\roster\plan.html:119
+#: .\templates\organisation\closures.html:27 .\templates\roster\plan.html:124
 #: .\templates\timesheets\day.html:84
 msgid "To"
 msgstr "Bis"
@@ -1303,41 +1310,41 @@ msgstr "Schicht"
 msgid "shifts"
 msgstr "Schichten"
 
-#: .\apps\roster\views.py:74
+#: .\apps\roster\views.py:73
 msgid "The roster was saved."
 msgstr "Der Dienstplan wurde gespeichert."
 
-#: .\apps\roster\views.py:76
+#: .\apps\roster\views.py:75
 msgid "The roster was not saved — see the cards marked below."
 msgstr "Der Dienstplan wurde nicht gespeichert — siehe die markierten Karten unten."
 
-#: .\apps\roster\views.py:178
+#: .\apps\roster\views.py:182
 msgid "That is not a date this app can read."
 msgstr "Das ist kein Datum, das diese App lesen kann."
 
-#: .\apps\roster\views.py:183
+#: .\apps\roster\views.py:187
 msgid "That is this week — copying it onto itself would double every shift."
 msgstr "Das ist diese Woche — sie auf sich selbst zu kopieren würde jede Schicht verdoppeln."
 
-#: .\apps\roster\views.py:189
+#: .\apps\roster\views.py:193
 #, python-format
 msgid "%(count)s shifts were copied from the week of %(from)s. They were added to what was already here, so anything that is now doubled can be dragged off."
 msgstr "%(count)s Schichten wurden aus der Woche ab %(from)s kopiert. Sie wurden zum Vorhandenen hinzugefügt; was jetzt doppelt ist, lässt sich wegziehen."
 
-#: .\apps\roster\views.py:193
+#: .\apps\roster\views.py:197
 msgid "That week has no shifts to copy."
 msgstr "In dieser Woche gibt es keine Schichten zum Kopieren."
 
-#: .\apps\roster\views.py:249
+#: .\apps\roster\views.py:253
 #, python-format
 msgid "%(count)s shifts were drafted from the contracts, starting at %(start)s. Days that already had somebody on them were left alone — drag the cards to where they belong."
 msgstr "%(count)s Schichten wurden aus den Verträgen entworfen, beginnend um %(start)s. Tage, an denen bereits jemand eingeteilt war, blieben unangetastet — ziehen Sie die Karten dorthin, wo sie hingehören."
 
-#: .\apps\roster\views.py:255
+#: .\apps\roster\views.py:259
 msgid "Nothing to draft: everybody who works this week is already rostered."
 msgstr "Nichts zu entwerfen: alle, die diese Woche arbeiten, sind bereits eingeteilt."
 
-#: .\apps\roster\views.py:273
+#: .\apps\roster\views.py:277
 msgid "The shift was removed."
 msgstr "Die Schicht wurde entfernt."
 
@@ -1405,7 +1412,7 @@ msgstr "Ein Tag hat nur 24 Stunden."
 msgid "A break cannot be longer than a day."
 msgstr "Eine Pause kann nicht länger als ein Tag sein."
 
-#: .\apps\timesheets\fields.py:313
+#: .\apps\timesheets\fields.py:318
 msgid "A correction cannot be longer than a day."
 msgstr "Eine Korrektur kann nicht länger als ein Tag sein."
 
@@ -1440,13 +1447,13 @@ msgid "Uncheck to enter a different break. A break entered by hand is shown in a
 msgstr "Haken entfernen, um eine andere Pause einzutragen. Eine von Hand eingetragene Pause wird bernsteinfarben angezeigt."
 
 #: .\apps\timesheets\forms.py:195 .\templates\timesheets\day.html:116
-#: .\templates\timesheets\month.html:119 .\templates\timesheets\month.html:586
+#: .\templates\timesheets\month.html:120 .\templates\timesheets\month.html:592
 msgid "Break"
 msgstr "Pause"
 
 #: .\apps\timesheets\forms.py:202 .\templates\timesheets\day.html:141
-#: .\templates\timesheets\month.html:120 .\templates\timesheets\month.html:551
-#: .\templates\timesheets\month.html:588
+#: .\templates\timesheets\month.html:121 .\templates\timesheets\month.html:543
+#: .\templates\timesheets\month.html:594
 msgid "Correction"
 msgstr "Korrektur"
 
@@ -1478,12 +1485,12 @@ msgstr "gesperrter Tag"
 msgid "locked days"
 msgstr "gesperrte Tage"
 
-#: .\apps\timesheets\models.py:155 .\apps\timesheets\views.py:50
+#: .\apps\timesheets\models.py:155 .\apps\timesheets\views.py:52
 #, python-format
 msgid "%(date)s is locked and cannot be changed. Ask a manager to unlock that day — locking a month is how the hours in it are signed off."
 msgstr "%(date)s ist gesperrt und kann nicht geändert werden. Bitten Sie Ihre Leitung, den Tag zu entsperren — mit dem Sperren eines Monats werden die Stunden darin abgezeichnet."
 
-#: .\apps\timesheets\models.py:193 .\apps\timesheets\views.py:59
+#: .\apps\timesheets\models.py:193 .\apps\timesheets\views.py:61
 #, python-format
 msgid "%(date)s has not happened yet, so there are no hours to record for it. A status — time off, sickness — can be set for a future day; hours cannot."
 msgstr "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Ein Status — Abwesenheit, Krankheit — kann für einen künftigen Tag gesetzt werden, Stunden nicht."
@@ -1532,109 +1539,132 @@ msgstr "Arbeitsabschnitt"
 msgid "work segments"
 msgstr "Arbeitsabschnitte"
 
-#: .\apps\timesheets\views.py:706
+#: .\apps\timesheets\views.py:215
+msgid "Waiting for a decision. Nothing is credited and no days are spent until it is approved."
+msgstr "Wartet auf eine Entscheidung. Bis zur Genehmigung wird nichts angerechnet und werden keine Tage verbraucht."
+
+#: .\apps\timesheets\views.py:220
+msgid "Booked, and waiting for a manager to answer a request to cancel it."
+msgstr "Eingetragen, und wartet auf die Antwort der Leitung auf einen Rücknahmeantrag."
+
+#: .\apps\timesheets\views.py:485
+#, python-format
+msgid "%(status)s (half day)"
+msgstr "%(status)s (halber Tag)"
+
+#: .\apps\timesheets\views.py:805
 #, python-format
 msgid "Started at %(time)s."
 msgstr "Um %(time)s begonnen."
 
-#: .\apps\timesheets\views.py:712
+#: .\apps\timesheets\views.py:811
 #, python-format
 msgid "Stopped at %(time)s. %(hours)s recorded for %(date)s so far."
 msgstr "Um %(time)s beendet. Für den %(date)s sind bisher %(hours)s erfasst."
 
-#: .\apps\timesheets\views.py:820
+#: .\apps\timesheets\views.py:919
 msgid "The day was saved."
 msgstr "Der Tag wurde gespeichert."
 
-#: .\apps\timesheets\views.py:914
+#: .\apps\timesheets\views.py:1013
 msgid "There is nothing rostered on that day, so there is nothing to confirm. Enter the hours instead."
 msgstr "An diesem Tag ist nichts eingeteilt, es gibt also nichts zu bestätigen. Tragen Sie die Stunden ein."
 
-#: .\apps\timesheets\views.py:922
+#: .\apps\timesheets\views.py:1021
 #, python-format
 msgid "%(date)s was confirmed: %(hours)s worked."
 msgstr "%(date)s wurde bestätigt: %(hours)s gearbeitet."
 
-#: .\apps\timesheets\views.py:977
+#: .\apps\timesheets\views.py:1076
 #, python-format
 msgid "%(confirmed)s days were confirmed. %(skipped)s already had hours entered and were left exactly as they are."
 msgstr "%(confirmed)s Tage wurden bestätigt. Bei %(skipped)s waren bereits Stunden eingetragen; sie blieben unverändert."
 
-#: .\apps\timesheets\views.py:981
+#: .\apps\timesheets\views.py:1080
 #, python-format
 msgid "%(confirmed)s days were confirmed."
 msgstr "%(confirmed)s Tage wurden bestätigt."
 
-#: .\apps\timesheets\views.py:984
+#: .\apps\timesheets\views.py:1083
 msgid "Every rostered day this week already has hours entered, so nothing was changed."
 msgstr "An jedem eingeteilten Tag dieser Woche sind bereits Stunden eingetragen; es wurde nichts geändert."
 
-#: .\apps\timesheets\views.py:987
+#: .\apps\timesheets\views.py:1086
 msgid "There is nothing rostered this week to confirm."
 msgstr "Diese Woche ist nichts eingeteilt, das bestätigt werden könnte."
 
-#: .\apps\timesheets\views.py:1028
+#: .\apps\timesheets\views.py:1127
 msgid "There is a correction with nothing saying why. A correction nobody can account for is the one entry on a timesheet that cannot be defended."
 msgstr "Es gibt eine Korrektur ohne Begründung. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt."
 
-#: .\apps\timesheets\views.py:1212
+#: .\apps\timesheets\views.py:1311
 msgid "That day is a workplace closure, which is the employer's to declare and not something one timesheet can take back."
 msgstr "Dieser Tag ist eine Betriebsschließung. Die erklärt der Betrieb, und ein einzelner Stundenzettel kann sie nicht zurücknehmen."
 
-#: .\apps\timesheets\views.py:1218
+#: .\apps\timesheets\views.py:1317
 #, python-format
 msgid "That absence runs from %(from)s to %(to)s. Change it where it was booked — taking one day out of a range from here would have to split it, and a split nobody asked for is worse than an extra click."
 msgstr "Diese Abwesenheit läuft vom %(from)s bis zum %(to)s. Bitte dort ändern, wo sie eingetragen wurde — einen einzelnen Tag von hier aus herauszunehmen würde sie teilen, und eine Teilung, die niemand wollte, ist schlimmer als ein Klick mehr."
 
-#: .\apps\timesheets\views.py:1238
+#: .\apps\timesheets\views.py:1339
+#, python-format
+msgid "%(date)s is already booked and approved. Ask for that to be cancelled first — this cell cannot swap one for another."
+msgstr "Für %(date)s ist bereits etwas genehmigt eingetragen. Bitte zuerst die Rücknahme beantragen — diese Zelle kann nicht das eine gegen das andere tauschen."
+
+#: .\apps\timesheets\views.py:1349
+#, python-format
+msgid "Your manager has been asked to cancel %(date)s. It stays booked until they answer."
+msgstr "Ihre Leitung wurde um die Rücknahme für %(date)s gebeten. Bis zur Antwort bleibt der Eintrag bestehen."
+
+#: .\apps\timesheets\views.py:1366
 #, python-format
 msgid "%(date)s has no status any more."
 msgstr "%(date)s hat keinen Status mehr."
 
-#: .\apps\timesheets\views.py:1266
+#: .\apps\timesheets\views.py:1394
 #, python-format
 msgid "%(date)s could not be saved: %(why)s"
 msgstr "%(date)s konnte nicht gespeichert werden: %(why)s"
 
-#: .\apps\timesheets\views.py:1283
+#: .\apps\timesheets\views.py:1411
 #, python-format
 msgid "%(date)s was recorded as %(status)s."
 msgstr "%(date)s wurde als %(status)s eingetragen."
 
-#: .\apps\timesheets\views.py:1358
+#: .\apps\timesheets\views.py:1486
 #, python-format
 msgid "There is more than one day with a coming and no going — %(dates)s. Only one stretch can be left open at a time, or Stop has no way of knowing which one it ended."
 msgstr "Es gibt mehr als einen Tag mit einem Kommen ohne Gehen — %(dates)s. Es darf immer nur ein Abschnitt offen sein, sonst weiß „Ende“ nicht, welchen es beendet."
 
-#: .\apps\timesheets\views.py:1498
+#: .\apps\timesheets\views.py:1609
 msgid "Nobody was ticked, so nothing was changed."
 msgstr "Es war niemand angehakt, es wurde also nichts geändert."
 
-#: .\apps\timesheets\views.py:1506
+#: .\apps\timesheets\views.py:1617
 #, python-format
 msgid "%(count)s day was unlocked."
 msgid_plural "%(count)s days were unlocked."
 msgstr[0] "%(count)s Tag wurde entsperrt."
 msgstr[1] "%(count)s Tage wurden entsperrt."
 
-#: .\apps\timesheets\views.py:1519
+#: .\apps\timesheets\views.py:1630
 #, python-format
 msgid "%(names)s still have time off waiting for a decision in that month. Decide it first — approving it afterwards would change hours the month had already been signed off on."
 msgstr "Bei %(names)s wartet in diesem Monat noch eine Abwesenheit auf eine Entscheidung. Bitte zuerst entscheiden — eine spätere Genehmigung würde Stunden ändern, für die der Monat bereits abgezeichnet wurde."
 
-#: .\apps\timesheets\views.py:1529
+#: .\apps\timesheets\views.py:1640
 #, python-format
 msgid "%(count)s day was locked."
 msgid_plural "%(count)s days were locked."
 msgstr[0] "%(count)s Tag wurde gesperrt."
 msgstr[1] "%(count)s Tage wurden gesperrt."
 
-#: .\apps\timesheets\views.py:1551
+#: .\apps\timesheets\views.py:1662
 #, python-format
 msgid "%(date)s was unlocked and can be changed again."
 msgstr "%(date)s wurde entsperrt und kann wieder geändert werden."
 
-#: .\apps\timesheets\views.py:1556
+#: .\apps\timesheets\views.py:1667
 #, python-format
 msgid "%(date)s was locked."
 msgstr "%(date)s wurde gesperrt."
@@ -1668,6 +1698,30 @@ msgstr "Die eigene Uhr, nicht die des Betriebs."
 msgid "Language"
 msgstr "Sprache"
 
+#: .\templates\_month_picker.html:24
+msgid "The month before"
+msgstr "Vorheriger Monat"
+
+#: .\templates\_month_picker.html:29
+msgid "Choose a month"
+msgstr "Monat wählen"
+
+#: .\templates\_month_picker.html:37
+msgid "The year before"
+msgstr "Vorheriges Jahr"
+
+#: .\templates\_month_picker.html:47
+msgid "The year after"
+msgstr "Nächstes Jahr"
+
+#: .\templates\_month_picker.html:68
+msgid "The month after"
+msgstr "Nächster Monat"
+
+#: .\templates\_month_picker.html:73
+msgid "This month"
+msgstr "Dieser Monat"
+
 #: .\templates\absences\mine.html:3 .\templates\base.html:57
 msgid "Time off"
 msgstr "Abwesenheit"
@@ -1678,8 +1732,8 @@ msgstr "Abwesenheit"
 #: .\templates\accounts\sso_settings.html:3
 #: .\templates\accounts\user_form.html:3 .\templates\accounts\user_list.html:3
 #: .\templates\accounts\user_password.html:3 .\templates\base.html:6
-#: .\templates\base.html:33 .\templates\base.html:176
-#: .\templates\base.html:197
+#: .\templates\base.html:33 .\templates\base.html:188
+#: .\templates\employees\contract_change.html:3
 #: .\templates\employees\employee_form.html:3
 #: .\templates\employees\employee_list.html:3
 #: .\templates\organisation\closure_form.html:3
@@ -1698,187 +1752,313 @@ msgstr "Zeiterfassung"
 msgid "My time off"
 msgstr "Meine Abwesenheiten"
 
-#: .\templates\absences\mine.html:10
+#: .\templates\absences\mine.html:22 .\templates\absences\mine.html:475
+msgid "Ask for extra off days"
+msgstr "Sonderurlaub beantragen"
+
+#: .\templates\absences\mine.html:30
 #: .\templates\employees\employee_leave.html:10
 #: .\templates\organisation\holidays.html:21
 msgid "Year"
 msgstr "Jahr"
 
-#: .\templates\absences\mine.html:16
-#: .\templates\employees\employee_leave.html:16
-#: .\templates\organisation\holidays.html:27
-#: .\templates\timesheets\month.html:37
-#: .\templates\timesheets\month_end.html:18
-msgid "Show"
-msgstr "Anzeigen"
+#: .\templates\absences\mine.html:42 .\templates\absences\year_end.html:44
+msgid "This year"
+msgstr "Dieses Jahr"
 
-#: .\templates\absences\mine.html:23
-#: .\templates\employees\employee_leave.html:28
-msgid "Days a year"
-msgstr "Tage pro Jahr"
+#: .\templates\absences\mine.html:53
+msgid "Off days"
+msgstr "Urlaubstage"
 
-#: .\templates\absences\mine.html:27 .\templates\absences\mine.html:100
+#: .\templates\absences\mine.html:57 .\templates\absences\mine.html:217
+msgid "Extra off days"
+msgstr "Sonderurlaubstage"
+
+#: .\templates\absences\mine.html:61
+msgid "Unused off days"
+msgstr "Resturlaub"
+
+#: .\templates\absences\mine.html:65 .\templates\absences\mine.html:223
 #: .\templates\absences\year_end.html:46
 #: .\templates\employees\employee_leave.html:32
 #: .\templates\employees\employee_leave.html:107
 msgid "Taken"
 msgstr "Genommen"
 
-#: .\templates\absences\mine.html:31 .\templates\absences\mine.html:101
-#: .\templates\absences\year_end.html:47
-#: .\templates\employees\employee_leave.html:36
-#: .\templates\employees\employee_leave.html:108
-msgid "Left"
-msgstr "Rest"
+#: .\templates\absences\mine.html:76
+#: .\templates\employees\employee_leave.html:44
+msgid "Sick days"
+msgstr "Krankheitstage"
 
-#: .\templates\absences\mine.html:43
+#: .\templates\absences\mine.html:90
 #: .\templates\employees\employee_leave.html:58
 #, python-format
 msgid "%(days)s day(s) were carried over from %(year)s."
 msgstr "%(days)s Tag(e) wurden aus %(year)s übertragen."
 
-#: .\templates\absences\mine.html:46 .\templates\absences\mine.html:49
+#: .\templates\absences\mine.html:93 .\templates\absences\mine.html:96
 #: .\templates\employees\employee_leave.html:61
 #: .\templates\employees\employee_leave.html:64
 #, python-format
 msgid "They lapse on %(date)s."
 msgstr "Sie verfallen am %(date)s."
 
-#: .\templates\absences\mine.html:51
+#: .\templates\absences\mine.html:98
 #: .\templates\employees\employee_leave.html:66
 msgid "They do not expire."
 msgstr "Sie verfallen nicht."
 
-#: .\templates\absences\mine.html:55
+#: .\templates\absences\mine.html:102
 #: .\templates\employees\employee_leave.html:70
 #, python-format
 msgid "%(lost)s day(s) lapsed on %(date)s and are no longer available."
 msgstr "%(lost)s Tag(e) sind am %(date)s verfallen und stehen nicht mehr zur Verfügung."
 
-#: .\templates\absences\mine.html:58
+#: .\templates\absences\mine.html:105
 #: .\templates\employees\employee_leave.html:73
 #, python-format
 msgid "The deadline was extended: %(reason)s"
 msgstr "Die Frist wurde verlängert: %(reason)s"
 
-#: .\templates\absences\mine.html:72
-#: .\templates\employees\employee_leave.html:44
-msgid "Sick days"
-msgstr "Krankheitstage"
-
-#: .\templates\absences\mine.html:79
+#: .\templates\absences\mine.html:112
 #, python-format
 msgid "Days you have asked for are not taken off yet — a request that is declined has not been spent. If everything waiting is approved you will have %(left)s left."
 msgstr "Beantragte Tage sind noch nicht abgezogen — ein abgelehnter Antrag hat nichts verbraucht. Wenn alles Wartende genehmigt wird, bleiben Ihnen %(left)s."
 
-#: .\templates\absences\mine.html:89
+#: .\templates\absences\mine.html:199 .\templates\absences\mine.html:441
+#: .\templates\absences\mine.html:509
+msgid "Half a day"
+msgstr "Halber Tag"
+
+#: .\templates\absences\mine.html:203
+msgid "Click a day to ask for it off, or to say you were ill. A day drawn in a solid colour has been approved; a dotted one is still with your manager. Weekends, public holidays and days your contract gives no hours are not squares you can book, because they cost you nothing."
+msgstr "Klicken Sie auf einen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Ein Tag in kräftiger Farbe ist genehmigt, ein gepunkteter liegt noch bei Ihrer Leitung. Wochenenden, Feiertage und Tage, für die Ihr Vertrag keine Stunden vorsieht, lassen sich nicht buchen — sie kosten Sie ohnehin nichts."
+
+#: .\templates\absences\mine.html:212
 #, python-format
 msgid "You work %(days)s days a week. A full week here is %(full)s days and carries %(entitlement)s days of leave, so yours is that share of it. Days you are not due to work, and public holidays, never come out of it."
 msgstr "Sie arbeiten %(days)s Tage pro Woche. Eine volle Woche sind hier %(full)s Tage und bringt %(entitlement)s Urlaubstage; Ihr Anspruch ist der entsprechende Anteil davon. Tage, an denen Sie nicht eingeteilt sind, und Feiertage gehen nie davon ab."
 
-#: .\templates\absences\mine.html:90
+#: .\templates\absences\mine.html:213
 #, python-format
 msgid "This year is worth %(this_year)s days, worked out from every contract that was in force during it — so a change to your hours part-way through moves it, and so does joining or leaving part-way through."
 msgstr "Dieses Jahr ist %(this_year)s Tage wert, berechnet aus jedem in diesem Jahr gültigen Vertrag — eine unterjährige Änderung Ihrer Stunden verschiebt den Wert also ebenso wie ein unterjähriger Ein- oder Austritt."
 
-#: .\templates\absences\mine.html:98
+#: .\templates\absences\mine.html:221
 #: .\templates\employees\employee_form.html:194
 #: .\templates\employees\employee_leave.html:104
 msgid "Type"
 msgstr "Art"
 
-#: .\templates\absences\mine.html:99
+#: .\templates\absences\mine.html:222
 #: .\templates\employees\employee_leave.html:106
 msgid "Entitled"
 msgstr "Anspruch"
 
-#: .\templates\absences\mine.html:118
-msgid "Ask for time off"
-msgstr "Abwesenheit beantragen"
+#: .\templates\absences\mine.html:224 .\templates\absences\year_end.html:47
+#: .\templates\employees\employee_leave.html:36
+#: .\templates\employees\employee_leave.html:108
+msgid "Left"
+msgstr "Rest"
 
-#: .\templates\absences\mine.html:120
-msgid "New request"
-msgstr "Neuer Antrag"
+#: .\templates\absences\mine.html:246
+msgid "Everything asked for this year"
+msgstr "Alles, was in diesem Jahr beantragt wurde"
 
-#: .\templates\absences\mine.html:135
-msgid "Send for approval"
-msgstr "Zur Genehmigung senden"
-
-#: .\templates\absences\mine.html:141
-msgid "Sickness"
-msgstr "Krankheit"
-
-#: .\templates\absences\mine.html:143
-msgid "You are recorded as ill."
-msgstr "Sie sind als krank eingetragen."
-
-#: .\templates\absences\mine.html:145
-msgid "You are telling the app, not asking it. It counts from the moment you record it: the hours for those days are credited, it does not come out of your leave, and days you were not due to work are not counted. Your manager is shown it so they know, and confirms that they have seen it — that is a receipt, not a permission."
-msgstr "Sie teilen es der App mit, Sie fragen nicht. Es zählt ab dem Moment der Erfassung: die Stunden dieser Tage werden gutgeschrieben, es geht nicht von Ihrem Urlaub ab, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt. Ihre Leitung sieht es und bestätigt, dass sie es zur Kenntnis genommen hat — das ist eine Empfangsbestätigung, keine Genehmigung."
-
-#: .\templates\absences\mine.html:147
-msgid "Report sickness"
-msgstr "Krankheit melden"
-
-#: .\templates\absences\mine.html:159
-msgid "Record it"
-msgstr "Eintragen"
-
-#: .\templates\absences\mine.html:165 .\templates\absences\year_end.html:44
-msgid "This year"
-msgstr "Dieses Jahr"
-
-#: .\templates\absences\mine.html:171 .\templates\absences\requests.html:81
+#: .\templates\absences\mine.html:252 .\templates\absences\requests.html:101
 #: .\templates\employees\employee_leave.html:135
 msgid "Reason"
 msgstr "Anmerkung"
 
-#: .\templates\absences\mine.html:172
+#: .\templates\absences\mine.html:253
 #: .\templates\employees\contract_change.html:81
 #: .\templates\employees\employee_form.html:123
 #: .\templates\employees\employee_list.html:27
 msgid "Days"
 msgstr "Tage"
 
-#: .\templates\absences\mine.html:173
+#: .\templates\absences\mine.html:254 .\templates\absences\mine.html:360
 #: .\templates\employees\employee_leave.html:138
 #: .\templates\timesheets\home.html:67
 msgid "State"
 msgstr "Status"
 
-#: .\templates\absences\mine.html:194 .\templates\absences\requests.html:24
+#: .\templates\absences\mine.html:275 .\templates\absences\mine.html:356
+#: .\templates\absences\requests.html:24
 #: .\templates\employees\employee_leave.html:158
-#: .\templates\timesheets\month.html:200
+#: .\templates\timesheets\month.html:223
 msgid "half day"
 msgstr "halber Tag"
 
-#: .\templates\absences\mine.html:197
+#: .\templates\absences\mine.html:278
 msgid "Reply:"
 msgstr "Antwort:"
 
-#: .\templates\absences\mine.html:210
+#: .\templates\absences\mine.html:302
 msgid "Withdraw this?"
 msgstr "Diesen Antrag zurückziehen?"
 
-#: .\templates\absences\mine.html:211
+#: .\templates\absences\mine.html:303
 msgid "It stays in the list as withdrawn, so the record still shows that it was asked for."
 msgstr "Er bleibt als zurückgezogen in der Liste, damit der Vorgang nachvollziehbar bleibt."
 
-#: .\templates\absences\mine.html:212 .\templates\absences\mine.html:214
+#: .\templates\absences\mine.html:304 .\templates\absences\mine.html:307
+#: .\templates\absences\mine.html:392
 msgid "Withdraw"
 msgstr "Zurückziehen"
 
-#: .\templates\absences\mine.html:221
-msgid "Last day of illness"
-msgstr "Letzter Krankheitstag"
+#: .\templates\absences\mine.html:311
+msgid "Ask to cancel this?"
+msgstr "Rücknahme beantragen?"
 
-#: .\templates\absences\mine.html:223
-msgid "Say when it ended"
-msgstr "Ende eintragen"
+#: .\templates\absences\mine.html:312
+msgid "Your manager decides it. It stays booked until they answer — the days stay spent and the hours stay credited."
+msgstr "Ihre Leitung entscheidet darüber. Bis zur Antwort bleibt der Eintrag bestehen — die Tage bleiben verbraucht und die Stunden angerechnet."
 
-#: .\templates\absences\mine.html:229
+#: .\templates\absences\mine.html:313
+msgid "Ask"
+msgstr "Beantragen"
+
+#: .\templates\absences\mine.html:316 .\templates\absences\mine.html:393
+msgid "Ask to cancel"
+msgstr "Rücknahme beantragen"
+
+#: .\templates\absences\mine.html:325
+msgid "Your manager has it"
+msgstr "Liegt bei Ihrer Leitung"
+
+#: .\templates\absences\mine.html:331
 msgid "Nothing recorded for this year."
 msgstr "Für dieses Jahr ist nichts eingetragen."
+
+#: .\templates\absences\mine.html:353
+msgid "Booked"
+msgstr "Gebucht"
+
+#: .\templates\absences\mine.html:359
+msgid "When"
+msgstr "Wann"
+
+#: .\templates\absences\mine.html:370
+msgid "These days were booked together and can only be taken back together — the whole booking goes, not the day you clicked."
+msgstr "Diese Tage wurden zusammen gebucht und können nur zusammen zurückgenommen werden — es geht die ganze Buchung, nicht der angeklickte Tag."
+
+#: .\templates\absences\mine.html:379
+msgid "Nobody has decided this yet, so it is still yours to take back. It stays in the record as withdrawn, which is what shows that it was asked for at all."
+msgstr "Darüber ist noch nicht entschieden, also können Sie es selbst zurückziehen. Es bleibt als zurückgezogen im Verlauf stehen — nur so ist überhaupt noch zu sehen, dass es beantragt wurde."
+
+#: .\templates\absences\mine.html:382
+msgid "This is approved and the roster has been built around it, so your manager decides. It stays booked until they answer — the days stay spent and the hours stay credited."
+msgstr "Das ist genehmigt und der Dienstplan baut darauf auf, also entscheidet Ihre Leitung. Bis zur Antwort bleibt es gebucht — die Tage bleiben verbraucht und die Stunden angerechnet."
+
+#: .\templates\absences\mine.html:385
+msgid "Your manager has been asked to cancel this and has not answered yet. There is nothing further to press."
+msgstr "Ihre Leitung wurde um die Rücknahme gebeten und hat noch nicht geantwortet. Hier gibt es nichts weiter zu drücken."
+
+#: .\templates\absences\mine.html:394 .\templates\absences\mine.html:550
+#: .\templates\accounts\sso_settings.html:249
+#: .\templates\accounts\user_list.html:119 .\templates\roster\plan.html:202
+#: .\templates\timesheets\month.html:604
+msgid "Close"
+msgstr "Schließen"
+
+#: .\templates\absences\mine.html:408
+msgid "What is it"
+msgstr "Worum geht es"
+
+#: .\templates\absences\mine.html:423
+msgid "Comes out of your leave."
+msgstr "Geht von Ihrem Urlaub ab."
+
+#: .\templates\absences\mine.html:424
+msgid "Costs no leave. The day reads as a shortfall against your contracted hours, and that shortfall is the overtime being taken back."
+msgstr "Kostet keinen Urlaub. Der Tag erscheint als Minus gegenüber Ihren vertraglichen Stunden — und genau dieses Minus ist der Abbau der Überstunden."
+
+#: .\templates\absences\mine.html:425
+msgid "Costs no leave, and dates are all it records. There is no note and never a diagnosis — your manager is shown that you were ill, not why."
+msgstr "Kostet keinen Urlaub, und festgehalten werden nur die Daten. Es gibt keine Notiz und niemals eine Diagnose — Ihre Leitung sieht, dass Sie krank waren, nicht warum."
+
+#: .\templates\absences\mine.html:449 .\templates\absences\mine.html:511
+msgid "Only when the two dates are the same one."
+msgstr "Nur wenn beide Daten derselbe Tag sind."
+
+#: .\templates\absences\mine.html:453 .\templates\absences\mine.html:515
+#: .\templates\roster\plan.html:127 .\templates\timesheets\day.html:157
+msgid "Note"
+msgstr "Anmerkung"
+
+#: .\templates\absences\mine.html:455 .\templates\absences\mine.html:517
+msgid "Optional, and read by whoever decides it."
+msgstr "Freiwillig, und wird von der entscheidenden Person gelesen."
+
+#: .\templates\absences\mine.html:459 .\templates\absences\mine.html:521
+msgid "Send for approval"
+msgstr "Zur Genehmigung senden"
+
+#: .\templates\absences\mine.html:460 .\templates\absences\mine.html:522
+#: .\templates\accounts\sso_settings.html:225
+#: .\templates\accounts\user_form.html:101
+#: .\templates\accounts\user_password.html:30 .\templates\base.html:261
+#: .\templates\base.html:278 .\templates\employees\contract_change.html:69
+#: .\templates\timesheets\month.html:517 .\templates\timesheets\month.html:560
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: .\templates\absences\mine.html:477
+msgid "Days that come out of an entitlement of their own — a funeral, a move, a wedding. Which one it is has to be named, or the days cannot be counted against anything."
+msgstr "Tage aus einem eigenen Anspruch — eine Beerdigung, ein Umzug, eine Hochzeit. Welcher Anspruch es ist, muss benannt werden, sonst lassen sich die Tage nirgends anrechnen."
+
+#: .\templates\absences\mine.html:486
+msgid "Which"
+msgstr "Welche Art"
+
+#: .\templates\absences\mine.html:492
+msgid "The figure in brackets is what is left of that type."
+msgstr "Die Zahl in Klammern ist der Rest dieser Art."
+
+#: .\templates\absences\mine.html:533
+msgid "Reading this page"
+msgstr "Diese Seite lesen"
+
+#: .\templates\absences\mine.html:535
+msgid "The three figures"
+msgstr "Die drei Zahlen"
+
+#: .\templates\absences\mine.html:536
+msgid "Off days is what this year is worth to you, including anything carried over from last year. Extra off days are the separate entitlements — a funeral, a move — and they are not part of the first figure. Unused off days is what is left once the approved days have come off; days still waiting are not taken off, because a request that is declined was never spent."
+msgstr "Urlaubstage ist das, was Ihnen dieses Jahr zusteht, einschließlich allem, was aus dem Vorjahr übertragen wurde. Sonderurlaubstage sind eigene Ansprüche — eine Beerdigung, ein Umzug — und in der ersten Zahl nicht enthalten. Resturlaub ist das, was nach Abzug der genehmigten Tage bleibt; Tage, über die noch nicht entschieden ist, werden nicht abgezogen, denn ein abgelehnter Antrag hat nie etwas verbraucht."
+
+#: .\templates\absences\mine.html:538
+msgid "The calendar"
+msgstr "Der Kalender"
+
+#: .\templates\absences\mine.html:539
+msgid "A solid square is approved. A dotted one is still with your manager and counts for nothing yet. A square filled diagonally is half a day. A pale square is a day you were not due to work anyway — a weekend, a public holiday, or a day your contract gives no hours — and booking one would cost you nothing, so it cannot be clicked."
+msgstr "Ein ausgefülltes Feld ist genehmigt. Ein gepunktetes liegt noch bei Ihrer Leitung und zählt noch nichts. Ein diagonal gefülltes Feld ist ein halber Tag. Ein blasses Feld ist ein Tag, an dem Sie ohnehin nicht eingeteilt waren — ein Wochenende, ein Feiertag oder ein Tag ohne vertragliche Stunden — und ihn zu buchen würde Sie nichts kosten, deshalb lässt er sich nicht anklicken."
+
+#: .\templates\absences\mine.html:540
+msgid "Click any other day to ask for it off or to say you were ill. The pop-up opens on that date at both ends; change the second one to ask for a run of days."
+msgstr "Klicken Sie auf jeden anderen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Das Fenster öffnet sich mit diesem Datum an beiden Enden; ändern Sie das zweite, um mehrere Tage am Stück zu beantragen."
+
+#: .\templates\absences\mine.html:542
+msgid "Taking something back"
+msgstr "Etwas zurücknehmen"
+
+#: .\templates\absences\mine.html:543
+msgid "Click a day that is already booked. Anything your manager has not answered yet is yours to withdraw outright. Anything approved is a day the roster has been built around, so you ask instead and it stays booked — the days stay spent and the hours stay credited — until they answer."
+msgstr "Klicken Sie auf einen bereits gebuchten Tag. Alles, was Ihre Leitung noch nicht beantwortet hat, können Sie selbst zurückziehen. Alles Genehmigte ist ein Tag, auf dem der Dienstplan aufbaut, also bitten Sie darum — und bis zur Antwort bleibt es gebucht, die Tage bleiben verbraucht und die Stunden angerechnet."
+
+#: .\templates\absences\mine.html:544
+msgid "Days asked for together are one booking and are drawn as one bar. They come back together too: clicking the Wednesday of a week off acts on the whole week, not on the Wednesday. To give back part of a booking, take the whole thing back and ask for the days you are keeping."
+msgstr "Zusammen beantragte Tage sind eine Buchung und werden als ein Balken gezeichnet. Sie kommen auch zusammen zurück: Ein Klick auf den Mittwoch einer freien Woche betrifft die ganze Woche, nicht den Mittwoch. Wenn Sie nur einen Teil zurückgeben möchten, nehmen Sie die ganze Buchung zurück und beantragen Sie die Tage, die Sie behalten wollen."
+
+#: .\templates\absences\mine.html:546
+msgid "What each kind costs"
+msgstr "Was die einzelnen Arten kosten"
+
+#: .\templates\absences\mine.html:547
+msgid "Holiday and extra off days come out of an entitlement. Sickness never does, and it is paid as though you had worked the day. Time off in lieu costs no leave either, and is the one kind that credits no hours — that shortfall against your contracted hours is the overtime being taken back."
+msgstr "Urlaub und Sonderurlaub gehen von einem Anspruch ab. Krankheit nie — sie wird bezahlt, als hätten Sie den Tag gearbeitet. Überstundenabbau kostet ebenfalls keinen Urlaub und ist die einzige Art, die keine Stunden gutschreibt: das Minus gegenüber Ihren vertraglichen Stunden ist genau der Abbau."
 
 #: .\templates\absences\no_contract.html:3
 msgid "No contract"
@@ -1916,78 +2096,90 @@ msgstr "Anträge"
 msgid "Time off waiting for a decision"
 msgstr "Abwesenheiten, die auf eine Entscheidung warten"
 
-#: .\templates\absences\requests.html:30
+#: .\templates\absences\requests.html:34
+msgid "asked to cancel"
+msgstr "Rücknahme beantragt"
+
+#: .\templates\absences\requests.html:40
 #, python-format
 msgid "%(counter)s working day"
 msgid_plural "%(counter)s working days"
 msgstr[0] "%(counter)s Arbeitstag"
 msgstr[1] "%(counter)s Arbeitstage"
 
-#: .\templates\absences\requests.html:41
+#: .\templates\absences\requests.html:51
 msgid "Entitled to"
 msgstr "Anspruch"
 
-#: .\templates\absences\requests.html:42
+#: .\templates\absences\requests.html:52
 #: .\templates\organisation\settings.html:135
 msgid "Already taken"
 msgstr "Bereits genommen"
 
-#: .\templates\absences\requests.html:43
+#: .\templates\absences\requests.html:53
 msgid "Left now"
 msgstr "Aktuell übrig"
 
-#: .\templates\absences\requests.html:45
+#: .\templates\absences\requests.html:55
 msgid "Left if everything waiting is approved"
 msgstr "Übrig, wenn alles Wartende genehmigt wird"
 
-#: .\templates\absences\requests.html:52
+#: .\templates\absences\requests.html:62
 msgid "Approving everything this person has asked for would take them past their entitlement."
 msgstr "Alles zu genehmigen, was diese Person beantragt hat, überschritte ihren Anspruch."
 
-#: .\templates\absences\requests.html:58
+#: .\templates\absences\requests.html:68
 msgid "Reply"
 msgstr "Antwort"
 
-#: .\templates\absences\requests.html:60
+#: .\templates\absences\requests.html:70
 msgid "A sentence back to them — required when declining"
 msgstr "Ein Satz zurück — bei einer Ablehnung erforderlich"
 
-#: .\templates\absences\requests.html:62
+#: .\templates\absences\requests.html:78
+msgid "Cancel it"
+msgstr "Zurücknehmen"
+
+#: .\templates\absences\requests.html:79
+msgid "Keep it booked"
+msgstr "Bestehen lassen"
+
+#: .\templates\absences\requests.html:81
 msgid "Approve"
 msgstr "Genehmigen"
 
-#: .\templates\absences\requests.html:63
+#: .\templates\absences\requests.html:82
 msgid "Decline"
 msgstr "Ablehnen"
 
-#: .\templates\absences\requests.html:71
+#: .\templates\absences\requests.html:91
 msgid "Nothing is waiting for a decision."
 msgstr "Es wartet nichts auf eine Entscheidung."
 
-#: .\templates\absences\requests.html:75
+#: .\templates\absences\requests.html:95
 msgid "Recently decided"
 msgstr "Zuletzt entschieden"
 
-#: .\templates\absences\requests.html:79
-#: .\templates\accounts\user_list.html:28
-#: .\templates\timesheets\month_end.html:65
-#: .\templates\timesheets\team.html:34
+#: .\templates\absences\requests.html:99
+#: .\templates\accounts\user_list.html:24
+#: .\templates\timesheets\month_end.html:50
+#: .\templates\timesheets\team.html:40
 msgid "Employee"
 msgstr "Mitarbeiter/in"
 
-#: .\templates\absences\requests.html:80
+#: .\templates\absences\requests.html:100
 msgid "Dates"
 msgstr "Zeitraum"
 
-#: .\templates\absences\requests.html:82
+#: .\templates\absences\requests.html:102
 msgid "Decision"
 msgstr "Entscheidung"
 
-#: .\templates\absences\requests.html:83
+#: .\templates\absences\requests.html:103
 msgid "By"
 msgstr "Von"
 
-#: .\templates\absences\requests.html:107
+#: .\templates\absences\requests.html:127
 msgid "Nothing has been decided yet."
 msgstr "Es wurde noch nichts entschieden."
 
@@ -2079,18 +2271,18 @@ msgid "Why it was extended"
 msgstr "Grund der Verlängerung"
 
 #: .\templates\absences\year_end.html:126
-#: .\templates\accounts\sso_settings.html:228
+#: .\templates\accounts\sso_settings.html:224
 #: .\templates\employees\employee_form.html:8
 #: .\templates\organisation\closure_form.html:7
 #: .\templates\organisation\leave_type_form.html:7
 #: .\templates\organisation\leave_type_form.html:76
-#: .\templates\organisation\settings.html:7 .\templates\roster\plan.html:9
-#: .\templates\timesheets\day.html:8 .\templates\timesheets\month.html:455
-#: .\templates\timesheets\month.html:531 .\templates\timesheets\month.html:561
+#: .\templates\organisation\settings.html:7 .\templates\roster\plan.html:8
+#: .\templates\timesheets\day.html:8 .\templates\timesheets\month.html:516
+#: .\templates\timesheets\month.html:559
 msgid "Save"
 msgstr "Speichern"
 
-#: .\templates\absences\year_end.html:135 .\templates\timesheets\team.html:80
+#: .\templates\absences\year_end.html:135 .\templates\timesheets\team.html:86
 msgid "Nobody is employed yet."
 msgstr "Es ist noch niemand beschäftigt."
 
@@ -2202,236 +2394,216 @@ msgid "Single sign-on"
 msgstr "Single Sign-on"
 
 #: .\templates\accounts\sso_settings.html:9
-#: .\templates\accounts\user_list.html:9
-msgid "Help for this page"
-msgstr "Hilfe zu dieser Seite"
-
-#: .\templates\accounts\sso_settings.html:13
 msgid "Setting this up is three steps and two of them are on the provider. Work down this page in order."
 msgstr "Die Einrichtung hat drei Schritte, zwei davon beim Anbieter. Arbeiten Sie diese Seite der Reihe nach durch."
 
-#: .\templates\accounts\sso_settings.html:23
+#: .\templates\accounts\sso_settings.html:19
 msgid "Step 1 — give the provider this redirect URI"
 msgstr "Schritt 1 — dem Anbieter diese Redirect-URI geben"
 
-#: .\templates\accounts\sso_settings.html:26
+#: .\templates\accounts\sso_settings.html:22
 msgid "Copy"
 msgstr "Kopieren"
 
-#: .\templates\accounts\sso_settings.html:27
+#: .\templates\accounts\sso_settings.html:23
 msgid "Register this as the redirect URI (some providers call it callback or reply URL). It must match exactly, trailing slash included. The provider then gives you a client ID and a secret for step 2."
 msgstr "Tragen Sie dies als Redirect-URI ein (manche Anbieter nennen es Callback- oder Reply-URL). Sie muss exakt übereinstimmen, einschließlich des abschließenden Schrägstrichs. Der Anbieter gibt Ihnen daraufhin eine Client-ID und ein Secret für Schritt 2."
 
-#: .\templates\accounts\sso_settings.html:29
+#: .\templates\accounts\sso_settings.html:25
 #, python-format
 msgid "This is built from the app’s configured public address, not from the address you are on now (%(browsing)s) — that one is only reachable inside the house, and a provider cannot send a browser back to it."
 msgstr "Sie wird aus der konfigurierten öffentlichen Adresse der App gebildet, nicht aus der Adresse, auf der Sie gerade sind (%(browsing)s) — die ist nur intern erreichbar, und ein Anbieter kann keinen Browser dorthin zurückschicken."
 
-#: .\templates\accounts\sso_settings.html:34
+#: .\templates\accounts\sso_settings.html:30
 msgid "This page has never been saved, so what you see below is what the container’s environment configured. Nothing is wrong — it is a starting point. The first save copies it into the database, and from then on this page is the only thing that decides how sign-in works."
 msgstr "Diese Seite wurde noch nie gespeichert; was Sie unten sehen, stammt aus der Umgebung des Containers. Es ist nichts falsch — es ist ein Ausgangspunkt. Das erste Speichern übernimmt es in die Datenbank, und von da an entscheidet allein diese Seite, wie die Anmeldung funktioniert."
 
-#: .\templates\accounts\sso_settings.html:44
+#: .\templates\accounts\sso_settings.html:40
 msgid "Nothing was saved. Fix these first:"
 msgstr "Es wurde nichts gespeichert. Beheben Sie zuerst dies:"
 
-#: .\templates\accounts\sso_settings.html:56
+#: .\templates\accounts\sso_settings.html:52
 msgid "The stored client secret cannot be read any more. That happens when DJANGO_SECRET_KEY changes — the secret is encrypted with a key derived from it. Enter the secret again below."
 msgstr "Das gespeicherte Client-Secret ist nicht mehr lesbar. Das passiert, wenn DJANGO_SECRET_KEY sich ändert — das Secret ist mit einem daraus abgeleiteten Schlüssel verschlüsselt. Tragen Sie es unten erneut ein."
 
-#: .\templates\accounts\sso_settings.html:60
+#: .\templates\accounts\sso_settings.html:56
 msgid "One of the addresses below is plain http. The client secret and the tokens would cross the network unencrypted. This is only reasonable on a LAN you trust."
 msgstr "Eine der Adressen unten ist einfaches http. Client-Secret und Tokens gingen unverschlüsselt über das Netz. Das ist nur in einem vertrauenswürdigen LAN vertretbar."
 
-#: .\templates\accounts\sso_settings.html:69
+#: .\templates\accounts\sso_settings.html:65
 msgid "What this container can reach"
 msgstr "Was dieser Container erreicht"
 
-#: .\templates\accounts\sso_settings.html:82
+#: .\templates\accounts\sso_settings.html:78
 msgid "Any HTTP answer counts as reachable — a 404 still proves the network path and the certificate work. Whether the address is the right one is what “Read the endpoints from the server” is for."
 msgstr "Jede HTTP-Antwort gilt als erreichbar — auch ein 404 beweist, dass Netzweg und Zertifikat funktionieren. Ob die Adresse die richtige ist, klärt „Endpunkte vom Server lesen“."
 
-#: .\templates\accounts\sso_settings.html:95
+#: .\templates\accounts\sso_settings.html:91
 msgid "Offer the single sign-on button"
 msgstr "Die Single-Sign-on-Schaltfläche anbieten"
 
-#: .\templates\accounts\sso_settings.html:100
+#: .\templates\accounts\sso_settings.html:96
 msgid "Step 2 — the SSO server"
 msgstr "Schritt 2 — der SSO-Server"
 
-#: .\templates\accounts\sso_settings.html:102
+#: .\templates\accounts\sso_settings.html:98
 msgid "Address"
 msgstr "Adresse"
 
-#: .\templates\accounts\sso_settings.html:107
+#: .\templates\accounts\sso_settings.html:103
 msgid "This is the only address you should have to type. Saving reads the provider’s discovery document and fills the four endpoints in from it — do not copy them from documentation, because providers move them between versions."
 msgstr "Dies ist die einzige Adresse, die Sie eingeben sollten. Beim Speichern wird das Discovery-Dokument des Anbieters gelesen und die vier Endpunkte werden daraus gefüllt — kopieren Sie sie nicht aus einer Dokumentation, denn Anbieter verschieben sie zwischen Versionen."
 
-#: .\templates\accounts\sso_settings.html:119
+#: .\templates\accounts\sso_settings.html:115
 msgid "not set"
 msgstr "nicht gesetzt"
 
-#: .\templates\accounts\sso_settings.html:124
+#: .\templates\accounts\sso_settings.html:120
 #, python-format
 msgid "Read from the server on %(when)s."
 msgstr "Am %(when)s vom Server gelesen."
 
-#: .\templates\accounts\sso_settings.html:126
+#: .\templates\accounts\sso_settings.html:122
 msgid "Entered by hand."
 msgstr "Von Hand eingetragen."
 
-#: .\templates\accounts\sso_settings.html:128
+#: .\templates\accounts\sso_settings.html:124
 msgid "Not read from the server yet — these are guesses from the address above. Press Save to read the real ones."
 msgstr "Noch nicht vom Server gelesen — dies sind Vermutungen aus der Adresse oben. Speichern Sie, um die echten zu lesen."
 
-#: .\templates\accounts\sso_settings.html:134
+#: .\templates\accounts\sso_settings.html:130
 msgid "Enter the endpoints by hand instead"
 msgstr "Endpunkte stattdessen von Hand eintragen"
 
-#: .\templates\accounts\sso_settings.html:135
+#: .\templates\accounts\sso_settings.html:131
 msgid "For a provider that publishes no discovery document. Anything filled in here wins over what the server says, and is left alone on save unless the address above changes."
 msgstr "Für einen Anbieter ohne Discovery-Dokument. Was hier steht, hat Vorrang vor dem, was der Server sagt, und bleibt beim Speichern unangetastet, solange die Adresse oben sich nicht ändert."
 
-#: .\templates\accounts\sso_settings.html:138
+#: .\templates\accounts\sso_settings.html:134
 msgid "Authorisation endpoint"
 msgstr "Autorisierungs-Endpunkt"
 
-#: .\templates\accounts\sso_settings.html:143
+#: .\templates\accounts\sso_settings.html:139
 msgid "Token endpoint"
 msgstr "Token-Endpunkt"
 
-#: .\templates\accounts\sso_settings.html:148
+#: .\templates\accounts\sso_settings.html:144
 msgid "User info endpoint"
 msgstr "Benutzerinfo-Endpunkt"
 
-#: .\templates\accounts\sso_settings.html:160
+#: .\templates\accounts\sso_settings.html:156
 msgid "Step 3 — the client the provider issued"
 msgstr "Schritt 3 — der vom Anbieter ausgestellte Client"
 
-#: .\templates\accounts\sso_settings.html:161
+#: .\templates\accounts\sso_settings.html:157
 msgid "Both of these come from the provider, after you gave it the redirect URI at the top."
 msgstr "Beides bekommen Sie vom Anbieter, nachdem Sie ihm oben die Redirect-URI gegeben haben."
 
-#: .\templates\accounts\sso_settings.html:164
+#: .\templates\accounts\sso_settings.html:160
 msgid "Client ID"
 msgstr "Client-ID"
 
-#: .\templates\accounts\sso_settings.html:172
+#: .\templates\accounts\sso_settings.html:168
 msgid "A secret is stored. Leave empty to keep it."
 msgstr "Ein Secret ist gespeichert. Leer lassen, um es zu behalten."
 
-#: .\templates\accounts\sso_settings.html:172
+#: .\templates\accounts\sso_settings.html:168
 msgid "Nothing stored yet."
 msgstr "Noch nichts gespeichert."
 
-#: .\templates\accounts\sso_settings.html:186
+#: .\templates\accounts\sso_settings.html:182
 msgid "Signature algorithm"
 msgstr "Signaturalgorithmus"
 
-#: .\templates\accounts\sso_settings.html:191
+#: .\templates\accounts\sso_settings.html:187
 msgid "Scopes"
 msgstr "Scopes"
 
-#: .\templates\accounts\sso_settings.html:196
+#: .\templates\accounts\sso_settings.html:192
 msgid "Request timeout"
 msgstr "Zeitlimit"
 
-#: .\templates\accounts\sso_settings.html:203
+#: .\templates\accounts\sso_settings.html:199
 msgid "Who may sign in"
 msgstr "Wer sich anmelden darf"
 
-#: .\templates\accounts\sso_settings.html:205
+#: .\templates\accounts\sso_settings.html:201
 msgid "Allowed groups"
 msgstr "Erlaubte Gruppen"
 
-#: .\templates\accounts\sso_settings.html:211
+#: .\templates\accounts\sso_settings.html:207
 msgid "Group claim"
 msgstr "Gruppen-Claim"
 
-#: .\templates\accounts\sso_settings.html:216
+#: .\templates\accounts\sso_settings.html:212
 msgid "Administrator group"
 msgstr "Administratorgruppe"
 
-#: .\templates\accounts\sso_settings.html:223
+#: .\templates\accounts\sso_settings.html:219
 msgid "Verify the SSO server’s certificate"
 msgstr "Zertifikat des SSO-Servers prüfen"
 
-#: .\templates\accounts\sso_settings.html:229
-#: .\templates\accounts\user_form.html:101
-#: .\templates\accounts\user_password.html:30 .\templates\base.html:239
-#: .\templates\base.html:256 .\templates\employees\contract_change.html:69
-#: .\templates\timesheets\month.html:456 .\templates\timesheets\month.html:532
-#: .\templates\timesheets\month.html:562
-msgid "Cancel"
-msgstr "Abbrechen"
-
-#: .\templates\accounts\sso_settings.html:240
+#: .\templates\accounts\sso_settings.html:236
 msgid "Read the endpoints from the server"
 msgstr "Endpunkte vom Server lesen"
 
-#: .\templates\accounts\sso_settings.html:244
+#: .\templates\accounts\sso_settings.html:240
 msgid "Check the connection"
 msgstr "Verbindung prüfen"
 
-#: .\templates\accounts\sso_settings.html:247
+#: .\templates\accounts\sso_settings.html:243
 msgid "Both read what is currently saved, not what is typed above — save first."
 msgstr "Beide lesen den gespeicherten Stand, nicht das oben Eingetippte — speichern Sie zuerst."
 
-#: .\templates\accounts\sso_settings.html:253
-#: .\templates\accounts\user_list.html:123 .\templates\roster\plan.html:197
-#: .\templates\timesheets\month.html:598
-msgid "Close"
-msgstr "Schließen"
-
-#: .\templates\accounts\sso_settings.html:254
+#: .\templates\accounts\sso_settings.html:250
 msgid "Setting up single sign-on"
 msgstr "Single Sign-on einrichten"
 
-#: .\templates\accounts\sso_settings.html:256
+#: .\templates\accounts\sso_settings.html:252
 msgid "The order the three steps happen in"
 msgstr "Die Reihenfolge der drei Schritte"
 
-#: .\templates\accounts\sso_settings.html:257
+#: .\templates\accounts\sso_settings.html:253
 msgid "The redirect URI comes first because the provider asks for it before it will issue anything: you register this app there, give it that address, and it hands back a client ID and a secret. Those two come back here for step 3. Nothing on this page has to be saved before you can copy the redirect URI — it is at the top on every visit."
 msgstr "Die Redirect-URI kommt zuerst, weil der Anbieter sie verlangt, bevor er irgendetwas ausstellt: Sie registrieren diese App dort, geben ihr die Adresse, und bekommen Client-ID und Secret zurück. Diese beiden kommen hierher in Schritt 3. Zum Kopieren der Redirect-URI muss auf dieser Seite nichts gespeichert sein — sie steht bei jedem Besuch oben."
 
-#: .\templates\accounts\sso_settings.html:258
+#: .\templates\accounts\sso_settings.html:254
 msgid "Why there is only one address to type"
 msgstr "Warum nur eine Adresse einzugeben ist"
 
-#: .\templates\accounts\sso_settings.html:259
+#: .\templates\accounts\sso_settings.html:255
 msgid "Saving asks the provider for its discovery document and reads the authorisation, token, user info and JWKS addresses out of it. You can paste either the issuer or the full …/.well-known/openid-configuration address — both are understood. The endpoints are shown afterwards with the date they were read, and there is a disclosure below them for a provider that publishes no discovery document at all."
 msgstr "Beim Speichern wird das Discovery-Dokument des Anbieters abgerufen und daraus werden Autorisierungs-, Token-, Benutzerinfo- und JWKS-Adresse gelesen. Sie können den Issuer oder die vollständige Adresse …/.well-known/openid-configuration einfügen — beides wird verstanden. Die Endpunkte werden danach mit dem Datum ihres Abrufs angezeigt; darunter gibt es einen Bereich für Anbieter ganz ohne Discovery-Dokument."
 
-#: .\templates\accounts\sso_settings.html:260
+#: .\templates\accounts\sso_settings.html:256
 msgid "If a save seems to do nothing"
 msgstr "Wenn ein Speichern nichts zu bewirken scheint"
 
-#: .\templates\accounts\sso_settings.html:261
+#: .\templates\accounts\sso_settings.html:257
 msgid "It did not save, and the reason is listed in red at the top of the page. Every error is collected there and links to the field it belongs to, including fields inside the closed sections — an error on a box you cannot see is the one case where a page looks like it is ignoring you."
 msgstr "Dann wurde nicht gespeichert, und der Grund steht rot oben auf der Seite. Alle Fehler werden dort gesammelt und verweisen auf das zugehörige Feld, auch auf Felder in zugeklappten Bereichen — ein Fehler an einem Feld, das man nicht sieht, ist der eine Fall, in dem eine Seite wirkt, als ignoriere sie einen."
 
-#: .\templates\accounts\sso_settings.html:262
+#: .\templates\accounts\sso_settings.html:258
 msgid "The order that cannot lock you out"
 msgstr "Die Reihenfolge, die Sie nicht aussperrt"
 
-#: .\templates\accounts\sso_settings.html:263
+#: .\templates\accounts\sso_settings.html:259
 msgid "Fill everything in with the switch at the top still off, save, press “Check the connection”, and only then switch it on. The local password form stays available either way — it is at /accounts/login/?local=1 even when the single sign-on button is the only thing on the page."
 msgstr "Füllen Sie alles aus, während der Schalter oben noch aus ist, speichern Sie, drücken Sie „Verbindung prüfen“, und schalten Sie ihn erst dann ein. Das lokale Passwortformular bleibt in jedem Fall erreichbar — unter /accounts/login/?local=1, auch wenn auf der Seite nur die Single-Sign-on-Schaltfläche steht."
 
-#: .\templates\accounts\sso_settings.html:264
+#: .\templates\accounts\sso_settings.html:260
 msgid "If the login reaches the provider and then fails"
 msgstr "Wenn die Anmeldung den Anbieter erreicht und dann scheitert"
 
-#: .\templates\accounts\sso_settings.html:265
+#: .\templates\accounts\sso_settings.html:261
 msgid "That is almost always the container being unable to reach the SSO server itself, which it has to do for the token exchange. “Check the connection” asks that question from inside the container. If the browser can reach the server and this cannot, it is your router not sending internal traffic back to itself."
 msgstr "Dann kann fast immer der Container selbst den SSO-Server nicht erreichen, was er für den Token-Austausch tun muss. „Verbindung prüfen“ stellt genau diese Frage aus dem Container heraus. Wenn der Browser den Server erreicht und dies nicht, schickt Ihr Router internen Verkehr nicht zu sich selbst zurück."
 
-#: .\templates\accounts\sso_settings.html:266
+#: .\templates\accounts\sso_settings.html:262
 msgid "Where the secret is kept"
 msgstr "Wo das Secret liegt"
 
-#: .\templates\accounts\sso_settings.html:267
+#: .\templates\accounts\sso_settings.html:263
 msgid "In the database, encrypted with a key derived from DJANGO_SECRET_KEY — so a copy of the database alone does not reveal it, but a backup taken together with the environment does. Change DJANGO_SECRET_KEY and the secret has to be entered again."
 msgstr "In der Datenbank, verschlüsselt mit einem aus DJANGO_SECRET_KEY abgeleiteten Schlüssel — eine Kopie der Datenbank allein gibt es also nicht preis, eine Sicherung zusammen mit der Umgebung schon. Ändert sich DJANGO_SECRET_KEY, muss das Secret neu eingetragen werden."
 
@@ -2481,7 +2653,7 @@ msgid "Gives access to this page, and to the Django administration behind it."
 msgstr "Gibt Zugang zu dieser Seite und zur dahinterliegenden Django-Verwaltung."
 
 #: .\templates\accounts\user_form.html:90
-#: .\templates\accounts\user_list.html:65
+#: .\templates\accounts\user_list.html:61
 msgid "Administrator"
 msgstr "Administrator"
 
@@ -2493,7 +2665,7 @@ msgstr "Volle Rechte, einschließlich des Wegs zurück, wenn etwas nicht stimmt.
 msgid "If a provider group is configured as the administrator group, the provider decides this at every sign-in and anything set here is replaced."
 msgstr "Ist eine Anbietergruppe als Administratorgruppe konfiguriert, entscheidet der Anbieter dies bei jeder Anmeldung und überschreibt, was hier gesetzt ist."
 
-#: .\templates\accounts\user_form.html:100 .\templates\base.html:254
+#: .\templates\accounts\user_form.html:100 .\templates\base.html:276
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
@@ -2535,18 +2707,18 @@ msgid_plural "%(n)s accounts can sign in"
 msgstr[0] "%(n)s Konto kann sich anmelden"
 msgstr[1] "%(n)s Konten können sich anmelden"
 
-#: .\templates\accounts\user_list.html:14
+#: .\templates\accounts\user_list.html:10
 msgid "Add an account"
 msgstr "Konto hinzufügen"
 
-#: .\templates\accounts\user_list.html:18
+#: .\templates\accounts\user_list.html:14
 #, python-format
 msgid "%(n)s of these signs in through SSO. Their name and e-mail come from the identity provider and are refreshed at every sign-in."
 msgid_plural "%(n)s of these sign in through SSO. Their names and e-mail addresses come from the identity provider and are refreshed at every sign-in."
 msgstr[0] "%(n)s davon meldet sich über SSO an. Name und E-Mail kommen vom Identitätsanbieter und werden bei jeder Anmeldung erneuert."
 msgstr[1] "%(n)s davon melden sich über SSO an. Namen und E-Mail-Adressen kommen vom Identitätsanbieter und werden bei jeder Anmeldung erneuert."
 
-#: .\templates\accounts\user_list.html:25
+#: .\templates\accounts\user_list.html:21
 #: .\templates\employees\employee_list.html:24
 #: .\templates\organisation\closures.html:25
 #: .\templates\organisation\holidays.html:44
@@ -2554,92 +2726,92 @@ msgstr[1] "%(n)s davon melden sich über SSO an. Namen und E-Mail-Adressen komme
 msgid "Name"
 msgstr "Name"
 
-#: .\templates\accounts\user_list.html:26
+#: .\templates\accounts\user_list.html:22
 msgid "Signs in with"
 msgstr "Meldet sich an mit"
 
-#: .\templates\accounts\user_list.html:27
+#: .\templates\accounts\user_list.html:23
 msgid "Rights"
 msgstr "Rechte"
 
-#: .\templates\accounts\user_list.html:29
+#: .\templates\accounts\user_list.html:25
 msgid "Last seen"
 msgstr "Zuletzt gesehen"
 
-#: .\templates\accounts\user_list.html:30
+#: .\templates\accounts\user_list.html:26
 msgid "Actions"
 msgstr "Aktionen"
 
-#: .\templates\accounts\user_list.html:47
+#: .\templates\accounts\user_list.html:43
 msgid "Identity from the provider"
 msgstr "Identität vom Anbieter"
 
-#: .\templates\accounts\user_list.html:57
+#: .\templates\accounts\user_list.html:53
 msgid "SSO"
 msgstr "SSO"
 
-#: .\templates\accounts\user_list.html:67
+#: .\templates\accounts\user_list.html:63
 msgid "Manages people"
 msgstr "Verwaltet Konten"
 
-#: .\templates\accounts\user_list.html:69
+#: .\templates\accounts\user_list.html:65
 msgid "Signs in"
 msgstr "Meldet sich an"
 
-#: .\templates\accounts\user_list.html:71
+#: .\templates\accounts\user_list.html:67
 msgid "switched off"
 msgstr "abgeschaltet"
 
-#: .\templates\accounts\user_list.html:82
+#: .\templates\accounts\user_list.html:78
 msgid "no contract"
 msgstr "kein Vertrag"
 
-#: .\templates\accounts\user_list.html:85
+#: .\templates\accounts\user_list.html:81
 msgid "never"
 msgstr "nie"
 
-#: .\templates\accounts\user_list.html:88
+#: .\templates\accounts\user_list.html:84
 #: .\templates\organisation\closures.html:49
 #: .\templates\organisation\leave_types.html:53
 msgid "Edit"
 msgstr "Bearbeiten"
 
-#: .\templates\accounts\user_list.html:94
+#: .\templates\accounts\user_list.html:90
 msgid "Switch this account off?"
 msgstr "Dieses Konto abschalten?"
 
-#: .\templates\accounts\user_list.html:94
+#: .\templates\accounts\user_list.html:90
 msgid "Switch this account on?"
 msgstr "Dieses Konto einschalten?"
 
-#: .\templates\accounts\user_list.html:95
+#: .\templates\accounts\user_list.html:91
 msgid "They will not be able to sign in. Every hour they have worked is kept and nothing is deleted."
 msgstr "Die Person kann sich dann nicht mehr anmelden. Jede geleistete Stunde bleibt erhalten, es wird nichts gelöscht."
 
-#: .\templates\accounts\user_list.html:95
+#: .\templates\accounts\user_list.html:91
 msgid "They will be able to sign in again."
 msgstr "Die Person kann sich wieder anmelden."
 
-#: .\templates\accounts\user_list.html:96
-#: .\templates\accounts\user_list.html:98
+#: .\templates\accounts\user_list.html:92
+#: .\templates\accounts\user_list.html:94
 msgid "Switch off"
 msgstr "Abschalten"
 
-#: .\templates\accounts\user_list.html:96
-#: .\templates\accounts\user_list.html:98
+#: .\templates\accounts\user_list.html:92
+#: .\templates\accounts\user_list.html:94
 msgid "Switch on"
 msgstr "Einschalten"
 
-#: .\templates\accounts\user_list.html:101
+#: .\templates\accounts\user_list.html:97
 msgid "Delete this account?"
 msgstr "Dieses Konto löschen?"
 
-#: .\templates\accounts\user_list.html:102
+#: .\templates\accounts\user_list.html:98
 msgid "The account is removed for good. Their employee record and every hour on it are kept, but the two are no longer linked and they cannot sign in. Switching the account off is the reversible version of this."
 msgstr "Das Konto wird endgültig entfernt. Der Mitarbeitendendatensatz und jede darin erfasste Stunde bleiben erhalten, aber beide sind nicht mehr verknüpft und die Person kann sich nicht anmelden. Das Konto abzuschalten ist die umkehrbare Variante davon."
 
-#: .\templates\accounts\user_list.html:103
-#: .\templates\accounts\user_list.html:106
+#: .\templates\accounts\user_list.html:99
+#: .\templates\accounts\user_list.html:102
 #: .\templates\employees\employee_form.html:247
 #: .\templates\employees\employee_form.html:252
 #: .\templates\employees\employee_form.html:254
@@ -2650,39 +2822,39 @@ msgstr "Das Konto wird endgültig entfernt. Der Mitarbeitendendatensatz und jede
 msgid "Delete"
 msgstr "Löschen"
 
-#: .\templates\accounts\user_list.html:113
+#: .\templates\accounts\user_list.html:109
 msgid "Nobody yet."
 msgstr "Noch niemand."
 
-#: .\templates\accounts\user_list.html:124
+#: .\templates\accounts\user_list.html:120
 msgid "Accounts in this app"
 msgstr "Konten in dieser App"
 
-#: .\templates\accounts\user_list.html:126
+#: .\templates\accounts\user_list.html:122
 msgid "Two kinds"
 msgstr "Zwei Arten"
 
-#: .\templates\accounts\user_list.html:127
+#: .\templates\accounts\user_list.html:123
 msgid "An account marked “SSO” is the local end of an identity held by the provider. Its name and e-mail are copied from there at every sign-in, so changing them here would be undone; its password lives with the provider and cannot be set from this app at all."
 msgstr "Ein mit „SSO“ markiertes Konto ist das lokale Ende einer Identität beim Anbieter. Name und E-Mail werden bei jeder Anmeldung von dort übernommen; eine Änderung hier würde also rückgängig gemacht. Das Passwort liegt beim Anbieter und lässt sich aus dieser App gar nicht setzen."
 
-#: .\templates\accounts\user_list.html:128
+#: .\templates\accounts\user_list.html:124
 msgid "An account marked “Password” was created here. Use one for somebody who works here but has no account with the provider — and keep one as the way back in when SSO is the thing that is broken."
 msgstr "Ein mit „Passwort“ markiertes Konto wurde hier angelegt. Nutzen Sie eines für Personen, die hier arbeiten, aber kein Konto beim Anbieter haben — und behalten Sie eines als Weg zurück, wenn ausgerechnet SSO nicht funktioniert."
 
-#: .\templates\accounts\user_list.html:129
+#: .\templates\accounts\user_list.html:125
 msgid "Why somebody is missing"
 msgstr "Warum jemand fehlt"
 
-#: .\templates\accounts\user_list.html:130
+#: .\templates\accounts\user_list.html:126
 msgid "This app has no way to read the provider’s list of accounts. An SSO account appears here the first time it signs in, and not before."
 msgstr "Diese App kann die Kontenliste des Anbieters nicht lesen. Ein SSO-Konto erscheint hier bei der ersten Anmeldung und nicht früher."
 
-#: .\templates\accounts\user_list.html:131
+#: .\templates\accounts\user_list.html:127
 msgid "Switching off, or deleting"
 msgstr "Abschalten oder löschen"
 
-#: .\templates\accounts\user_list.html:132
+#: .\templates\accounts\user_list.html:128
 msgid "Switching an account off is reversible and keeps everything. Deleting is not — but it never takes a timesheet with it: an employee record and the hours on it survive the account being removed, because somebody who has left still worked them."
 msgstr "Ein Konto abzuschalten ist umkehrbar und behält alles. Löschen ist es nicht — aber es nimmt nie einen Stundenzettel mit: Mitarbeitendendatensatz und Stunden überleben das Entfernen des Kontos, denn wer ausgeschieden ist, hat sie trotzdem gearbeitet."
 
@@ -2758,15 +2930,19 @@ msgstr "Abmelden"
 msgid "Toggle navigation"
 msgstr "Navigation ein-/ausblenden"
 
-#: .\templates\base.html:251
+#: .\templates\base.html:205 .\templates\base.html:206
+msgid "Help for this page"
+msgstr "Hilfe zu dieser Seite"
+
+#: .\templates\base.html:273
 msgid "Unsaved changes"
 msgstr "Ungespeicherte Änderungen"
 
-#: .\templates\base.html:252
+#: .\templates\base.html:274
 msgid "You have unsaved changes on this page. Do you want to save them before leaving?"
 msgstr "Auf dieser Seite gibt es ungespeicherte Änderungen. Möchten Sie sie vor dem Verlassen speichern?"
 
-#: .\templates\base.html:255
+#: .\templates\base.html:277
 msgid "Discard"
 msgstr "Verwerfen"
 
@@ -2838,7 +3014,7 @@ msgstr "Stunden"
 
 #: .\templates\employees\contract_change.html:82
 #: .\templates\employees\employee_form.html:124
-#: .\templates\timesheets\month.html:556
+#: .\templates\timesheets\month.html:554
 msgid "Why"
 msgstr "Grund"
 
@@ -2870,8 +3046,8 @@ msgstr "Entfernen"
 #: .\templates\organisation\settings.html:77
 #: .\templates\organisation\settings.html:78
 #: .\templates\organisation\settings.html:91
-#: .\templates\organisation\settings.html:92 .\templates\roster\plan.html:140
-#: .\templates\roster\plan.html:172
+#: .\templates\organisation\settings.html:92 .\templates\roster\plan.html:145
+#: .\templates\roster\plan.html:177
 msgid "Remove"
 msgstr "Entfernen"
 
@@ -2987,6 +3163,15 @@ msgstr "Diese Person löschen?"
 #: .\templates\employees\employee_form.html:251
 msgid "This cannot be undone. If anything has been recorded for them, the app will refuse and tell you to switch them off instead."
 msgstr "Das lässt sich nicht rückgängig machen. Ist etwas erfasst, verweigert die App den Vorgang und schlägt stattdessen das Abschalten vor."
+
+#: .\templates\employees\employee_leave.html:16
+#: .\templates\organisation\holidays.html:27
+msgid "Show"
+msgstr "Anzeigen"
+
+#: .\templates\employees\employee_leave.html:28
+msgid "Days a year"
+msgstr "Tage pro Jahr"
 
 #: .\templates\employees\employee_leave.html:40
 msgid "Waiting"
@@ -3176,7 +3361,7 @@ msgid "Date"
 msgstr "Datum"
 
 #: .\templates\organisation\holidays.html:43
-#: .\templates\timesheets\home.html:64 .\templates\timesheets\month.html:116
+#: .\templates\timesheets\home.html:64 .\templates\timesheets\month.html:117
 msgid "Day"
 msgstr "Tag"
 
@@ -3336,7 +3521,7 @@ msgid "Deducted"
 msgstr "Abgezogen"
 
 #: .\templates\organisation\settings.html:137
-#: .\templates\timesheets\day.html:137 .\templates\timesheets\month.html:451
+#: .\templates\timesheets\day.html:137 .\templates\timesheets\month.html:512
 msgid "Counted as worked"
 msgstr "Als Arbeitszeit gezählt"
 
@@ -3349,86 +3534,77 @@ msgstr "Min."
 msgid "Three things this table is here to show. A day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier — reading the rules the other way costs somebody break they were entitled to. A break somebody already took counts: clocking out for half an hour and back in is half an hour off the day already. But it only counts if it broke the work up — the last row is six and a half hours worked straight through with the hour off afterwards, which is still six and a half hours without a break, and a pause under fifteen minutes is not a break at all."
 msgstr "Drei Dinge zeigt diese Tabelle. Ein Tag, der nur knapp über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe — die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zusteht. Eine bereits genommene Pause zählt: wer sich für eine halbe Stunde ausbucht und wieder einbucht, hat diese halbe Stunde schon nicht gearbeitet. Sie zählt aber nur, wenn sie die Arbeit unterbrochen hat — die letzte Zeile sind sechseinhalb Stunden am Stück und die Stunde frei danach, das bleiben sechseinhalb Stunden ohne Pause. Und eine Unterbrechung unter fünfzehn Minuten ist gar keine Pause."
 
-#: .\templates\roster\plan.html:8 .\templates\timesheets\month.html:18
-msgid "Help"
-msgstr "Hilfe"
-
-#: .\templates\roster\plan.html:15 .\templates\timesheets\team.html:10
+#: .\templates\roster\plan.html:20 .\templates\timesheets\team.html:16
 msgid "Previous"
 msgstr "Zurück"
 
-#: .\templates\roster\plan.html:16 .\templates\timesheets\home.html:21
-#: .\templates\timesheets\team.html:11
+#: .\templates\roster\plan.html:21 .\templates\timesheets\home.html:21
+#: .\templates\timesheets\team.html:17
 msgid "This week"
 msgstr "Diese Woche"
 
-#: .\templates\roster\plan.html:17 .\templates\timesheets\team.html:12
+#: .\templates\roster\plan.html:22 .\templates\timesheets\team.html:18
 msgid "Next"
 msgstr "Weiter"
 
-#: .\templates\roster\plan.html:25
+#: .\templates\roster\plan.html:30
 msgid "Draft this week from the contracts?"
 msgstr "Diese Woche aus den Verträgen entwerfen?"
 
-#: .\templates\roster\plan.html:26
+#: .\templates\roster\plan.html:31
 #, python-format
 msgid "Everybody who works a day this week and is not already rostered on it gets a shift starting at %(start)s, as long as their contract says. Days that already have somebody on them are left alone. It is a first draft — drag the cards where they belong."
 msgstr "Alle, die diese Woche an einem Tag arbeiten und dort noch nicht eingeteilt sind, bekommen eine Schicht ab %(start)s, so lang wie ihr Vertrag es vorsieht. Tage, an denen bereits jemand eingeteilt ist, bleiben unangetastet. Es ist ein erster Entwurf — ziehen Sie die Karten dorthin, wo sie hingehören."
 
-#: .\templates\roster\plan.html:27
+#: .\templates\roster\plan.html:32
 msgid "Draft the week"
 msgstr "Woche entwerfen"
 
-#: .\templates\roster\plan.html:30
+#: .\templates\roster\plan.html:35
 msgid "Fill from contracts"
 msgstr "Aus Verträgen füllen"
 
-#: .\templates\roster\plan.html:37
+#: .\templates\roster\plan.html:42
 msgid "Copy that week here"
 msgstr "Diese Woche hierher kopieren"
 
-#: .\templates\roster\plan.html:79
+#: .\templates\roster\plan.html:84
 msgid "asked for"
 msgstr "beantragt"
 
-#: .\templates\roster\plan.html:87
+#: .\templates\roster\plan.html:92
 msgid "Shift"
 msgstr "Schicht"
 
-#: .\templates\roster\plan.html:122 .\templates\timesheets\day.html:157
-#: .\templates\timesheets\month.html:525
-msgid "Note"
-msgstr "Anmerkung"
-
-#: .\templates\roster\plan.html:135 .\templates\roster\plan.html:167
+#: .\templates\roster\plan.html:140 .\templates\roster\plan.html:172
 msgid "Move to the previous day"
 msgstr "Auf den vorherigen Tag verschieben"
 
-#: .\templates\roster\plan.html:137 .\templates\roster\plan.html:169
+#: .\templates\roster\plan.html:142 .\templates\roster\plan.html:174
 msgid "Move to the next day"
 msgstr "Auf den nächsten Tag verschieben"
 
-#: .\templates\roster\plan.html:179
+#: .\templates\roster\plan.html:184
 msgid "Save the roster"
 msgstr "Dienstplan speichern"
 
-#: .\templates\roster\plan.html:189
+#: .\templates\roster\plan.html:194
 msgid "Planning the week"
 msgstr "Die Woche planen"
 
-#: .\templates\roster\plan.html:191
+#: .\templates\roster\plan.html:196
 msgid "Each column is a day. A card is one person’s shift on that day, and somebody can have more than one — a split shift is two cards."
 msgstr "Jede Spalte ist ein Tag. Eine Karte ist die Schicht einer Person an diesem Tag, und es können mehrere sein — ein geteilter Dienst sind zwei Karten."
 
-#: .\templates\roster\plan.html:192
+#: .\templates\roster\plan.html:197
 msgid "Drag a card to another column to move the shift, or use the ‹ and › buttons on it. Nothing is written until you press Save."
 msgstr "Ziehen Sie eine Karte in eine andere Spalte, um die Schicht zu verschieben, oder benutzen Sie die Schaltflächen ‹ und › darauf. Geschrieben wird nichts, bis Sie speichern."
 
-#: .\templates\roster\plan.html:193
+#: .\templates\roster\plan.html:198
 msgid "“Fill from contracts” drafts a whole week from everybody’s contracted hours, starting at the time set under Working time. It adds the break the day needs on top, because a contract counts working time and a shift is clock-in to clock-out."
 msgstr "„Aus Verträgen füllen“ entwirft eine ganze Woche aus den vertraglichen Stunden aller, beginnend zu der unter „Arbeitszeit“ gesetzten Uhrzeit. Die für den Tag nötige Pause wird obendrauf gerechnet, denn ein Vertrag zählt Arbeitszeit und eine Schicht geht von Kommen bis Gehen."
 
-#: .\templates\roster\plan.html:194
+#: .\templates\roster\plan.html:199
 msgid "The pale bands are people who are already away. A band marked “asked for” is a request nobody has decided yet — deciding it and planning around it are the same job."
 msgstr "Die blassen Balken sind Personen, die bereits abwesend sind. Ein mit „beantragt“ markierter Balken ist ein noch nicht entschiedener Antrag — ihn zu entscheiden und um ihn herum zu planen ist dieselbe Aufgabe."
 
@@ -3485,11 +3661,11 @@ msgstr "Weiterer Abschnitt"
 msgid "minutes"
 msgstr "Minuten"
 
-#: .\templates\timesheets\day.html:135 .\templates\timesheets\month.html:449
+#: .\templates\timesheets\day.html:135 .\templates\timesheets\month.html:510
 msgid "Time here"
 msgstr "Anwesenheit"
 
-#: .\templates\timesheets\day.html:136 .\templates\timesheets\month.html:450
+#: .\templates\timesheets\day.html:136 .\templates\timesheets\month.html:511
 msgid "Break the rules require"
 msgstr "Vorgeschriebene Pause"
 
@@ -3569,11 +3745,11 @@ msgstr "Bestätigen"
 msgid "Rostered"
 msgstr "Eingeteilt"
 
-#: .\templates\timesheets\home.html:66 .\templates\timesheets\team.html:38
+#: .\templates\timesheets\home.html:66 .\templates\timesheets\team.html:44
 msgid "Worked"
 msgstr "Gearbeitet"
 
-#: .\templates\timesheets\home.html:91 .\templates\timesheets\team.html:86
+#: .\templates\timesheets\home.html:91 .\templates\timesheets\team.html:92
 msgid "confirmed"
 msgstr "bestätigt"
 
@@ -3624,302 +3800,250 @@ msgstr "Alles aus den letzten zwei Wochen ist bestätigt."
 msgid "My timesheet"
 msgstr "Mein Stundenzettel"
 
-#: .\templates\timesheets\month.html:25
-#: .\templates\timesheets\month_end.html:11
-msgid "The month before"
-msgstr "Vorheriger Monat"
-
-#: .\templates\timesheets\month.html:31
-#: .\templates\timesheets\month_end.html:12
-msgid "Month"
-msgstr "Monat"
-
-#: .\templates\timesheets\month.html:39
-#: .\templates\timesheets\month_end.html:20
-msgid "The month after"
-msgstr "Nächster Monat"
-
-#: .\templates\timesheets\month.html:41
-#: .\templates\timesheets\month_end.html:22
-msgid "This month"
-msgstr "Dieser Monat"
-
-#: .\templates\timesheets\month.html:52
+#: .\templates\timesheets\month.html:36
 msgid "Unlock the month?"
 msgstr "Monat entsperren?"
 
-#: .\templates\timesheets\month.html:52
+#: .\templates\timesheets\month.html:36
 msgid "Lock the month?"
 msgstr "Monat sperren?"
 
-#: .\templates\timesheets\month.html:53
+#: .\templates\timesheets\month.html:37
 msgid "Everything in this month becomes changeable again."
 msgstr "Alles in diesem Monat kann wieder geändert werden."
 
-#: .\templates\timesheets\month.html:53
+#: .\templates\timesheets\month.html:37
 msgid "Nothing in this month can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again from its own row."
 msgstr "Danach kann nichts mehr in diesem Monat geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Ein einzelner Tag kann über seine eigene Zeile wieder entsperrt werden."
 
-#: .\templates\timesheets\month.html:54
-#: .\templates\timesheets\month_end.html:50
+#: .\templates\timesheets\month.html:38
+#: .\templates\timesheets\month_end.html:35
 msgid "Go ahead"
 msgstr "Weiter"
 
-#: .\templates\timesheets\month.html:60
-#: .\templates\timesheets\month_end.html:139
+#: .\templates\timesheets\month.html:44
+#: .\templates\timesheets\month_end.html:124
 msgid "Unlock the month"
 msgstr "Monat entsperren"
 
-#: .\templates\timesheets\month.html:64
-#: .\templates\timesheets\month_end.html:133
+#: .\templates\timesheets\month.html:48
+#: .\templates\timesheets\month_end.html:118
 msgid "Lock the month"
 msgstr "Monat sperren"
 
-#: .\templates\timesheets\month.html:117 .\templates\timesheets\month.html:489
+#: .\templates\timesheets\month.html:118 .\templates\timesheets\month.html:587
 msgid "Status"
 msgstr "Status"
 
-#: .\templates\timesheets\month.html:118 .\templates\timesheets\month.html:584
+#: .\templates\timesheets\month.html:119 .\templates\timesheets\month.html:590
 msgid "Bookings"
 msgstr "Buchungen"
 
-#: .\templates\timesheets\month.html:121
-#: .\templates\timesheets\month_end.html:66
+#: .\templates\timesheets\month.html:122
+#: .\templates\timesheets\month_end.html:51
 msgid "Actual"
 msgstr "Ist"
 
-#: .\templates\timesheets\month.html:122
-#: .\templates\timesheets\month_end.html:67
+#: .\templates\timesheets\month.html:123
+#: .\templates\timesheets\month_end.html:52
 msgid "Supposed"
 msgstr "Soll"
 
-#: .\templates\timesheets\month.html:123 .\templates\timesheets\month.html:594
-#: .\templates\timesheets\month_end.html:68
+#: .\templates\timesheets\month.html:124 .\templates\timesheets\month.html:600
+#: .\templates\timesheets\month_end.html:53
 msgid "Saldo"
 msgstr "Saldo"
 
-#: .\templates\timesheets\month.html:124
+#: .\templates\timesheets\month.html:125
 msgid "Running"
 msgstr "Laufend"
 
-#: .\templates\timesheets\month.html:125
+#: .\templates\timesheets\month.html:126
 msgid "Comment"
 msgstr "Bemerkung"
 
-#: .\templates\timesheets\month.html:134
-msgid "Brought forward"
-msgstr "Übertrag"
-
-#: .\templates\timesheets\month.html:159
+#: .\templates\timesheets\month.html:154
 msgid "Unlock this day so it can be changed"
 msgstr "Diesen Tag entsperren, um ihn zu ändern"
 
-#: .\templates\timesheets\month.html:160
+#: .\templates\timesheets\month.html:155
 #, python-format
 msgid "Unlock %(date)s"
 msgstr "%(date)s entsperren"
 
-#: .\templates\timesheets\month.html:163
+#: .\templates\timesheets\month.html:158 .\templates\timesheets\month.html:196
 msgid "This day is locked. Ask a manager to unlock it."
 msgstr "Dieser Tag ist gesperrt. Bitten Sie Ihre Leitung, ihn zu entsperren."
 
-#: .\templates\timesheets\month.html:164
-#: .\templates\timesheets\month_end.html:111
+#: .\templates\timesheets\month.html:159
+#: .\templates\timesheets\month_end.html:96
 msgid "locked"
 msgstr "gesperrt"
 
-#: .\templates\timesheets\month.html:168
+#: .\templates\timesheets\month.html:163
 msgid "Lock this day again"
 msgstr "Diesen Tag wieder sperren"
 
-#: .\templates\timesheets\month.html:169
+#: .\templates\timesheets\month.html:164
 #, python-format
 msgid "Lock %(date)s"
 msgstr "%(date)s sperren"
 
-#: .\templates\timesheets\month.html:188
+#: .\templates\timesheets\month.html:197
+msgid "This day is part of something that was booked elsewhere — a workplace closure, or an absence covering several days. Change it on the Time off page."
+msgstr "Dieser Tag gehört zu etwas, das an anderer Stelle eingetragen wurde — einer Betriebsschließung oder einer Abwesenheit über mehrere Tage. Bitte auf der Seite „Abwesenheit“ ändern."
+
+#: .\templates\timesheets\month.html:232
+msgid "still running"
+msgstr "läuft noch"
+
+#: .\templates\timesheets\month.html:241
+msgid "The hours entered are not the hours rostered."
+msgstr "Die eingetragenen Stunden sind nicht die eingeteilten."
+
+#: .\templates\timesheets\month.html:241
+msgid "differs"
+msgstr "abweichend"
+
+#: .\templates\timesheets\month.html:251
 #, python-format
 msgid "Status for %(date)s"
 msgstr "Status für %(date)s"
 
-#: .\templates\timesheets\month.html:209
-msgid "Reported, and not yet acknowledged by a manager. It counts either way."
-msgstr "Gemeldet und von der Leitung noch nicht zur Kenntnis genommen. Es zählt so oder so."
+#: .\templates\timesheets\month.html:271
+msgid "Nothing — an ordinary working day"
+msgstr "Nichts — ein normaler Arbeitstag"
 
-#: .\templates\timesheets\month.html:209
-msgid "not yet seen"
-msgstr "noch nicht gesehen"
-
-#: .\templates\timesheets\month.html:211
-msgid "Waiting for a decision. The days are not taken off a balance until it is approved."
-msgstr "Wartet auf eine Entscheidung. Die Tage werden erst bei Genehmigung vom Konto abgezogen."
-
-#: .\templates\timesheets\month.html:211
-msgid "waiting"
-msgstr "wartet"
-
-#: .\templates\timesheets\month.html:221
-msgid "still running"
-msgstr "läuft noch"
-
-#: .\templates\timesheets\month.html:230
-msgid "The hours entered are not the hours rostered."
-msgstr "Die eingetragenen Stunden sind nicht die eingeteilten."
-
-#: .\templates\timesheets\month.html:230
-msgid "differs"
-msgstr "abweichend"
-
-#: .\templates\timesheets\month.html:234
-msgid "set"
-msgstr "festlegen"
-
-#: .\templates\timesheets\month.html:256
+#: .\templates\timesheets\month.html:314
 #, python-format
 msgid "Bookings for %(date)s"
 msgstr "Buchungen für %(date)s"
 
-#: .\templates\timesheets\month.html:263
-msgid "add"
-msgstr "eintragen"
-
-#: .\templates\timesheets\month.html:267
+#: .\templates\timesheets\month.html:323
 #, python-format
 msgid "%(counter)s more booking — open the day to see it"
 msgid_plural "%(counter)s more bookings — open the day to see them"
 msgstr[0] "%(counter)s weitere Buchung — Tag öffnen, um sie zu sehen"
 msgstr[1] "%(counter)s weitere Buchungen — Tag öffnen, um sie zu sehen"
 
-#: .\templates\timesheets\month.html:282 .\templates\timesheets\month.html:439
+#: .\templates\timesheets\month.html:338 .\templates\timesheets\month.html:500
 msgid "Take the rostered times"
 msgstr "Geplante Zeiten übernehmen"
 
-#: .\templates\timesheets\month.html:283
+#: .\templates\timesheets\month.html:339
 #, python-format
 msgid "Take the rostered times for %(date)s"
 msgstr "Geplante Zeiten für %(date)s übernehmen"
 
-#: .\templates\timesheets\month.html:295
+#: .\templates\timesheets\month.html:351
 #, python-format
 msgid "Entered by hand. The rules would give %(computed)s minutes."
 msgstr "Von Hand eingetragen. Die Regeln ergäben %(computed)s Minuten."
 
-#: .\templates\timesheets\month.html:310
+#: .\templates\timesheets\month.html:371
 #, python-format
 msgid "Correction for %(date)s"
 msgstr "Korrektur für %(date)s"
 
-#: .\templates\timesheets\month.html:320
+#: .\templates\timesheets\month.html:381
 msgid "Credited, not worked — an absence the hours are paid for."
 msgstr "Gutgeschrieben, nicht geleistet — eine Abwesenheit, für die die Stunden bezahlt werden."
 
-#: .\templates\timesheets\month.html:347
+#: .\templates\timesheets\month.html:408
 #, python-format
 msgid "Comment for %(date)s"
 msgstr "Bemerkung zu %(date)s"
 
-#: .\templates\timesheets\month.html:374
+#: .\templates\timesheets\month.html:435
 msgid "The month"
 msgstr "Der Monat"
 
-#: .\templates\timesheets\month.html:374
+#: .\templates\timesheets\month.html:435
 msgid "So far"
 msgstr "Bis heute"
 
-#: .\templates\timesheets\month.html:400
+#: .\templates\timesheets\month.html:461
 msgid "The whole month"
 msgstr "Ganzer Monat"
 
-#: .\templates\timesheets\month.html:411
+#: .\templates\timesheets\month.html:472
 #, python-format
 msgid "Includes %(amount)s brought from a previous contract, as at %(date)s."
 msgstr "Enthält %(amount)s aus einem früheren Vertrag, Stand %(date)s."
 
-#: .\templates\timesheets\month.html:416
+#: .\templates\timesheets\month.html:477
 msgid "A holiday, a day of leave or a sick day is credited at the contracted hours, so the month comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back."
 msgstr "Ein Feiertag, ein Urlaubstag oder ein Krankheitstag wird mit den vertraglichen Stunden gutgeschrieben; der Monat geht damit auf und der Grund steht in der Zeile. Der Freizeitausgleich ist die Ausnahme und wird nicht gutgeschrieben — genau dieses Minus ist die Überstunde, die zurückgenommen wird."
 
-#: .\templates\timesheets\month.html:427
+#: .\templates\timesheets\month.html:488
 msgid "One line per booking. Type the time, then say whether it is a coming or a going — the keyboard does it too: press C for coming or G for going and the line is entered."
 msgstr "Eine Zeile je Buchung. Zeit eintippen und dann angeben, ob es ein Kommen oder ein Gehen ist — über die Tastatur geht das auch: K für Kommen oder G für Gehen, und die Zeile ist eingetragen."
 
-#: .\templates\timesheets\month.html:436
+#: .\templates\timesheets\month.html:497
 msgid "Another booking"
 msgstr "Weitere Buchung"
 
-#: .\templates\timesheets\month.html:457
+#: .\templates\timesheets\month.html:518
 msgid "Clear the day"
 msgstr "Tag leeren"
 
-#: .\templates\timesheets\month.html:477
-msgid "What was true of this day. Time off is asked for and waits for a decision; sickness is stated and counts from the moment it is entered — your manager acknowledges it rather than allows it."
-msgstr "Was an diesem Tag war. Abwesenheit wird beantragt und wartet auf eine Entscheidung; Krankheit wird gemeldet und zählt ab dem Eintragen — Ihre Leitung nimmt sie zur Kenntnis, sie genehmigt sie nicht."
+#: .\templates\timesheets\month.html:537
+msgid "Time that was never clocked. A minus takes time off."
+msgstr "Zeit, die nie an einer Uhr erfasst wurde. Ein Minus zieht Zeit ab."
 
-#: .\templates\timesheets\month.html:485
-msgid "This day is part of something that was booked elsewhere — a workplace closure, or an absence covering several days. Change it on the Time off page."
-msgstr "Dieser Tag gehört zu etwas, das an anderer Stelle eingetragen wurde — einer Betriebsschließung oder einer Abwesenheit über mehrere Tage. Bitte auf der Seite „Abwesenheit“ ändern."
-
-#: .\templates\timesheets\month.html:491
-msgid "Nothing — an ordinary working day"
-msgstr "Nichts — ein normaler Arbeitstag"
-
-#: .\templates\timesheets\month.html:503
-msgid "Which"
-msgstr "Welcher"
-
-#: .\templates\timesheets\month.html:515
-msgid "Half a day"
-msgstr "Ein halber Tag"
-
-#: .\templates\timesheets\month.html:545
-msgid "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. Minutes, or 0:30. A minus takes time off."
-msgstr "Zeit, die zu diesem Tag gehört und nie von einer Uhr abgelesen wurde — ein vergessenes Gehen, eine Fahrt zu einem zweiten Einsatzort, ein bezahlter Nachmittag. Minuten oder 0:30. Ein Minus zieht Zeit ab."
-
-#: .\templates\timesheets\month.html:563
+#: .\templates\timesheets\month.html:561
 msgid "Remove the correction"
 msgstr "Korrektur entfernen"
 
-#: .\templates\timesheets\month.html:580
+#: .\templates\timesheets\month.html:578
 msgid "Reading the timesheet"
 msgstr "Den Stundenzettel lesen"
 
-#: .\templates\timesheets\month.html:582
+#: .\templates\timesheets\month.html:580
 msgid "Saving"
 msgstr "Speichern"
 
-#: .\templates\timesheets\month.html:583
+#: .\templates\timesheets\month.html:581
 msgid "There is no Save button. A comment is written when you leave the box; bookings and a correction are written when you accept the pop-up. Everything the change moves — the running column and the totals — is worked out again by the server and redrawn."
 msgstr "Es gibt keine Schaltfläche „Speichern“. Eine Bemerkung wird geschrieben, sobald Sie das Feld verlassen; Buchungen und eine Korrektur werden geschrieben, sobald Sie das Fenster bestätigen. Alles, was sich dadurch ändert — die laufende Spalte und die Summen — wird vom Server neu berechnet und neu gezeichnet."
 
-#: .\templates\timesheets\month.html:585
+#: .\templates\timesheets\month.html:588
+msgid "What was true of this day. Everything here is asked for and waits for your manager to decide it — sickness too. Nothing is credited and no leave is spent until they have."
+msgstr "Was an diesem Tag war. Alles hier wird beantragt und wartet auf die Entscheidung Ihrer Leitung — Krankheit ebenso. Bis dahin wird nichts angerechnet und kein Urlaub verbraucht."
+
+#: .\templates\timesheets\month.html:589
+msgid "Click the status cell and choose from the list. Every status has its half day directly under it, and each kind of special leave you have been granted is its own entry. A day still waiting for a decision is drawn with a dotted edge — so is one you have asked to have cancelled, which stays booked until your manager answers."
+msgstr "Auf die Status-Zelle klicken und aus der Liste wählen. Zu jedem Status steht der halbe Tag direkt darunter, und jede Sonderurlaubsart, die Ihnen gewährt wurde, ist ein eigener Eintrag. Ein Tag, über den noch nicht entschieden ist, wird mit gepunktetem Rand gezeichnet — ebenso einer, dessen Rücknahme Sie beantragt haben und der bis zur Antwort Ihrer Leitung bestehen bleibt."
+
+#: .\templates\timesheets\month.html:591
 msgid "A day is a column of comings and goings, in the order they happened. Click the cell to enter them. The cell shows the first four and counts the rest; the pop-up has all of them. A coming with no going yet is a shift still running: it is worth nothing until it has an end, because a figure that changes on every refresh is not one anybody can sign off."
 msgstr "Ein Tag ist eine Spalte aus Kommen und Gehen, in der Reihenfolge, in der sie stattgefunden haben. Zum Eintragen auf die Zelle klicken. Die Zelle zeigt die ersten vier und zählt den Rest; im Fenster stehen alle. Ein Kommen ohne Gehen ist eine noch laufende Schicht: Sie zählt null, solange sie kein Ende hat — eine Zahl, die sich bei jedem Neuladen ändert, kann niemand abzeichnen."
 
-#: .\templates\timesheets\month.html:587
+#: .\templates\timesheets\month.html:593
 msgid "Worked out from the break rules and deducted from the bookings. A break somebody typed by hand is drawn in amber, because a break of 30 the rules produced and a break of 30 somebody entered are the same number and mean different things."
 msgstr "Wird aus den Pausenregeln berechnet und von den Buchungen abgezogen. Eine von Hand eingetragene Pause steht in Bernstein, denn eine Pause von 30 Minuten aus der Regel und eine von Hand eingetragene Pause von 30 Minuten sind dieselbe Zahl und bedeuten Verschiedenes."
 
-#: .\templates\timesheets\month.html:589
+#: .\templates\timesheets\month.html:595
 msgid "Time that belongs on the day and was never read off a clock. It always needs a reason, and it is added after the break — so a correction can never push a day over a break threshold and deduct a break nobody took."
 msgstr "Zeit, die zum Tag gehört und nie von einer Uhr abgelesen wurde. Sie braucht immer eine Begründung und wird nach der Pause aufgeschlagen — eine Korrektur kann einen Tag also nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat."
 
-#: .\templates\timesheets\month.html:590
+#: .\templates\timesheets\month.html:596
 msgid "Days that have not happened"
 msgstr "Tage, die noch nicht waren"
 
-#: .\templates\timesheets\month.html:591
+#: .\templates\timesheets\month.html:597
 msgid "Hours can only be entered for today and for days already past — a booking is a record of when you were demonstrably at work, and nobody has been at work tomorrow. A status is different: booking leave or naming a training day in advance is exactly what a future row is for."
 msgstr "Stunden lassen sich nur für heute und für bereits vergangene Tage eintragen — eine Buchung hält fest, wann Sie nachweislich da waren, und morgen war noch niemand da. Beim Status ist es anders: Urlaub zu beantragen oder eine Fortbildung im Voraus einzutragen ist genau das, wofür eine künftige Zeile da ist."
 
-#: .\templates\timesheets\month.html:592
+#: .\templates\timesheets\month.html:598
 msgid "Locked days"
 msgstr "Gesperrte Tage"
 
-#: .\templates\timesheets\month.html:593
+#: .\templates\timesheets\month.html:599
 msgid "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards."
 msgstr "Ihre Leitung schließt einen Monat ab, wenn die Stunden darin vereinbart sind. Danach kann an einem gesperrten Tag nichts mehr geändert werden — weder die Buchungen noch der Status noch die Korrektur noch die Bemerkung. Muss etwas berichtigt werden, entsperrt die Leitung genau diesen einen Tag über das Schloss in seiner Zeile und sperrt ihn danach wieder."
 
-#: .\templates\timesheets\month.html:595
+#: .\templates\timesheets\month.html:601
 msgid "Actual less supposed. Green is time over the contract, red is time under it. The running column carries on from the balance brought into the month, so the last row of the month is the balance to date."
 msgstr "Ist minus Soll. Grün ist Zeit über dem Vertrag, Rot ist Zeit darunter. Die laufende Spalte setzt den Übertrag in den Monat fort, die letzte Zeile des Monats ist also der Saldo bis heute."
 
@@ -3927,65 +4051,65 @@ msgstr "Ist minus Soll. Grün ist Zeit über dem Vertrag, Rot ist Zeit darunter.
 msgid "Closing a month"
 msgstr "Monat abschließen"
 
-#: .\templates\timesheets\month_end.html:28
+#: .\templates\timesheets\month_end.html:13
 msgid "Locking a month closes it: nothing in it can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again on that person's timesheet when something has to be put right."
 msgstr "Das Sperren schließt den Monat: danach kann nichts mehr darin geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Muss etwas berichtigt werden, kann ein einzelner Tag auf dem Stundenzettel der Person wieder entsperrt werden."
 
-#: .\templates\timesheets\month_end.html:38
+#: .\templates\timesheets\month_end.html:23
 #, python-format
 msgid "%(counter)s absence in this month is still waiting for a decision. A month cannot be locked over it — decide it first."
 msgid_plural "%(counter)s absences in this month are still waiting for a decision. A month cannot be locked over them — decide them first."
 msgstr[0] "%(counter)s Abwesenheit in diesem Monat wartet noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden."
 msgstr[1] "%(counter)s Abwesenheiten in diesem Monat warten noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden."
 
-#: .\templates\timesheets\month_end.html:39
+#: .\templates\timesheets\month_end.html:24
 msgid "Open the requests"
 msgstr "Zu den Anträgen"
 
-#: .\templates\timesheets\month_end.html:48
+#: .\templates\timesheets\month_end.html:33
 msgid "Lock or unlock the month?"
 msgstr "Monat sperren oder entsperren?"
 
-#: .\templates\timesheets\month_end.html:49
+#: .\templates\timesheets\month_end.html:34
 msgid "Locking closes that month for everybody you have ticked: nothing in it can be changed afterwards. A single day can be unlocked again on their own timesheet."
 msgstr "Das Sperren schließt den Monat für alle Angehakten: danach kann nichts mehr darin geändert werden. Ein einzelner Tag kann auf dem jeweiligen Stundenzettel wieder entsperrt werden."
 
-#: .\templates\timesheets\month_end.html:62
+#: .\templates\timesheets\month_end.html:47
 msgid "Everybody"
 msgstr "Alle"
 
-#: .\templates\timesheets\month_end.html:69
+#: .\templates\timesheets\month_end.html:54
 msgid "Still open"
 msgstr "Noch offen"
 
-#: .\templates\timesheets\month_end.html:70
+#: .\templates\timesheets\month_end.html:55
 msgid "Locked"
 msgstr "Gesperrt"
 
-#: .\templates\timesheets\month_end.html:99
+#: .\templates\timesheets\month_end.html:84
 #, python-format
 msgid "%(counter)s day unanswered"
 msgid_plural "%(counter)s days unanswered"
 msgstr[0] "%(counter)s Tag offen"
 msgstr[1] "%(counter)s Tage offen"
 
-#: .\templates\timesheets\month_end.html:104
+#: .\templates\timesheets\month_end.html:89
 #, python-format
 msgid "%(counter)s waiting for a decision"
 msgid_plural "%(counter)s waiting for a decision"
 msgstr[0] "%(counter)s wartet auf Entscheidung"
 msgstr[1] "%(counter)s warten auf Entscheidung"
 
-#: .\templates\timesheets\month_end.html:119
+#: .\templates\timesheets\month_end.html:104
 #, python-format
 msgid "%(locked)s of %(total)s days"
 msgstr "%(locked)s von %(total)s Tagen"
 
-#: .\templates\timesheets\month_end.html:122
+#: .\templates\timesheets\month_end.html:107
 msgid "open"
 msgstr "offen"
 
-#: .\templates\timesheets\month_end.html:127
+#: .\templates\timesheets\month_end.html:112
 msgid "Nobody is employed at the moment."
 msgstr "Zurzeit ist niemand beschäftigt."
 
@@ -3993,137 +4117,38 @@ msgstr "Zurzeit ist niemand beschäftigt."
 msgid "Team timesheets"
 msgstr "Stundenzettel des Teams"
 
-#: .\templates\timesheets\team.html:19
+#: .\templates\timesheets\team.html:25
 msgid "Worked, everybody"
 msgstr "Gearbeitet, alle"
 
-#: .\templates\timesheets\team.html:23
+#: .\templates\timesheets\team.html:29
 msgid "Contracted, everybody"
 msgstr "Vertraglich, alle"
 
-#: .\templates\timesheets\team.html:27
+#: .\templates\timesheets\team.html:33
 msgid "Days nobody has answered for"
 msgstr "Tage, für die niemand geantwortet hat"
 
-#: .\templates\timesheets\team.html:39
+#: .\templates\timesheets\team.html:45
 msgid "Difference"
 msgstr "Differenz"
 
-#: .\templates\timesheets\team.html:68
+#: .\templates\timesheets\team.html:74
 msgid "Rostered, but nobody has said what was worked"
 msgstr "Eingeteilt, aber niemand hat gesagt, was gearbeitet wurde"
 
-#: .\templates\timesheets\team.html:87
+#: .\templates\timesheets\team.html:93
 msgid "entered, not confirmed"
 msgstr "eingetragen, nicht bestätigt"
 
-#: .\templates\timesheets\team.html:88
+#: .\templates\timesheets\team.html:94
 msgid "rostered, nothing entered"
 msgstr "eingeteilt, nichts eingetragen"
 
-#: .\templates\timesheets\team.html:89
+#: .\templates\timesheets\team.html:95
 msgid "different from the roster"
 msgstr "abweichend vom Dienstplan"
 
-#: .\templates\timesheets\team.html:90
+#: .\templates\timesheets\team.html:96
 msgid "away"
 msgstr "abwesend"
-
-#~ msgid "decimal — 7,5 h"
-#~ msgstr "dezimal — 7,5 h"
-
-#~ msgid "clock — 7:30 h"
-#~ msgstr "Uhrzeit — 7:30 h"
-
-#~ msgid "hours"
-#~ msgstr "Stunden"
-
-#~ msgid "How durations are written on every page that shows one."
-#~ msgstr "Wie Zeitdauern auf jeder Seite geschrieben werden, die eine anzeigt."
-
-#~ msgid "preferences"
-#~ msgstr "Einstellungen"
-
-#~ msgid "Your settings were saved."
-#~ msgstr "Ihre Einstellungen wurden gespeichert."
-
-#~ msgid "My settings"
-#~ msgstr "Meine Einstellungen"
-
-#~ msgid "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you."
-#~ msgstr "Ihre eigenen, nicht die des Betriebs. Dienstplan, Stunden und Urlaubsanspruch werden mit Ihrer Leitung vereinbart; auf dieser Seite geht es nur darum, wie die App sich für Sie liest."
-
-#~ msgid "How a duration is written wherever this app shows one. Both say the same thing — 7,5 h and 7:30 h are one working day — so switching this never changes a total, only how you read it."
-#~ msgstr "Wie eine Zeitdauer überall dort geschrieben wird, wo diese App eine anzeigt. Beide sagen dasselbe — 7,5 h und 7:30 h sind ein Arbeitstag — das Umstellen ändert also nie eine Summe, nur wie Sie sie lesen."
-
-#~ msgid "Nothing was saved, so the month is exactly as it was."
-#~ msgstr "Es wurde nichts gespeichert, der Monat ist also genau so wie zuvor."
-
-#, python-format
-#~ msgid "%(count)s day was saved."
-#~ msgid_plural "%(count)s days were saved."
-#~ msgstr[0] "%(count)s Tag wurde gespeichert."
-#~ msgstr[1] "%(count)s Tage wurden gespeichert."
-
-#~ msgid "Nothing had changed, so nothing was saved."
-#~ msgstr "Es hatte sich nichts geändert, es wurde also nichts gespeichert."
-
-#~ msgid "Edit account"
-#~ msgstr "Konto bearbeiten"
-
-#~ msgid "Closure"
-#~ msgstr "Schließzeit"
-
-#~ msgid "Special leave type"
-#~ msgstr "Sonderurlaubsart"
-
-#~ msgid "at work"
-#~ msgstr "im Dienst"
-
-#, python-format
-#~ msgid "It is %(time)s now."
-#~ msgstr "Es ist jetzt %(time)s."
-
-#~ msgid "Balance to date"
-#~ msgstr "Saldo bis heute"
-
-#~ msgid "Take these"
-#~ msgstr "Übernehmen"
-
-#~ msgid "Take it"
-#~ msgstr "Übernehmen"
-
-#, python-format
-#~ msgid "%(saved)s days were saved and %(removed)s were cleared."
-#~ msgstr "%(saved)s Tage wurden gespeichert und %(removed)s geleert."
-
-#, python-format
-#~ msgid "%(saved)s days were saved."
-#~ msgstr "%(saved)s Tage wurden gespeichert."
-
-#, python-format
-#~ msgid "Confirm %(counter)s day"
-#~ msgid_plural "Confirm %(counter)s days"
-#~ msgstr[0] "%(counter)s Tag bestätigen"
-#~ msgstr[1] "%(counter)s Tage bestätigen"
-
-#~ msgid "Credited"
-#~ msgstr "Gutgeschrieben"
-
-#~ msgid "Total"
-#~ msgstr "Summe"
-
-#~ msgid "not accepted"
-#~ msgstr "nicht anerkannt"
-
-#~ msgid "Confirm"
-#~ msgstr "Bestätigen"
-
-#~ msgid "Enter hours"
-#~ msgstr "Stunden eintragen"
-
-#~ msgid "Nobody approves this — you are telling the app, not asking. Sick days do not come out of your leave, and days you were not due to work are not counted."
-#~ msgstr "Hier genehmigt niemand etwas — Sie teilen es der App mit, Sie fragen nicht. Krankheitstage gehen nicht von Ihrem Urlaub ab, und Tage, an denen Sie ohnehin nicht eingeteilt waren, werden nicht gezählt."
-
-#~ msgid "A week that contains a holiday or a sick day shows fewer hours worked than contracted, with the reason named on the row. This app reports hours; it does not add absence back as time worked."
-#~ msgstr "Eine Woche mit einem Urlaubs- oder Krankheitstag weist weniger gearbeitete als vertragliche Stunden aus, mit dem Grund in der jeweiligen Zeile. Diese App weist Stunden nach; sie rechnet Abwesenheit nicht als Arbeitszeit zurück."

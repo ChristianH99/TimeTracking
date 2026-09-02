@@ -35,7 +35,7 @@ ITEMS = {
     },
     "mine.absences": {
         ("absences", name)
-        for name in ("mine", "request", "request-cancel", "sick", "sick-end")
+        for name in ("mine", "book", "request-cancel")
     },
 
     # The manager's pages. Note that `timesheets:employee-day` is here and

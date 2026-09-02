@@ -218,25 +218,25 @@
 
     const display = row.querySelector("[data-bookings-display]");
     display.textContent = "";
-    if (!bookings.length) {
-      const empty = document.createElement("span");
-      empty.className = "hint";
-      empty.textContent = gettext("add");
-      display.appendChild(empty);
-    } else {
-      bookings.slice(0, SHOWN).forEach((booking) => {
-        const chip = document.createElement("span");
-        chip.className = "booking booking--" + booking.kind;
-        chip.textContent = booking.time;
-        display.appendChild(chip);
-      });
-      if (bookings.length > SHOWN) {
-        const more = document.createElement("span");
-        more.className = "booking-more";
-        more.textContent = "+" + (bookings.length - SHOWN);
-        display.appendChild(more);
-      }
+    bookings.slice(0, SHOWN).forEach((booking) => {
+      const chip = document.createElement("span");
+      chip.className = "booking booking--" + booking.kind;
+      chip.textContent = booking.time;
+      display.appendChild(chip);
+    });
+    if (bookings.length > SHOWN) {
+      const more = document.createElement("span");
+      more.className = "booking-more";
+      more.textContent = "+" + (bookings.length - SHOWN);
+      display.appendChild(more);
     }
+
+    /* An emptied cell has to go back to looking fillable, and a filled one has
+       to stop — this is the whole of what the word "add" used to do, and it is
+       the half that a repaint gets wrong if it is forgotten: clearing a day
+       would leave a blank cell with nothing to say it could be typed in. */
+    const opener = row.querySelector("[data-bookings-open]");
+    if (opener) opener.classList.toggle("is-empty", bookings.length === 0);
 
     /* The roster's offer goes the moment there is something to compare it
        against. Leaving it beside real bookings would be the page suggesting
@@ -263,6 +263,12 @@
     } else {
       dash(correctionOut);
       correctionOut.removeAttribute("title");
+    }
+    /* Same as the bookings cell: a correction that has just been removed has to
+       go back to looking like a cell somebody can type in. */
+    const correctionOpener = row.querySelector("[data-correction-open]");
+    if (correctionOpener) {
+      correctionOpener.classList.toggle("is-empty", !data.correction_minutes);
     }
 
     const actual = row.querySelector("[data-actual]");
@@ -303,6 +309,17 @@
       const flag = pill(gettext("differs"));
       flag.title = gettext("The hours entered are not the hours rostered.");
       live.appendChild(flag);
+    }
+
+    /* Empty means *nothing at all in the cell*, not "no absence": a day that
+       has just grown a "differs" flag is no longer an empty cell, and leaving
+       the fillable tint behind a pill draws a box round something that is
+       already there. Counted from the pills rather than from the two fields
+       above, so a pill added to this cell next year is counted without anybody
+       having to remember this line. */
+    const status = row.querySelector("[data-status-cell]");
+    if (status) {
+      status.classList.toggle("is-empty", !status.querySelector(".pill"));
     }
   }
 
@@ -766,82 +783,89 @@
   correctionModal.querySelector("[data-correction-cancel]").addEventListener("click", () =>
     correctionController.close());
 
-  /* ---- the status pop-up ----------------------------------------------- */
+  /* ---- the status cell ------------------------------------------------- */
 
-  /* The one pop-up on this page that is a real form. It posts and the page
-   * reloads, where the other two save through fetch and repaint — a status
-   * changes what the whole month is worth, and a reload is both simpler and
-   * certainly right. Everything below is only *opening* it on the row that was
-   * clicked; the writing is Django's. */
-  const statusModal = document.querySelector("[data-status-modal]");
-  if (statusModal) {
-    const statusForm = statusModal.querySelector("[data-status-form]");
-    const statusTitle = statusModal.querySelector("[data-status-title]");
-    const kindBox = statusModal.querySelector("[data-status-kind]");
-    const specialBox = statusModal.querySelector("[data-status-special]");
-    const specialField = statusModal.querySelector("[data-status-special-field]");
-    const halfBox = statusModal.querySelector("[data-status-half]");
-    const noteBox = statusModal.querySelector("[data-status-note]");
-    const noteField = statusModal.querySelector("[data-status-note-field]");
-    const halfField = statusModal.querySelector("[data-status-half-field]");
-    const lockedNote = statusModal.querySelector("[data-status-locked]");
-    const fields = statusModal.querySelector("[data-status-fields]");
-    const accept = statusModal.querySelector("[data-status-accept]");
+  /* **No pop-up.** The cell is the control: a <select> laid over it, and
+   * choosing an option writes the day. All that is left for this file is
+   * pointing one form at the right date and posting it.
+   *
+   * It posts and the page reloads, where the other two cells save through fetch
+   * and repaint — a status changes what the whole month is worth (the credited
+   * hours, the saldo, the balance, the pills on every row below) and a reload is
+   * both simpler and certainly right. It is also a thing somebody does a few
+   * times a month rather than a few times an hour.
+   *
+   * One form for the whole table rather than one per row; the day is in the
+   * action, which is set here.
+   */
+  const statusForm = document.querySelector("[data-status-form]");
+  if (statusForm) {
+    const kindInput = statusForm.querySelector("[data-status-kind]");
+    const specialInput = statusForm.querySelector("[data-status-special]");
+    const halfInput = statusForm.querySelector("[data-status-half]");
+    /* The page navigates on submit, but a second requestSubmit() before it does
+       throws — and both a pointer choice and the Enter that committed it can
+       reach here. */
+    let posted = false;
 
-    const statusController = window.modalController(statusModal);
-
-    /* Which boxes make sense for the chosen status.
-     *
-     * "Which" only for special leave, because it is the one that has to say
-     * which entitlement it comes out of. No note at all for sickness: a sick
-     * absence records that somebody was ill and never why, and a free-text box
-     * beside it is where a diagnosis ends up. Nothing at all for "no status",
-     * which is a removal and has nothing to describe. */
-    function syncFields() {
-      const kind = kindBox.value;
-      specialField.hidden = kind !== "special";
-      noteField.hidden = kind === "sick" || kind === "";
-      halfField.hidden = kind === "";
-      if (noteField.hidden) noteBox.value = "";
-      if (specialField.hidden) specialBox.value = "";
-      if (halfField.hidden) halfBox.checked = false;
-    }
-
-    function openStatus(row) {
-      const cell = row.querySelector("[data-status-kind]");
-      const editable = cell.dataset.statusEditable === "1";
-
-      statusTitle.textContent = row.dataset.label || "";
+    function writeStatus(select) {
+      if (posted) return;
+      const row = select.closest("[data-day]");
+      if (!row) return;
+      posted = true;
+      /* Straight off the option, never parsed out of its value: each entry
+         carries the three fields the view reads. The value is an opaque key and
+         is only ever compared, which is what lets an entry mean "special leave,
+         type 3, half a day" without anything having to take that apart. */
+      const chosen = select.options[select.selectedIndex];
+      kindInput.value = chosen.dataset.kind || "";
+      specialInput.value = chosen.dataset.special || "";
+      halfInput.value = chosen.dataset.half || "";
       statusForm.action = table.dataset.statusUrl.replace("0000-00-00", row.dataset.day);
-      kindBox.value = cell.dataset.statusKind || "";
-      specialBox.value = cell.dataset.statusSpecial || "";
-      halfBox.checked = cell.dataset.statusHalf === "1";
-      noteBox.value = cell.dataset.statusNote || "";
-      syncFields();
-
-      /* A closure and a multi-day absence are read-only here, and the pop-up
-         says which rather than offering controls that would refuse. `hidden`
-         is safe on these: there is nothing inside them to validate, so the
-         unfocusable-control trap that the roster's card holder avoids does not
-         apply — the submit is gone with them. */
-      lockedNote.hidden = editable;
-      fields.hidden = !editable;
-      specialField.hidden = !editable || specialField.hidden;
-      halfField.hidden = !editable || halfField.hidden;
-      noteField.hidden = !editable || noteField.hidden;
-      accept.hidden = !editable;
-
-      statusController.open();
-      if (editable) kindBox.focus();
+      /* requestSubmit, never submit: submit() skips validation and every submit
+         listener, and this form goes through the shell's like any other. */
+      if (statusForm.requestSubmit) statusForm.requestSubmit();
+      else statusForm.submit();
     }
 
-    kindBox.addEventListener("change", syncFields);
-    statusModal.querySelector("[data-status-cancel]").addEventListener("click", () =>
-      statusController.close());
+    /* **A choice, not every option the selection passed over.** A native select
+     * fires `change` on *every arrow press* while it is closed, so writing on
+     * `change` alone would record a status the moment somebody stepped past one
+     * with the keyboard — on a page where every row has one of these.
+     *
+     * The pointer cannot do that: an option is chosen by releasing on it, and
+     * nothing is selected on the way. So a change that followed a pointerdown
+     * on the select is a decision and is written at once; a change that did not
+     * is held until the choice is actually committed — Enter, or leaving the
+     * cell. Both of those compare against what the server rendered, so stepping
+     * back to where you started writes nothing at all.
+     */
+    let fromPointer = false;
 
-    table.addEventListener("click", (event) => {
-      const opener = event.target.closest("[data-status-open]");
-      if (opener) openStatus(opener.closest("[data-day]"));
+    table.addEventListener("pointerdown", (event) => {
+      fromPointer = Boolean(event.target.closest("[data-status-select]"));
+    });
+
+    table.addEventListener("change", (event) => {
+      const select = event.target.closest("[data-status-select]");
+      if (select && fromPointer) writeStatus(select);
+    });
+
+    /* `keyup` and not `keydown`: with the list open, Enter is what commits the
+       highlighted option, and on keydown the value is still the old one — the
+       press would write back exactly what was already there, which for an
+       absence means withdrawing it and asking for it again. */
+    table.addEventListener("keyup", (event) => {
+      const select = event.target.closest("[data-status-select]");
+      if (select && event.key === "Enter" && select.value !== select.dataset.saved) {
+        writeStatus(select);
+      }
+    });
+
+    table.addEventListener("focusout", (event) => {
+      const select = event.target.closest("[data-status-select]");
+      fromPointer = false;
+      if (select && select.value !== select.dataset.saved) writeStatus(select);
     });
   }
 
@@ -852,7 +876,7 @@
        Their buttons are `disabled` so this never fires for one, and the guard is
        here all the same — the server decides, and this file must not be the
        thing that does. It is checked per *action* rather than per row, because a
-       future row still opens its status pop-up: booking leave in advance is
+       future row's status dropdown still opens: booking leave in advance is
        exactly what a future row is for. */
     const row = event.target.closest("[data-day]");
     const noHours = row && row.classList.contains("no-hours");
@@ -918,20 +942,7 @@
     }
   });
 
-  /* ---- the month picker ------------------------------------------------ */
-
-  /* Submits itself, and the button beside it goes away. Left as it is, choosing
-   * a month does nothing until somebody notices the second control — and a
-   * select that appears to do nothing is a select people press twice. The button
-   * is removed rather than never rendered, because without script it is the only
-   * way the picker works at all. */
-  const picker = document.querySelector("[data-month-picker]");
-  if (picker) {
-    const go = document.querySelector("[data-month-go]");
-    if (go) go.hidden = true;
-    picker.addEventListener("change", () => {
-      if (picker.form.requestSubmit) picker.form.requestSubmit();
-      else picker.form.submit();
-    });
-  }
+  /* The month picker is not here any more: it is twelve links and a year, in
+   * templates/_month_picker.html, driven by static/js/monthpicker.js — a
+   * component the month-end page uses too. */
 })();

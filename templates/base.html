@@ -154,13 +154,40 @@
                 aria-label="{% translate 'Toggle navigation' %}">
           <span class="shell-hamburger-icon"><span></span><span></span><span></span></span>
         </button>
-        {% comment %}**Nothing page-specific lives up here.** The topbar is the
-        app's, not the page's: it says which app this is, offers the one control
-        that is true wherever you are standing, and switches the language. A
-        page's own title, its subtitle and its buttons are the page's, and they
-        are rendered in `.page-head` at the top of <main> below.{% endcomment %}
-        <span class="topbar-app">{% translate "Time Tracking" %}</span>
+        {% comment %}**Where you are, and it is the only place that says so.**
+        The bar used to carry the app's name, which the brand in the top-left
+        corner of the sidebar was already saying two inches away — so the one
+        line of chrome that is on screen at every moment spent it repeating
+        something rather than answering "which page am I on". It now carries the
+        page's heading, and the page's own subtitle after it: "My timesheet –
+        September 2026" is one sentence and both halves of it are the answer.
+
+        It is the page's `<h1>`, and there is still exactly one per page. The
+        heading is not repeated in `.page-head` below — printing it twice, three
+        centimetres apart, is the same fault the app's name was removed for.
+
+        A page's *controls* are still the page's and stay down there. The month
+        picker in particular is not up here: it is a control that changes what
+        the page is showing, and the bar is a statement about where you are
+        standing.{% endcomment %}
+        <h1 class="topbar-page">
+          <span class="topbar-page-title">{% block page_title %}{% translate "Time Tracking" %}{% endblock %}</span
+          >{% comment %}No whitespace between the two, because `:empty` is what
+          hides the subtitle on the pages that have none — and a newline inside
+          the span is content as far as `:empty` is concerned. The separator is
+          drawn by CSS on the non-empty case for the same reason.{% endcomment %}<span class="topbar-page-sub">{% block page_subtitle %}{% endblock %}</span>
+        </h1>
         <div class="topbar-actions">
+          {% comment %}Page help, and it is in the bar on every page that has
+          any — the "?" used to sit in each page's own head, which put a control
+          that means the same thing everywhere in a different place on every
+          page. Rendered hidden and revealed by shell.js when the page turns out
+          to define a help modal: without script it could not open anything, and
+          a button that does nothing is worse than no button. That also means no
+          page has to remember to render it.{% endcomment %}
+          <button type="button" class="topbar-help" data-help-open hidden
+                  aria-label="{% translate 'Help for this page' %}"
+                  title="{% translate 'Help for this page' %}">?</button>
           {% include "_clock.html" %}
           {% include "_lang_switcher.html" %}
         </div>
@@ -170,22 +197,16 @@
       is ten columns — says so and gets the room instead of scrolling inside
       it at every window size.{% endcomment %}
       <main class="content{% block content_class %}{% endblock %}" id="main-content">
-        {% comment %}The page's own head: what this page is, and what can be done
-        to it. It used to be in the topbar, which made the app's chrome change
-        shape from page to page and left no room for anything that is true
-        everywhere. The heading is here rather than in each `{% block content %}`
-        so that there is exactly one of it per page and the actions can sit
-        beside it.{% endcomment %}
-        <div class="page-head">
-          <div class="page-head-text">
-            <h1 class="page-head-title">{% block page_title %}{% translate "Time Tracking" %}{% endblock %}</h1>
-            {% comment %}Empty on most pages, and `:empty` hides it — a blank
-            line under every heading is a gap that reads as a rendering
-            fault.{% endcomment %}
-            <p class="page-head-sub">{% block page_subtitle %}{% endblock %}</p>
-          </div>
-          <div class="page-head-actions">{% block page_actions %}{% endblock %}</div>
-        </div>
+        {% comment %}What can be done to this page — Save, Add, Delete. The
+        heading and the subtitle are not here: they are in the topbar, which is
+        on screen when this row has scrolled away.
+
+        Rendered with nothing around it and nothing inside it but the block, so
+        that `:empty` in the stylesheet can take the whole row away on the pages
+        that have no buttons. A newline in here would defeat that — `:empty`
+        counts whitespace as content — which is why the block sits hard against
+        both tags.{% endcomment %}
+        <div class="page-head">{% block page_actions %}{% endblock %}</div>
         {% comment %}role="status" (an aria-live="polite" region), so a message
         is announced rather than silently added to the page — it is the app's
         answer to something somebody just did. shell.js gives each one a dismiss

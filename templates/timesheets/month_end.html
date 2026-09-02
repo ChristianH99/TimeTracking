@@ -6,22 +6,7 @@
 
 {% block content %}
   <div class="list-toolbar">
-    <form method="get" class="month-nav">
-      <a class="button button--secondary button--small" href="?month={{ previous_month|date:'Y-m' }}"
-         aria-label="{% translate 'The month before' %}">&larr;</a>
-      <label class="sr-only" for="month-picker">{% translate "Month" %}</label>
-      <select id="month-picker" name="month" class="month-picker" data-month-picker>
-        {% for choice in months %}
-          <option value="{{ choice|date:'Y-m' }}"{% if choice == month %} selected{% endif %}>{{ choice|date:"F Y" }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="button button--secondary button--small" data-month-go>{% translate "Show" %}</button>
-      <a class="button button--secondary button--small" href="?month={{ next_month|date:'Y-m' }}"
-         aria-label="{% translate 'The month after' %}">&rarr;</a>
-      {% if month != this_month %}
-        <a class="link-button" href="?month={{ this_month|date:'Y-m' }}">{% translate "This month" %}</a>
-      {% endif %}
-    </form>
+    {% include "_month_picker.html" %}
   </div>
 
   <p class="page-lead">
@@ -137,5 +122,6 @@
 {% endblock %}
 
 {% block scripts %}
+  <script src="{% static 'js/monthpicker.js' %}"></script>
   <script src="{% static 'js/month_end.js' %}"></script>
 {% endblock %}

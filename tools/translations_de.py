@@ -41,8 +41,6 @@ SINGULAR = {
     "Say which special leave this is.": "Bitte angeben, um welchen Sonderurlaub es sich handelt.",
     "You already have time off recorded that overlaps these dates.":
         "Für diesen Zeitraum ist bei Ihnen bereits eine Abwesenheit eingetragen.",
-    "Leave empty if you do not know yet — you can say when it ended later.":
-        "Leer lassen, wenn es noch nicht absehbar ist — das Ende können Sie später nachtragen.",
     "reply": "Antwort",
     "Say why. Somebody whose time off is declined without a reason has to come and ask for one.":
         "Bitte begründen. Wer eine Absage ohne Grund bekommt, muss nachfragen kommen.",
@@ -52,6 +50,11 @@ SINGULAR = {
     "Workplace closed": "Betrieb geschlossen",
     "Waiting for approval": "Wartet auf Genehmigung",
     "Approved": "Genehmigt",
+    # The fifth status: an approved absence somebody has asked to have taken off
+    # again. „Rücknahme“ rather than „Stornierung“ — the second is what a travel
+    # agent does to a booking, and this is somebody asking for a decision to be
+    # undone.
+    "Cancellation requested": "Rücknahme beantragt",
     "Declined": "Abgelehnt",
     "Withdrawn": "Zurückgezogen",
     "date": "Datum",
@@ -80,18 +83,40 @@ SINGULAR = {
     "Your request was sent for approval. It shows as waiting until your manager decides, and the days are not taken off your balance before then.":
         "Ihr Antrag wurde zur Genehmigung weitergeleitet. Er steht auf „wartet“, bis Ihre Leitung entscheidet; bis dahin werden die Tage nicht von Ihrem Guthaben abgezogen.",
     "That is not something you can withdraw.": "Das können Sie nicht zurückziehen.",
-    "That time off has already started. Ask your manager to change it.":
-        "Diese Abwesenheit hat bereits begonnen. Bitte wenden Sie sich an Ihre Leitung.",
     "The request was withdrawn.": "Der Antrag wurde zurückgezogen.",
-    "Those dates could not be read.": "Diese Daten konnten nicht gelesen werden.",
-    "That date could not be read.": "Dieses Datum konnte nicht gelesen werden.",
-    "That is before the illness started.": "Das liegt vor dem Beginn der Krankheit.",
-    "Thank you — the sickness is recorded as ended.": "Danke — die Krankheit ist als beendet eingetragen.",
+    "That could not be saved: %(why)s": "Das konnte nicht gespeichert werden: %(why)s",
     "That request has already been decided.": "Über diesen Antrag wurde bereits entschieden.",
+
+    # -- absences: what a square of the year calendar says for itself -----
+    #
+    # The two states a day can be in that make it *not* a control. Both are
+    # `title` text and nothing else — the square says it by being pale, and
+    # this is what somebody gets when they point at it and wonder why nothing
+    # happens.
+    "This day has been locked and nothing can be booked on it.":
+        "Dieser Tag ist gesperrt; darauf lässt sich nichts buchen.",
+    "You are not due to work on this day.": "An diesem Tag sind Sie nicht eingeteilt.",
     "That could not be saved.": "Das konnte nicht gespeichert werden.",
     "%(who)s’s time off was approved.": "Die Abwesenheit von %(who)s wurde genehmigt.",
     "%(who)s’s request was declined and they were told why.":
         "Der Antrag von %(who)s wurde abgelehnt, mit Begründung.",
+
+    # -- absences: asking for an approved one back ------------------------
+    #
+    # The line is approval, and it is the same line for every kind. Nothing a
+    # manager has not answered is theirs yet; something they have approved is a
+    # day the roster was built around, so taking it back is asked for and waits
+    # on the same list.
+    "Your manager has been asked to cancel it. It stays booked until they answer — the days are still spent and the hours still credited.":
+        "Ihre Leitung wurde um die Rücknahme gebeten. Bis zur Antwort bleibt der Eintrag bestehen — die Tage sind weiterhin verbraucht und die Stunden weiterhin angerechnet.",
+    "You have already asked for that to be cancelled.":
+        "Sie haben die Rücknahme bereits beantragt.",
+    "That has already been decided.": "Darüber wurde bereits entschieden.",
+    "%(who)s’s absence was cancelled.": "Die Abwesenheit von %(who)s wurde zurückgenommen.",
+    "%(who)s’s absence stays booked, and they were told why.":
+        "Die Abwesenheit von %(who)s bleibt bestehen, mit Begründung.",
+    "Recorded, and your manager has been shown it. It shows as waiting until they decide — it does not come out of your leave either way, and the days you were not due to work are not counted.":
+        "Eingetragen, und Ihrer Leitung angezeigt. Der Eintrag steht auf „wartet“, bis sie entscheidet — vom Urlaub geht er so oder so nicht ab, und Tage, an denen Sie ohnehin nicht eingeteilt waren, zählen nicht mit.",
 
     # -- accounts: forms -----------------------------------------------
     "Password": "Passwort",
@@ -406,7 +431,6 @@ SINGULAR = {
     "Delete": "Löschen",
     "Remove": "Entfernen",
     "Back": "Zurück",
-    "Help": "Hilfe",
     "Show": "Anzeigen",
     "Copy": "Kopieren",
     "Name": "Name",
@@ -433,7 +457,6 @@ SINGULAR = {
     "never": "nie",
     "left": "ausgeschieden",
     "manager": "Leitung",
-    "waiting": "wartet",
     "confirmed": "bestätigt",
     "not confirmed": "nicht bestätigt",
     "differs": "abweichend",

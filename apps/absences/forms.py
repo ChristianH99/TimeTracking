@@ -139,24 +139,26 @@ class AbsenceRequestForm(forms.ModelForm):
 
 
 class SickForm(forms.ModelForm):
-    """Reporting illness, and handing it to a manager to acknowledge.
+    """Reporting illness — asked for, and decided, like every other absence.
 
-    **The acknowledgement is a receipt, not a permission**, and the whole shape
-    of this form turns on the difference. An employer does not grant sickness —
-    it is a fact being reported — so the row is saved as ``REQUESTED`` for the
-    manager to see and confirm, and it counts as sickness *immediately*: the
-    hours are credited, the roster stops expecting the person, and the balance
-    shows the days. Nothing waits on the button.
+    **This form used to be the odd one out and deliberately is not any more.**
+    It saved a row that counted immediately, on the argument that an employer
+    does not *grant* illness; the manager's button was a receipt rather than a
+    permission, and only a positive refusal stopped the hours being credited.
+    One absence type behaving unlike every other cost more than it bought: the
+    timesheet had to say two different things about what a waiting day meant,
+    and a report against the wrong dates credited hours until somebody noticed.
 
-    What the button does is put a name and a timestamp against "yes, this was
-    reported to me", which is the thing an employer actually needs a record of
-    and the thing a paper sick note in a drawer does not have. The manager can
-    also refuse to accept it — no Krankmeldung arrived, the dates are wrong —
-    and that is the one act that stops the credit. It requires a written reason.
+    So a sick day is now ``REQUESTED``, credits nothing until it is approved,
+    and is refused with a written reason like anything else. What stays
+    different is the only thing that is actually different about it: **it costs
+    no leave**, ever.
 
-    ``end_date`` is optional, because on the morning somebody rings in nobody
-    knows. Left blank it means today, and it is extended later from the same
-    page.
+    ``end_date`` is required, the same as on a request. It used to be optional
+    — blank meant "today, and I will say later" — which is the honest state on
+    the morning somebody rings in, and it is the state that made an open-ended
+    absence possible. Somebody who does not yet know books the days they know
+    about.
 
     **There is still no diagnosis field and there must never be one.** A sick
     absence records that somebody was ill and never why; adding a note here
@@ -175,16 +177,11 @@ class SickForm(forms.ModelForm):
     def __init__(self, *args, employee=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.employee = employee
-        self.fields["end_date"].required = False
         self.fields["is_half_day"].required = False
-        self.fields["end_date"].help_text = _(
-            "Leave empty if you do not know yet — you can say when it ended later."
-        )
 
     def clean(self):
         data = super().clean()
-        start = data.get("start_date")
-        end = data.get("end_date") or start
+        start, end = data.get("start_date"), data.get("end_date")
         if start and end and end < start:
             self.add_error("end_date", _("The end is before the start."))
             return data
@@ -193,7 +190,6 @@ class SickForm(forms.ModelForm):
             return data
         if start and end and self.employee:
             self._refuse_locked_dates(start, end)
-        data["end_date"] = end
         return data
 
     # The same rule as the request form's, and deliberately the same words: a
@@ -206,11 +202,9 @@ class SickForm(forms.ModelForm):
         absence.employee = self.employee
         absence.kind = AbsenceKind.SICK
         absence.special_type = None
-        # Waiting to be acknowledged, not waiting to be allowed. `credits_hours`
-        # already treats a reported sick day as a sick day; this status only
-        # decides whether it is still on the manager's list.
+        # Waiting to be decided, the same as anything else. Nothing is credited
+        # and nothing is counted until a manager answers.
         absence.status = RequestStatus.REQUESTED
-        absence.end_date = self.cleaned_data["end_date"]
         if commit:
             absence.save()
         return absence
@@ -219,9 +213,10 @@ class SickForm(forms.ModelForm):
 class DecisionForm(forms.Form):
     """A manager's answer, with room for a sentence.
 
-    The note is optional for an approval and not for a refusal. Somebody whose
-    holiday is declined with no reason has to go and ask, and the answer exists
-    already in the head of the person who pressed the button.
+    Answers a request and a cancellation alike, because both are the same shape:
+    yes or no, and a sentence that is compulsory when the answer is no. Somebody
+    whose holiday is declined with no reason has to go and ask, and the answer
+    exists already in the head of the person who pressed the button.
     """
 
     approve = forms.BooleanField(required=False)

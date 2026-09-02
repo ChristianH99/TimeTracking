@@ -74,6 +74,33 @@
   --danger: #B3261E;
   --danger-bg: #FBE9E7;
 
+  /* Saturday and Sunday on the timesheet. A shade of its own rather than
+     `--snow`, which is the page's own background and therefore invisible
+     against a white table: the weekend was already marked in the markup and
+     could not be seen, which is the same as not marking it. Quiet all the same
+     — a weekend is still a date somebody can book onto, and greying it out
+     properly makes the row read as disabled. */
+  --weekend-bg: #E9EEEE;
+
+  /* An empty cell that is waiting to be filled. It replaces the words "set" and
+     "add", which had to be read on every one of thirty-one rows to say what the
+     cell's own emptiness already said — and which in German are longer than the
+     column is wide. The dashed line carries it for anybody who cannot see the
+     tint; both together are the affordance. Deliberately the quietest thing on
+     the page: on the first of the month every row is empty, so this is
+     thirty-one of them at once and anything louder is a page that looks broken.
+
+     **Translucent, and that is the whole reason it is not a flat colour.** The
+     rows underneath it are three different grounds — white, `--weekend-bg`, and
+     today's `--ember-bg` — and a flat tint pale enough to sit on white is
+     *lighter* than a weekend row, so the same marking read as a shaded box on a
+     Tuesday and as a white one on a Saturday. A wash over whatever is behind it
+     darkens all three by the same amount, which is what makes it one marking
+     rather than three. It is the only translucent value in the block, and this
+     is why. */
+  --fillable-bg: rgba(47,90,87,0.06);
+  --fillable-line: rgba(47,90,87,0.30);
+
   --shadow-sm: 0 1px 3px rgba(22,33,31,0.05), 0 2px 8px rgba(22,33,31,0.04);
   --shadow-md: 0 4px 12px rgba(22,33,31,0.08), 0 2px 6px rgba(22,33,31,0.05);
   --shadow-lg: 0 12px 32px rgba(22,33,31,0.12);
@@ -112,9 +139,21 @@
   --radius-pill: 999px;
 
   /* ---- type ----
-     An amount, a unit, a duration: things read as quantities rather than as
-     prose, and things that have to line up in a column. */
+     `--font-mono` is for machine text: a version string, a callback URL, an
+     endpoint — things that are copied rather than read, and where a character
+     that could be confused for another one is a support call.
+
+     **A duration is not machine text.** Every figure in this app used to be set
+     in the mono stack, which on Windows resolves to Consolas and reads as a
+     terminal transcript sitting inside an otherwise typeset page. What those
+     columns actually need is not a typewriter, it is *tabular figures*: digits
+     of one fixed width, so 7:30 above 12:15 above 0:45 line up on the colon.
+     Inter has them, and asking for them keeps the timesheet in the page's own
+     voice while still reading down a column. Both halves are needed — the
+     family alone gives proportional digits, and `tabular-nums` on the wrong
+     family gives a terminal with aligned digits. */
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-numeric: 'Inter', -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 
   /* ---- motion ---- a closed set, like the scales above. */
   --dur-1: 0.06s;  /* a press: as near instant as still reads as a change */
@@ -418,20 +457,38 @@ a:hover { color: var(--ember-hover); }
   box-shadow: 0 1px 0 rgba(43,37,33,0.08), 0 2px 10px rgba(43,37,33,0.06);
 }
 
-/* The app's name, and nothing about the page. The bar used to carry the
-   page's title, subtitle and buttons, which meant the app's chrome changed
-   shape from page to page and had no room for anything that is true everywhere
-   — Start and Stop above all. Those three moved to `.page-head` below. */
-.topbar-app {
+/* **Where you are.** The page's `<h1>`, and the only place the heading is
+   written: the bar used to say the app's name, which the brand in the corner of
+   the sidebar was already saying two inches away, so the one strip of chrome
+   that is on screen at every moment spent it repeating itself. The subtitle
+   follows it in the same line — "My timesheet – September 2026" — because both
+   halves answer the same question and a heading that needs a second line is a
+   heading that has to be found.
+
+   `min-width: 0` and the ellipsis are the pair that matter: the default is
+   "never narrower than my content", so a long title on a narrow window would
+   push Start, Stop and the language menu off the right-hand end rather than
+   shortening itself. */
+.topbar-page {
   font-family: 'Manrope', sans-serif;
   font-size: var(--text-xl);
   font-weight: 800;
   color: var(--white);
   letter-spacing: -0.3px;
   line-height: 1.15;
+  margin: 0;
+  min-width: 0;
   white-space: nowrap;
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+/* Lighter than the title and not bold: it is the second half of a sentence, not
+   a second heading. Most pages have none, and `:empty` takes it and its
+   separator away together — which is why base.html leaves no whitespace inside
+   the span. */
+.topbar-page-sub { font-weight: 400; color: rgba(255,255,255,0.8); }
+.topbar-page-sub:empty { display: none; }
+.topbar-page-sub::before { content: " – "; color: rgba(255,255,255,0.55); }
 
 /* ===== START AND STOP, IN THE TOPBAR =====
    Clocking in is a fact about the person and not about the page, so the one
@@ -444,7 +501,7 @@ a:hover { color: var(--ember-hover); }
   font-size: var(--text-sm); color: rgba(255,255,255,0.85);
   white-space: nowrap;
 }
-.topbar-clock-now, .topbar-clock-elapsed { font-family: var(--font-mono); }
+.topbar-clock-now, .topbar-clock-elapsed { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .topbar-clock-elapsed { font-weight: 700; color: var(--white); }
 .topbar-clock-since .hint { color: rgba(255,255,255,0.6); }
 /* A running shift, said with a shape as well as with a word: the bar is read at
@@ -461,24 +518,28 @@ a:hover { color: var(--ember-hover); }
 }
 
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-4); flex-shrink: 0; }
-/* The round chrome for a page's "?" button. Outlined rather than filled: a
-   filled button here would compete with the page's primary action. */
-/* Kept under its old name because it is the same control; it simply lives in
-   the page head now rather than in the terracotta bar, so it is drawn in the
-   page's own greys instead of in the bar's white. */
+/* The round chrome the bar's two secondary controls share: the page's "?" and
+   the language globe. Outlined in the bar's own translucent white, the same as
+   the hamburger — a filled circle here would read as the primary action, and
+   the primary action in this bar is Start or Stop.
+
+   The help button is one control that means the same thing on every page, and
+   it is here on all of them. It used to be rendered by each page into its own
+   head, which put it in a different place on every page and left the four pages
+   that have help looking different from the rest. */
 .topbar-help {
   width: 2rem; height: 2rem; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid rgba(255,255,255,0.45);
   border-radius: 50%;
-  background: var(--white);
-  color: var(--text-mid);
+  background: transparent;
+  color: var(--white);
   font-family: 'Manrope', sans-serif; font-weight: 800; font-size: var(--text-lg);
   cursor: pointer;
   transition: background var(--dur-3), border-color var(--dur-3), color var(--dur-3);
 }
-.topbar-help:hover { border-color: var(--ember); color: var(--ember); }
+.topbar-help:hover { background: rgba(255,255,255,0.16); border-color: var(--white); color: var(--white); }
 
 /* A `.button` in the topbar cannot wear the page's primary colour, because the
    bar already is that colour — terracotta on terracotta is a button-shaped
@@ -575,27 +636,19 @@ a:hover { color: var(--ember-hover); }
 .lang-option--active .lang-option-code { color: var(--ember); }
 
 /* ===== THE PAGE HEAD =====
-   What this page is, and what can be done to it. It was in the topbar until the
-   topbar became the app's; the heading is here rather than inside each page's
-   own markup so that there is exactly one of it per page and the buttons can
-   sit beside it. */
+   What can be done to this page, and nothing else. It carried the heading and
+   the subtitle until those moved into the topbar, where they stay visible after
+   this row has scrolled away; keeping a copy here would have been the same
+   duplication the app's name was removed from the bar for.
+
+   So it is now a row of buttons, right-aligned, and on the pages that have none
+   it is not a row at all — `:empty` takes it away, which is why base.html
+   renders the block with no whitespace around it. */
 .page-head {
-  display: flex; align-items: flex-start; gap: var(--space-6);
-  margin-bottom: var(--space-8); flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap;
 }
-/* min-width: 0 so a long title can shrink rather than pushing the buttons off
-   the row — the default is "never narrower than my content". */
-.page-head-text { min-width: 0; }
-.page-head-title { margin: 0; }
-.page-head-sub { margin: var(--space-2) 0 0; color: var(--text-light); font-size: var(--text-md); }
-/* Most pages have no subtitle, and a blank line under every heading is a gap
-   that reads as a rendering fault. */
-.page-head-sub:empty { display: none; }
-.page-head-actions {
-  margin-left: auto; display: flex; align-items: center;
-  gap: var(--space-4); flex-shrink: 0;
-}
-.page-head-actions:empty { display: none; }
+.page-head:empty { display: none; }
 
 /* ===== CONTENT ===== */
 .content { padding: var(--space-9); max-width: var(--content-max); margin: 0 auto; width: 100%; }
@@ -606,8 +659,13 @@ a:hover { color: var(--ember-hover); }
 .content--wide { max-width: var(--content-wide); }
 
 .page-lead { color: var(--text-mid); margin: calc(-1 * var(--space-5)) 0 var(--space-8); max-width: 46rem; }
+/* The negative top margin tucks the lead up under the row of page buttons. On a
+   page with no buttons there is no row to tuck under, and the same margin pulls
+   the first line of the page up into the padding instead. `:empty` hides the
+   row; this is the other half of hiding it. */
+.page-head:empty + .page-lead { margin-top: 0; }
 .hint { color: var(--text-light); font-size: var(--text-base); }
-.back-link { display: inline-block; font-size: var(--text-base); font-weight: 600; color: var(--text-mid); margin-bottom: var(--space-5); }
+.back-link { display: inline-flex; align-items: center; gap: var(--space-3); font-size: var(--text-base); font-weight: 600; color: var(--text-mid); margin-bottom: var(--space-5); }
 .back-link:hover { color: var(--ember); }
 
 /* ===== CARDS ===== */
@@ -701,6 +759,38 @@ tbody tr:hover td { background: rgba(43,37,33,0.015); }
   cursor: pointer;
 }
 .link-button:hover { color: var(--ember-hover); }
+
+/* ===== ICONS AND ICON BUTTONS =====
+   A drawn chevron rather than the `&larr;` and `&rarr;` entities the month and
+   week navigation used to use. Those are *type*, not iconography: they render
+   in whatever the surrounding family has for them, which across Inter, the
+   system fallbacks and a phone is three different weights and two different
+   lengths, and next to a typeset page they read as a stray character. The path
+   below is the same stroke weight as the language globe already in the topbar,
+   which is what makes them look like one set.
+
+   Sized in `em` on purpose — an icon is a component sizing itself against its
+   context, which is the one case the type scale does not cover. */
+.icon {
+  width: 1.15em; height: 1.15em; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+/* A square button whose whole content is one icon. It has no text to be sized
+   by, so the box is stated here; the label lives in aria-label and title. */
+.icon-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; flex-shrink: 0; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--white); color: var(--text-mid);
+  cursor: pointer;
+  transition: background var(--dur-3), border-color var(--dur-3), color var(--dur-3);
+}
+.icon-button:hover { border-color: var(--pine-light); color: var(--pine); background: var(--white); }
+/* Inside a panel that already has a border of its own, where a second one is a
+   box drawn round a box. */
+.icon-button--quiet { border-color: transparent; background: transparent; }
+.icon-button--quiet:hover { background: var(--snow); }
 
 /* ===== LIST TOOLBAR (search left, primary action right) ===== */
 .list-toolbar { display: flex; align-items: center; gap: var(--space-5); margin-bottom: var(--space-6); flex-wrap: wrap; }
@@ -1401,11 +1491,11 @@ textarea:focus-visible,
 .timesheet-day-name { font-weight: 700; color: var(--text-dark); }
 .timesheet-day-date { font-size: var(--text-xs); color: var(--text-light); }
 .timesheet-span {
-  display: inline-block; font-family: var(--font-mono); font-size: var(--text-sm);
+  display: inline-block; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-sm);
   background: var(--border-light); border-radius: var(--radius-xs);
   padding: var(--space-1) var(--space-3); margin-right: var(--space-2);
 }
-.timesheet-total { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.timesheet-total { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dark); }
 .timesheet-actions { white-space: nowrap; }
 tr.is-today > * { background: var(--ember-bg); }
 tr.is-off > * { color: var(--text-light); }
@@ -1434,16 +1524,90 @@ tr.is-off > * { color: var(--text-light); }
      other obvious move and it does not work here: `overflow-x` makes this a
      scroll container, so a sticky `top` is measured against a box that never
      scrolls vertically and simply has no effect.
-   - **Every figure is monospaced and right-aligned.** They are read down the
-     column and compared, which proportional digits make impossible.
+   - **Every figure is right-aligned and set in tabular figures.** They are read
+     down the column and compared, which proportional digits make impossible —
+     but a monospaced *family* is not what that needs, and using one put a
+     terminal transcript in the middle of a typeset page. `--font-numeric` is
+     the page's own family asking for fixed-width digits.
 */
 .month-nav { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 0; }
-.month-picker { min-width: 11rem; }
+
+/* ===== THE MONTH PICKER =====
+   A year above three columns of months, opened from the month it is showing.
+   It replaced a `<select>` of every month in a four-year window, which had two
+   faults that a list cannot not have: the month being looked at had to be
+   forced into the list or the browser silently showed a different one, and
+   finding March 2024 meant scrolling a column of thirty entries that all look
+   alike. Twelve cells in the shape of a wall calendar is a shape that is read
+   rather than scanned.
+
+   A <details>, so it opens, closes and takes the keyboard on its own before any
+   script has run — the same choice the Settings disclosure in the sidebar
+   makes. Everything inside it is a link. */
+.month-picker { position: relative; }
+.month-picker-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--white); color: var(--text-dark);
+  font-weight: 600; font-size: var(--text-base);
+  cursor: pointer; white-space: nowrap;
+  transition: border-color var(--dur-3), background var(--dur-3);
+}
+/* The browser's own disclosure triangle, in both spellings. The caret in the
+   markup is the one that turns, and two arrows on one control is one too
+   many. */
+.month-picker-toggle { list-style: none; }
+.month-picker-toggle::-webkit-details-marker { display: none; }
+.month-picker-toggle:hover { border-color: var(--pine-light); }
+.month-picker-caret { transition: transform var(--dur-4) ease; }
+.month-picker[open] .month-picker-toggle { border-color: var(--pine-light); background: var(--snow); }
+.month-picker[open] .month-picker-caret { transform: rotate(180deg); }
+
+.month-panel {
+  position: absolute; top: calc(100% + var(--space-3)); left: 0;
+  z-index: var(--z-menu);
+  background: var(--white);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+  width: 16rem;
+}
+.month-panel-year {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+.month-panel-year-label {
+  font-family: 'Manrope', sans-serif; font-weight: 800; font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums; color: var(--text-dark);
+}
+/* Three across and four down. A wall calendar's shape, and the reason the grid
+   is quicker to read than the list it replaced. */
+.month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.month-cell {
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-4) var(--space-2);
+  border: 1px solid transparent; border-radius: var(--radius-xs);
+  color: var(--text-mid); font-size: var(--text-sm); font-weight: 600;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+.month-cell:hover { background: var(--pine-bg); color: var(--text-dark); }
+/* Gold is this app's "the one that is currently selected", and this is the one
+   place on the page where that is literally the question being asked. */
+.month-cell.is-current {
+  background: var(--gold-bg); border-color: var(--gold); color: var(--gold-deep);
+}
 
 /* min-width: 0 so the column holding the table can shrink below its content.
    The default is "never shrink below what I contain", which would push the
    whole page sideways and take the topbar and the sidebar with it. */
-.month-scroll { overflow-x: auto; min-width: 0; margin-bottom: var(--space-7); }
+/* `position: relative` is not decoration: the comment cell carries an `.sr-only`
+   label, which is `position: absolute`, and `overflow` does not make an element
+   a containing block for one. Without this the label is laid out against the
+   *page* at its static position — which is inside a table 72rem wide — so the
+   whole document grew a horizontal scrollbar and the topbar and sidebar slid
+   sideways with it, for the sake of a 1px element nobody can see. */
+.month-scroll { position: relative; overflow-x: auto; min-width: 0; margin-bottom: var(--space-7); }
 
 /* **Fixed, and it is the point of the whole component.** `table-layout: fixed`
    with a width on every column means a day that gains a fifth booking changes
@@ -1484,7 +1648,7 @@ tr.is-off > * { color: var(--text-light); }
    colours above — so today and the weekends have to be said again for it, or
    the first cell of the row is the one that is the wrong colour. */
 .month-table tr.is-today > th[scope="row"] { background: var(--ember-bg); }
-.month-table tr.is-weekend > th[scope="row"] { background: var(--snow); }
+.month-table tr.is-weekend > th[scope="row"] { background: var(--weekend-bg); }
 /* The date, held against the left edge while the figures scroll under it.
    It needs its own background — a transparent sticky cell has the columns
    travelling visibly through it — and the row rules below paint over this one,
@@ -1494,32 +1658,91 @@ tr.is-off > * { color: var(--text-light); }
   position: sticky; left: 0; z-index: var(--z-sticky-heading);
   background: var(--white);
 }
-.month-table .numeric { text-align: right; font-family: var(--font-mono); }
+.month-table .numeric { text-align: right; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .month-table tfoot th, .month-table tfoot td {
   border-top: 2px solid var(--border); font-weight: 700; color: var(--text-dark);
 }
-.month-table tfoot td { font-family: var(--font-mono); text-align: right; }
+.month-table tfoot td { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; text-align: right; }
 
 /* The month's plan, under the totals. Quieter than the row above it, because
    it is the one figure on the page that is about what has not happened yet. */
 .month-plan th, .month-plan td { font-weight: 400; color: var(--text-light); border-top: 0; }
 
-.month-carried th, .month-carried td {
-  color: var(--text-light); font-size: var(--text-xs);
-  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
-}
-.month-carried td { text-align: right; }
+/* ===== THE STATUS CELL =====
+   **The cell is the control.** It opened a dialog with four fields until three
+   of them turned out to be the only reason it needed one — which special leave,
+   half a day, and a note. Naming each granted type as its own option answers
+   the first, the other two belong to the Time off page, and what is left is one
+   choice, which is a dropdown.
 
-/* The status cell is a button the size of the cell, the same as the bookings
-   one beside it: the target is the cell and not a pill inside it, and an empty
-   day has nothing to aim at otherwise. */
-.status-open {
-  display: block; width: 100%; text-align: left; cursor: pointer; overflow: hidden;
-  background: none; border: 1px solid transparent; border-radius: var(--radius-xs);
-  padding: var(--space-2) var(--space-3); font: inherit; color: inherit;
+   The cell still looks exactly as it did: the `<select>` is laid over it at zero
+   opacity and the pills underneath are what is read. Opacity does not affect hit
+   testing, so the whole cell is the target — the same reason it was a
+   full-width button before — and the option list itself is drawn by the browser
+   over the page, unaffected by the opacity of the control it belongs to. */
+.status-cell {
+  position: relative;
+  display: block; width: 100%; overflow: hidden;
+  border: 1px solid transparent; border-radius: var(--radius-xs);
+  padding: var(--space-2) var(--space-3);
   transition: background var(--dur-3), border-color var(--dur-3);
 }
-.status-open:hover { background: var(--pine-bg); border-color: var(--border); }
+/* Only a cell that has a dropdown in it. A locked day and a day inside a
+   closure or a longer absence carry a `title` saying why instead — hovering
+   something that cannot be changed must not offer to change it. */
+.status-cell--editable { cursor: pointer; }
+.status-cell--editable:hover { background: var(--pine-bg); border-color: var(--border); }
+/* **The focus ring, and it has to be redrawn here.** The control is
+   transparent, so the app's own ring lands on something nobody can see; this is
+   the same ring on the box they can. It *adds* an outline rather than
+   suppressing one — nothing here touches the global `:focus-visible` rule — and
+   `:focus-within` rather than a `:has()` on the cell keeps it to one selector
+   every browser this app meets already understands. The offset is negative so
+   the ring is drawn inside the cell: a <td> in this table clips, and a ring
+   sitting 2px outside would be cut off along the column edge. */
+.status-cell--editable:focus-within {
+  outline: 2px solid var(--ember);
+  outline-offset: -1px;
+}
+.status-select {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  margin: 0; padding: 0; border: 0;
+  font: inherit;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ===== A CELL THAT IS WAITING TO BE FILLED =====
+   The status cell and the bookings cell both used to print a word — "set" and
+   "add" — in every empty row. Thirty-one rows is thirty-one words that say what
+   an empty cell already says, in a grid whose columns are fixed and where the
+   German for either is wider than the space; and neither word survives being
+   read twice.
+
+   Colour and a dashed edge say it instead. The tint alone would not do it —
+   this is the same page that reserves amber for an overridden value and gold
+   for the current selection, so a fourth flat colour would be a fourth thing to
+   learn — and the broken line is the part that reads as "not a value yet"
+   without being a colour at all.
+
+   `:not(:disabled)` is what keeps it honest: a locked day and a day that has
+   not happened cannot be filled in, and inviting somebody to press a control
+   that refuses is worse than an empty cell. */
+.status-cell--editable.is-empty,
+.bookings-open.is-empty:not(:disabled),
+.correction-open.is-empty:not(:disabled) {
+  background: var(--fillable-bg);
+  border-style: dashed;
+  border-color: var(--fillable-line);
+}
+.status-cell--editable.is-empty:hover,
+.bookings-open.is-empty:not(:disabled):hover,
+.correction-open.is-empty:not(:disabled):hover {
+  background: var(--pine-bg);
+  border-style: solid;
+  border-color: var(--pine-light);
+}
 
 /* ===== A LOCKED DAY =====
    Quiet rather than crossed out. A closed month is the ordinary end state of
@@ -1528,8 +1751,8 @@ tr.is-off > * { color: var(--text-light); }
    one. The row keeps its figures at full contrast, because they are the whole
    reason anybody opens a month that is already shut; it is the *controls* that
    go, and they go by not being there. */
-tr.is-locked .status-open { cursor: default; }
-tr.is-locked .status-open:hover { background: none; border-color: transparent; }
+/* Nothing to say for the status cell here: a locked day is rendered without a
+   dropdown at all, so there is no control to quieten. */
 
 /* A row that holds no hours — locked, or not yet happened. The two are drawn
    the same way in these three cells because the answer is the same: there is
@@ -1553,14 +1776,19 @@ tr.no-hours .month-note { background: transparent; border-color: transparent; }
 .day-lock--open:hover { opacity: 1; }
 
 .month-day { display: flex; align-items: baseline; gap: var(--space-3); white-space: nowrap; }
-.month-day-number { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.month-day-number { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dark); }
 .month-day-name { font-size: var(--text-xs); color: var(--text-light); }
 .month-status { white-space: nowrap; }
 
 /* A weekend is quieter than a weekday and louder than nothing: it is still a
    date somebody can book onto, and greying it out entirely made people think
-   the row was disabled. */
-tr.is-weekend > * { background: var(--snow); }
+   the row was disabled. It has a shade of its own rather than `--snow`, which
+   is the page's own background — against a white table that is a difference of
+   two or three values, so the weekends were marked in the markup and could not
+   actually be seen. Saturday and Sunday are the pair the eye uses to find its
+   place down a column of thirty-one rows; a marking that cannot be seen is not
+   one. */
+tr.is-weekend > * { background: var(--weekend-bg); }
 tr.is-future > * { color: var(--text-muted); }
 tr.is-today > * { background: var(--ember-bg); }
 
@@ -1583,7 +1811,7 @@ tr.is-today > * { background: var(--ember-bg); }
    rest can be corrected as well as read — a second popover would show them and
    then still need the pop-up to change any of them. */
 .booking-more {
-  font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700;
+  font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-xs); font-weight: 700;
   color: var(--text-light); background: var(--border-light);
   border-radius: var(--radius-pill); padding: 0 var(--space-3);
 }
@@ -1592,7 +1820,7 @@ tr.is-today > * { background: var(--ember-bg); }
    the list is read at a glance and a column of identical chips is a column
    somebody has to count along. */
 .booking {
-  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-sm);
   border-radius: var(--radius-xs); padding: var(--space-1) var(--space-3);
 }
 .booking--in { background: var(--success-bg); color: var(--success-strong); }
@@ -1607,10 +1835,15 @@ tr.is-today > * { background: var(--ember-bg); }
 }
 .suggestion-take:hover { background: var(--success); color: var(--white); }
 
+/* The same box as the bookings cell to its left, and for the same reason: the
+   target is the cell, and an empty one has nothing to aim at otherwise. Right
+   aligned, because it is a figure in a column of figures read downwards — the
+   box is what the three cells share, not the alignment. */
 .correction-open {
-  cursor: pointer; background: none; border: 1px solid transparent;
-  border-radius: var(--radius-xs); padding: var(--space-2) var(--space-3);
-  font: inherit; color: inherit; font-family: var(--font-mono); width: 100%; text-align: right;
+  display: block; width: 100%; text-align: right; cursor: pointer; overflow: hidden;
+  background: none; border: 1px solid transparent; border-radius: var(--radius-xs);
+  padding: var(--space-2) var(--space-3); font: inherit; color: inherit;
+  font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
   transition: background var(--dur-3), border-color var(--dur-3);
 }
 .correction-open:hover { background: var(--pine-bg); border-color: var(--border); }
@@ -1633,7 +1866,7 @@ tr.is-today > * { background: var(--ember-bg); }
 /* Black at nought, red below it, green above. The sign is the message, so it is
    never carried by the colour alone — `hours_signed` writes the + and the -, and
    somebody who cannot tell the two apart still reads the right number. */
-.saldo { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.saldo { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dark); }
 .saldo--short { color: var(--danger); }
 .saldo--over { color: var(--success-strong); }
 
@@ -1641,7 +1874,7 @@ tr.is-today > * { background: var(--ember-bg); }
 .modal--wide { max-width: 40rem; }
 .booking-rows { display: flex; flex-direction: column; gap: var(--space-4); }
 .booking-row { display: flex; align-items: center; gap: var(--space-4); }
-.booking-time { font-family: var(--font-mono); max-width: 7rem; }
+.booking-time { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; max-width: 7rem; }
 .booking-kinds { display: inline-flex; gap: var(--space-2); }
 
 /* A pair of buttons rather than a select, because the whole gesture is meant to
@@ -1666,10 +1899,10 @@ tr.is-today > * { background: var(--ember-bg); }
 /* ===== THE DAY FORM ===== */
 .rostered { margin-bottom: var(--space-8); }
 .rostered-times { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: baseline; }
-.rostered-total { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); }
+.rostered-total { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dark); }
 .segment-rows { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-5); }
 .segment-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
-.segment-length { font-family: var(--font-mono); color: var(--text-light); font-size: var(--text-sm); min-width: var(--space-9); }
+.segment-length { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; color: var(--text-light); font-size: var(--text-sm); min-width: var(--space-9); }
 .row-delete { display: inline-flex; align-items: center; gap: var(--space-2); }
 .break-block { display: flex; flex-direction: column; gap: var(--space-5); }
 .break-manual { display: flex; flex-direction: column; gap: var(--space-3); max-width: 14rem; }
@@ -1681,7 +1914,7 @@ tr.is-today > * { background: var(--ember-bg); }
   border-radius: var(--radius-md); padding: var(--space-6);
 }
 .break-summary dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); font-weight: 700; }
-.break-summary dd { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: var(--text-xl); color: var(--text-dark); font-weight: 700; }
+.break-summary dd { margin: var(--space-2) 0 0; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-xl); color: var(--text-dark); font-weight: 700; }
 .checkbox-row { display: inline-flex; align-items: center; gap: var(--space-3); }
 
 /* ===== THE TEAM WEEK ===== */
@@ -1689,7 +1922,7 @@ tr.is-today > * { background: var(--ember-bg); }
 .team-day { text-align: center; font-size: var(--text-xs); }
 .team-day-date { display: block; font-weight: 400; color: var(--text-light); font-size: var(--text-2xs); }
 .team-cell {
-  text-align: center; font-family: var(--font-mono); font-size: var(--text-xs);
+  text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-xs);
   border-radius: var(--radius-xs);
 }
 .team-cell.is-confirmed { background: var(--success-bg); color: var(--success-strong); }
@@ -1741,6 +1974,237 @@ tr.is-today > * { background: var(--ember-bg); }
 .danger-zone { margin-top: var(--space-10); padding-top: var(--space-7); border-top: 1px solid var(--border); }
 .danger-zone h2 { color: var(--danger); }
 
+/* ===== THE TIME OFF YEAR =====
+
+   Twelve months, a week to a line, and the square is the control — the same
+   argument the timesheet's status cell makes. Everything below exists to keep
+   three hundred and sixty-five of them legible at once:
+
+   - the months are a `repeat(auto-fit, …)` grid, so the year is four across on
+     a laptop, three on a tablet and one on a phone without a breakpoint per
+     step. `min-width: 0` on the table because a month that will not shrink
+     below its content takes the page sideways and the topbar with it;
+   - each month is a real `<table>`. A calendar *is* one — the columns are
+     weekdays and the rows are weeks — so the weekday header is a `<th
+     scope="col">` and a screen reader reads "Mittwoch, 14" rather than "14";
+   - the global table rules are undone rather than worked around. They are
+     written for a data table with padded cells and a hover row, and a calendar
+     has neither.
+
+   The colours are the pills' colours, because the list underneath the grid
+   uses those and one thing said in two colours is two things. */
+.year-nav { display: flex; align-items: center; gap: var(--space-3); }
+.year-nav-label {
+  font-family: 'Manrope', sans-serif; font-weight: 800;
+  font-size: var(--text-xl); color: var(--text-dark);
+  font-variant-numeric: tabular-nums;
+  min-width: 4rem; text-align: center;
+}
+
+/* **`18rem` is doing arithmetic, not taste.** Twelve months want a column
+   count that divides twelve — four, three, two, one — and `auto-fit` gives
+   whatever fits, which at `--content-wide` was five: two rows of five and
+   November and December alone at the bottom, reading as a year that has run
+   out of room rather than as a year.
+
+   The content column is 1400px less its padding, so five columns need a
+   minimum under 252px and four need one under 319px. Anything between those
+   two makes four the widest answer this page can reach, and every narrower
+   window then steps 4 → 3 → 2 → 1 on its own. That is why there is no
+   breakpoint here: the three the app has are a closed set, and buying a fourth
+   for a column count is not the size of reason that set is for.
+
+   `min(18rem, 100%)` rather than `18rem`, because below about 290px the
+   minimum is wider than the container — and a grid column that will not shrink
+   below its content takes the page sideways and the topbar with it. */
+.year-calendar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: var(--space-7);
+  margin-bottom: var(--space-7);
+}
+.cal-month { table-layout: fixed; min-width: 0; }
+.cal-month-name {
+  caption-side: top; text-align: left;
+  font-family: 'Manrope', sans-serif; font-weight: 800;
+  font-size: var(--text-md); color: var(--text-dark);
+  padding-bottom: var(--space-4);
+}
+.cal-month th, .cal-month td {
+  padding: 0; border: none; background: transparent; text-align: center;
+}
+.cal-month thead th {
+  font-size: var(--text-2xs); color: var(--text-light); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding-bottom: var(--space-3);
+}
+/* The global hover paints a whole row of a data table. Down here a row is a
+   week, and a week lighting up when the pointer crosses it is seven days
+   changing colour to say nothing at all. */
+.cal-month tbody tr:hover td { background: transparent; }
+td.cal-cell { width: 14.28%; }
+
+/* **Every square carries a 2px border and most of them are transparent.**
+   Three things want an edge — a booking still waiting, today, and the two ends
+   of a run — and a square that only grows one when it needs it is a square
+   that moves by two pixels when it does. `box-sizing: border-box` and a stated
+   height mean the reserved border costs nothing and changes nothing, and the
+   background paints under it, so a settled day is filled edge to edge.
+
+   This is the opposite of the choice `.pill.is-pending` makes, and for a
+   reason rather than by accident: a pill's height comes from its padding, so a
+   border there really would make it two pixels taller than the one beside it.
+   Here the height is written down. */
+.cal-day {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 1.75rem;
+  margin: 0; padding: 0;
+  border: 2px solid transparent; border-radius: var(--radius-xs);
+  background: var(--white); color: var(--text-dark);
+  font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs); font-weight: 600;
+  transition: box-shadow var(--dur-3), background var(--dur-3);
+}
+button.cal-day { cursor: pointer; }
+/* **The hover ring is drawn inside the square, and the focus ring outside it.**
+   That asymmetry is the whole fix for a bug this grid produced twice. A ring
+   drawn outside an adjacent table cell has to escape its own box to be seen,
+   and escaping means depending on paint order against the neighbour it spills
+   into — which is a fight only one element on the page can be allowed to win.
+   The focused square is that element. Hover is a pointer affordance and can
+   say what it needs to inside its own edge, so it does, and then it cannot
+   clip anything or be clipped by anything. */
+button.cal-day:hover { box-shadow: inset 0 0 0 2px var(--pine-light); }
+
+/* **The focus ring is drawn outside the square, and a square in a table cannot
+   draw outside itself.** The squares of a week are adjacent cells with opaque
+   backgrounds painted in document order, so the two pixels of ring on the
+   *right* lie inside the next day and were painted over by that day the moment
+   it was drawn. The left side survived, because the day before had already
+   been painted. What is left is a ring with three sides, which reads as a
+   rendering fault rather than as focus.
+
+   `position: relative` lifts the square into the positioned paint phase, above
+   every sibling's background, and the ring comes out whole. No offsets, so
+   nothing moves.
+
+   **Exactly one square may be positioned, and this is the rule that says
+   which.** Positioning the hovered square too — which has the same geometry
+   and had the same bug — fixed it standing still and broke it moving: among
+   *positioned* siblings document order decides again, so a hovered day clipped
+   the ring of a focused day before it. And because `box-shadow` is
+   transitioned, the square the pointer was resting on stayed hovered, still
+   positioned and still clipping, for `--dur-3` after focus had left it. That
+   is the "it breaks in the moment focus moves" version of the same fault. The
+   answer is not to raise the focused square higher still, it is to stop the
+   hover ring needing to escape its box at all — see the rule above.
+
+   No z-index either, and it would be the wrong tool: with only ever one
+   positioned square, being positioned *at all* is the whole of what this
+   needs, and a step off the stacking scale would claim a relationship to the
+   sidebar and the modals that this has nothing to do with. */
+.cal-day:focus-visible { position: relative; }
+/* Not a control, and it says so by not being one: a weekend, a public holiday,
+   a day the contract gives no hours, a day somebody has locked, a closure. */
+.cal-day.is-static { cursor: default; }
+
+/* A day that costs nothing to be away on. All three of the subtractions
+   `Absence.working_days` makes look the same here, because they mean the same
+   thing to the person reading: you were not due in, so there is nothing to
+   book. The public holiday is the one that also carries a name, in its
+   `title`. */
+.cal-cell.is-weekend .cal-day,
+.cal-cell.is-nonworking .cal-day,
+.cal-cell.is-bankholiday .cal-day { background: var(--weekend-bg); color: var(--text-muted); }
+.cal-cell.is-bankholiday .cal-day { color: var(--text-light); }
+
+/* **Settled: a solid colour.** Each is the colour its pill wears in the list
+   below the grid, so the two halves of the page cannot disagree about what a
+   Tuesday was. */
+.cal-cell .cal-day--holiday,
+.cal-cell .cal-day--special { background: var(--success); color: var(--white); }
+.cal-cell .cal-day--overtime { background: var(--pine-light); color: var(--white); }
+.cal-cell .cal-day--sick { background: var(--plum); color: var(--white); }
+.cal-cell .cal-day--closure { background: var(--gold-deep); color: var(--white); }
+
+/* **Waiting: the same colour, unfilled and dotted.** A state belongs to the
+   thing it is a state of — the same argument `.pill.is-pending` makes, and the
+   same drawing, because somebody who has learnt the dots on one page has
+   learnt them on the other. An *inset* ring rather than a border, so a waiting
+   square is not two pixels larger than a settled one on a grid whose whole
+   point is that nothing moves. */
+.cal-cell .cal-day--holiday.is-pending,
+.cal-cell .cal-day--special.is-pending { background: var(--success-bg); color: var(--success-strong); }
+.cal-cell .cal-day--overtime.is-pending { background: var(--pine-bg); color: var(--pine); }
+.cal-cell .cal-day--sick.is-pending { background: var(--plum-bg); color: var(--plum); }
+.cal-day.is-pending { border-color: currentColor; border-style: dotted; }
+
+/* **Days booked together are drawn together.** A week off is one row, one
+   thing to withdraw and one thing somebody decided; seven separate tiles say
+   the opposite. So the squares of one booking lose the corners and the edges
+   that face each other, and what is left is a bar with two rounded ends.
+
+   The inner edge is made *transparent* rather than taken away. Removing the
+   width would move the content box by two pixels and wobble the number inside
+   every middle day of a run; a colour costs nothing and does the same job — on
+   a settled booking the fill runs straight through, and on one still waiting
+   the dotted line goes round the group instead of round each day of it, which
+   is the whole statement. */
+.cal-day.is-joined-left {
+  border-left-color: transparent;
+  border-top-left-radius: 0; border-bottom-left-radius: 0;
+}
+.cal-day.is-joined-right {
+  border-right-color: transparent;
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
+}
+
+/* Half of the day, drawn as half of the square. A wash over the corner rather
+   than a second colour, so it reads as *this kind, halved* — which is what a
+   half day is — and so that it works over all five colours and over the dotted
+   version of each without a rule per pair. */
+.cal-day.is-half {
+  background-image: linear-gradient(135deg, var(--white) 0 50%, transparent 50% 100%);
+}
+
+/* Today, and it borrows the border every square already reserves rather than
+   drawing an `outline` — `outline` is what the focus ring uses, and a rule
+   here would have taken that ring off exactly one square of the year: the one
+   somebody is most likely to be standing on. Colour only, so a day that is
+   both today and still waiting keeps its dotted line and gets it in ember. */
+.cal-cell.is-today .cal-day { border-color: var(--ember); font-weight: 800; }
+
+/* The key. Six colours over three hundred and sixty-five squares is six things
+   nobody can be expected to have been told about somewhere else. */
+.cal-legend {
+  list-style: none; margin: 0 0 var(--space-6); padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--space-5);
+  font-size: var(--text-sm); color: var(--text-mid);
+}
+.cal-legend li { display: inline-flex; align-items: center; gap: var(--space-3); }
+.cal-legend .cal-cell { display: inline-flex; }
+.cal-swatch { width: var(--space-7); height: var(--space-7); flex: none; }
+
+/* What is already booked on the day somebody clicked, in the pop-up. */
+.cal-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-5); margin: 0;
+  background: var(--snow); border-radius: var(--radius-sm); padding: var(--space-5);
+}
+.cal-facts dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 700; }
+.cal-facts dd { margin: var(--space-2) 0 0; color: var(--text-dark); font-weight: 600; }
+
+/* Three radios, and the whole question the day pop-up asks. A closed list of
+   three is read in one glance where a select has to be opened first. */
+.choice-set { border: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-5); }
+.choice-set legend {
+  float: left; width: 100%;
+  font-size: var(--text-xs); font-weight: 700; color: var(--text-mid);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0; margin-bottom: var(--space-4);
+}
+.choice { display: inline-flex; align-items: center; gap: var(--space-3); cursor: pointer; font-weight: 600; color: var(--text-dark); }
+
 /* ===== REQUESTS ===== */
 .request-list { display: flex; flex-direction: column; gap: var(--space-6); }
 .request-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-4); }
@@ -1753,7 +2217,7 @@ tr.is-today > * { background: var(--ember-bg); }
   background: var(--snow); border-radius: var(--radius-sm); padding: var(--space-5);
 }
 .request-balance dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 700; }
-.request-balance dd { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: var(--text-lg); font-weight: 700; color: var(--text-dark); }
+.request-balance dd { margin: var(--space-2) 0 0; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-lg); font-weight: 700; color: var(--text-dark); }
 .request-balance .is-quiet dd { color: var(--text-mid); font-size: var(--text-md); }
 .request-decision { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
 .request-decision input[type="text"] { flex: 1 1 16rem; min-width: 0; }
@@ -1777,6 +2241,12 @@ tr.is-today > * { background: var(--ember-bg); }
 .pill--ok { background: var(--success-bg); color: var(--success-strong); }
 .pill--pending { background: var(--gold-bg); color: var(--amber); }
 .pill--attention { background: var(--amber-bg); color: var(--amber); }
+/* **Holiday and special leave share the green, and that is the decision.**
+   They are asked for through different controls and counted against different
+   entitlements, but on a page that draws a year neither of those is something
+   a square can say — what a square says is "you were off" — and a second green
+   claiming to be a distinction is a colour somebody has to look up in order to
+   learn it means nothing they can act on. Four kinds, four colours. */
 .pill--holiday, .pill--special { background: var(--success-bg); color: var(--success-strong); }
 .pill--sick { background: var(--plum-bg); color: var(--plum); }
 .pill--closure { background: var(--gold-bg); color: var(--gold-deep); }
@@ -1785,6 +2255,20 @@ tr.is-today > * { background: var(--ember-bg); }
    one beside it — "half day", a time zone name — and a second loud pill next to
    a loud pill is two things competing to be read first. */
 .pill--muted { background: var(--border-light); color: var(--text-light); }
+
+/* **Not decided yet**, said on the pill the day is written in rather than by a
+   second pill beside it. On the timesheet that word cost nine and a half rems
+   of a column that cannot widen, and it pushed the thing it was qualifying out
+   of sight — a state belongs to the thing it is a state of.
+
+   An *inset outline* and not a border: a border would make this pill two pixels
+   taller than the settled one next to it, on a grid whose rows are a fixed
+   height and whose whole point is that nothing moves. `currentColor` so it
+   comes out in each kind's own colour instead of introducing a fifth. */
+.pill.is-pending {
+  outline: 1px dotted currentColor;
+  outline-offset: -1px;
+}
 
 .button--attention { background: var(--gold-deep); }
 .button--attention:hover { background: var(--gold-deep); filter: brightness(0.92); }
@@ -1833,7 +2317,11 @@ tr.is-today > * { background: var(--ember-bg); }
 @media (max-width: 700px) {
   .content { padding: var(--space-7); }
   th, td { padding: var(--space-4) var(--space-5); }
-  .page-head-sub { font-size: var(--text-base); }
+  /* The bar has the hamburger, the heading, Start/Stop and the language menu
+     on one line. On a phone the subtitle is the half that can go: "My
+     timesheet" is the answer, and the month is on the picker below it. */
+  .topbar-page { font-size: var(--text-lg); }
+  .topbar-page-sub { display: none; }
   /* The roster keeps its seven columns and scrolls. Reflowing a week to one
      column is exactly the thing it exists not to do — the comparison across
      days is why anybody opened it. */
@@ -1862,7 +2350,7 @@ tr.is-today > * { background: var(--ember-bg); }
    deliberately different colours: --danger for "this is not a time at all", and
    --amber for "these two overlap", which is a statement about a *pair* and
    about a value that is perfectly readable. */
-input[data-time-input] { font-family: var(--font-mono); max-width: 7rem; }
+input[data-time-input] { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; max-width: 7rem; }
 input[data-time-input].is-unreadable {
   border-color: var(--danger);
   background: var(--danger-bg);

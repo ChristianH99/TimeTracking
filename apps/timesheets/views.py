@@ -26,9 +26,11 @@ from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 
-from apps.absences.models import Absence, BankHoliday, Balance, RequestStatus
+from apps.absences.models import (
+    Absence, AbsenceKind, BankHoliday, Balance, IN_FORCE, RequestStatus, UNDECIDED,
+)
 from apps.employees.models import Employee
-from apps.employees.permissions import manager_required, own_or_manager
+from apps.employees.permissions import is_manager, manager_required, own_or_manager
 from apps.organisation.models import OrgSettings
 from apps.roster.models import Shift
 from apps.timesheets import bookings, clocking
@@ -189,6 +191,35 @@ def _day_row(employee, day, facts, settings, rules, today=None):
 
     counted = (worked or 0) + credited
 
+    # Whether this day's status is a question one cell can answer. A closure
+    # belongs to everybody at once and a range is not one date; both are
+    # read-only here and say so, and both send somebody to the Time off page.
+    status_editable = absence is None or bool(
+        absence.closure_id is None and absence.start_date == absence.end_date
+    )
+
+    # An absence nobody has decided yet. The cell draws it as a dotted edge on
+    # the pill rather than as a second pill beside it, and this is what it hangs
+    # on to. The sentence is built here rather than in the template because
+    # `{% translate … as x %}` does not unset itself between rows of a loop, so
+    # the first undecided day would make every day after it look undecided too.
+    #
+    # **One sentence for every kind now, sickness included.** It used to be two,
+    # because a reported sick day counted before anybody had answered and a day
+    # off did not; that difference has gone with the rule behind it. The one
+    # that is left is a cancellation, which is undecided in the other direction
+    # — the day *is* booked, and what is waiting is the asking to remove it.
+    status_pending_note = ""
+    if absence is not None and absence.status == RequestStatus.REQUESTED:
+        status_pending_note = _(
+            "Waiting for a decision. Nothing is credited and no days are spent "
+            "until it is approved."
+        )
+    elif absence is not None and absence.status == RequestStatus.CANCELLING:
+        status_pending_note = _(
+            "Booked, and waiting for a manager to answer a request to cancel it."
+        )
+
     return {
         "date": day,
         "record": record,
@@ -260,7 +291,7 @@ def _day_row(employee, day, facts, settings, rules, today=None):
         "holiday": holidays.get(day),
         "absence": absence,
         "is_half_day": bool(absence and absence.is_half_day),
-        # What the status pop-up opens on, and whether it may open at all.
+        # What the status cell's dropdown opens on, and whether it has one.
         #
         # **A closure is the employer's and a range is not one date.** Withdrawing
         # either from a single cell would be answering a question the cell did
@@ -269,11 +300,19 @@ def _day_row(employee, day, facts, settings, rules, today=None):
         # no clearer than editing it where it was booked. Both send somebody to
         # the absences page instead, which is where those live.
         "status_kind": absence.kind if absence else "",
-        "status_special": absence.special_type_id if absence else "",
-        "status_note": absence.reason if absence else "",
-        "status_editable": absence is None or bool(
-            absence.closure_id is None and absence.start_date == absence.end_date
-        ),
+        # Which entry of the dropdown this day is on, written by the same
+        # function that writes the entries. See `status_value`.
+        "status_value": status_value(
+            absence.kind, absence.special_type_id or "", absence.is_half_day,
+        ) if absence else "",
+        "status_pending_note": status_pending_note,
+        "status_editable": status_editable,
+        # `status_editable` and the lock together — the pair the cell actually
+        # keys off, the same shape `can_edit_hours` is below. The lock is a
+        # separate question from "can this one be answered from a cell at all",
+        # and a template that had to spell out `editable and not locked` three
+        # times would be three chances to spell it differently.
+        "can_set_status": status_editable and day not in locks,
         "is_working_day": is_working_day,
         # **Locked: finished, and not to be changed.** Every write path checks
         # it again — this is only what the page draws, and a row that merely
@@ -413,33 +452,74 @@ def _month_from(request):
     return month_start(dt.date.today())
 
 
-def _month_choices(employee, current):
-    """The months the dropdown offers, newest first.
+def status_value(kind, special_id="", half=False):
+    """The key that names one entry of the status dropdown.
 
-    From the month this person's records begin — their opening date, or their
-    earliest contract — through to a year ahead, and always including whichever
-    month is being looked at. Bounded rather than open-ended because a select
-    with every month since 1970 in it is a select nobody scrolls; a year ahead
-    because a roster is planned forward and checking next spring's rostered
-    hours is an ordinary thing to do.
+    It is **opaque**, and that is the point: it exists so the template can mark
+    the option that is current and so the browser can tell "you changed it" from
+    "you arrowed away and back". What gets *posted* comes off the option's data
+    attributes, so this encoding is never parsed anywhere and can be any string
+    that is unique per entry.
+
+    One function rather than two, because the row's current value and the
+    option's value are the same question asked from two places, and the day they
+    are spelled differently is the day the dropdown opens on the wrong entry
+    with nothing on the page to show it.
     """
-    last = max(month_shift(month_start(dt.date.today()), 12), current)
-    first = month_start(employee.opening_date or dt.date.today())
-    # Four years of history at most in the list itself. Anything older is still
-    # reachable by editing the query string, and is not what a dropdown is for.
-    first = max(first, month_shift(last, -48))
-    # **Last, and after the clamp.** The month being looked at is always in the
-    # list, whatever it is: a select whose selected option is not among its
-    # options renders as the first entry instead, so an old link would show a
-    # picker that disagrees with the page it is on.
-    first = min(first, current)
+    parts = [kind]
+    if special_id:
+        parts.append(str(special_id))
+    if half:
+        parts.append("half")
+    return ".".join(parts)
 
-    months = []
-    step = last
-    while step >= first:
-        months.append(step)
-        step = month_shift(step, -1)
-    return months
+
+def _status_pair(kind, label, special=""):
+    """One status, and the half day of it.
+
+    **Adjacent, not in a group of their own.** Twelve entries with every half
+    day beside the whole day it halves is a list read in pairs; the same twelve
+    split into "whole" and "half" sections is a list somebody has to scroll to
+    the bottom of to find that Urlaub is offered twice.
+    """
+    half_label = _("%(status)s (half day)") % {"status": label}
+    return [
+        {
+            "value": status_value(kind, special),
+            "label": label,
+            "kind": kind, "special": special, "half": "",
+        },
+        {
+            "value": status_value(kind, special, half=True),
+            "label": half_label,
+            "kind": kind, "special": special, "half": "1",
+        },
+    ]
+
+
+def _month_picker(current):
+    """What the month picker needs: the twelve cells of the year on screen, and
+    where the two year arrows above them point.
+
+    This replaces a pair of functions that built a bounded list of months for a
+    ``<select>`` — four years back, one forward, and the month being looked at
+    forced in because a select whose selected option is missing renders as the
+    first entry instead. **A year and a grid needs none of that.** The bound
+    only ever existed because a dropdown four hundred entries long is one nobody
+    scrolls, and clamping it was what made the missing-option case possible in
+    the first place; a grid shows twelve months and a year arrow reaches any
+    other year in one press, so every month is reachable and none has to be
+    special-cased.
+
+    The two arrows keep the month and move the year, so they are real links to a
+    real month — which is what lets the picker work with no script at all, where
+    a control that only redrew a panel could not.
+    """
+    return {
+        "year_months": [dt.date(current.year, index, 1) for index in range(1, 13)],
+        "previous_year": dt.date(current.year - 1, current.month, 1),
+        "next_year": dt.date(current.year + 1, current.month, 1),
+    }
 
 
 def build_month(employee, first, settings=None):
@@ -494,13 +574,16 @@ def build_month(employee, first, settings=None):
         "month": first,
         "month_end": last,
         "rows": rows,
-        "months": _month_choices(employee, first),
+        **_month_picker(first),
         "previous_month": month_shift(first, -1),
         "next_month": month_shift(first, 1),
         "this_month": month_start(today),
         "today": today,
-        "carried": carried["total"],
-        "carried_on": first - dt.timedelta(days=1),
+        # No "carried" here any more. The opening balance is still what the
+        # running column starts from — it is `running` above — but the row that
+        # announced it at the top of the table has gone: a running total that
+        # says where it started is saying twice what its first row already
+        # says, and it cost a line of a grid that is read down.
         "opening": carried["opening"],
         "opening_on": carried["opening_on"],
         "worked_total": worked_total,
@@ -561,7 +644,7 @@ def home(request):
 
     if _is_manager(request.user):
         context["waiting_requests"] = (
-            Absence.objects.filter(status=RequestStatus.REQUESTED)
+            Absence.objects.filter(status__in=UNDECIDED)
             .select_related("employee").order_by("start_date")[:5]
         )
         context["unconfirmed_people"] = _people_with_unconfirmed_days()
@@ -589,7 +672,6 @@ def _people_with_unconfirmed_days():
 
 def _month_context(request, employee):
     """The month page's context. One function, two doors, for the usual reason."""
-    from apps.absences.models import AbsenceKind
     from apps.organisation.models import SpecialLeaveType
 
     settings = OrgSettings.current()
@@ -599,19 +681,36 @@ def _month_context(request, employee):
     # is deliberately absent — offering it here would let somebody record "the
     # workplace was shut" for one person on one day, which is not a thing that
     # can be true.
-    context["status_kinds"] = [
+    # The three that need nothing else said about them. **Special leave is not
+    # among them**: it cannot be saved without naming which entitlement it comes
+    # out of, so offering it as one option would be offering the one choice the
+    # form always refuses. Each granted type is its own option in the cell's
+    # dropdown instead, grouped under the same word — which is what let the
+    # "which special leave?" box, and the dialog holding it, go.
+    kinds = [
         (AbsenceKind.HOLIDAY, AbsenceKind.HOLIDAY.label),
         (AbsenceKind.SICK, AbsenceKind.SICK.label),
         (AbsenceKind.OVERTIME, AbsenceKind.OVERTIME.label),
-        (AbsenceKind.SPECIAL, AbsenceKind.SPECIAL.label),
     ]
     # Only the types this person has been granted — the same restriction
     # `AbsenceRequestForm` makes, for the same reason: a type nobody granted is
     # not theirs, and offering it produces a request a manager has to decline
     # and then explain.
-    context["special_types"] = SpecialLeaveType.objects.filter(
+    special_types = SpecialLeaveType.objects.filter(
         grants__employee=employee, is_active=True,
     )
+    context["status_options"] = [
+        option
+        for kind, label in kinds
+        for option in _status_pair(kind, label)
+    ]
+    context["status_special_options"] = [
+        option
+        for leave_type in special_types
+        for option in _status_pair(
+            AbsenceKind.SPECIAL, leave_type.name, special=leave_type.pk,
+        )
+    ]
     context["is_own"] = (
         employee.user_id is not None and employee.user_id == request.user.id
     )
@@ -1226,13 +1325,42 @@ def set_status(request, pk, date):
 
     kind = request.POST.get("kind") or ""
 
+    # **Who is pressing this decides what "remove it" means**, and it is the
+    # same line `absences.request_cancel` draws. Nothing a manager has not
+    # answered is theirs yet, so the employee may take it back. Something
+    # approved is a day the roster was built around, so the employee *asks* — a
+    # manager, who would otherwise be answering their own request one press
+    # later, does it outright. On their own row a manager is the employee: a
+    # self-approving shortcut is exactly the audit trail this app keeps.
+    acts_as_manager = is_manager(request.user) and employee.user_id != request.user.id
+    if existing is not None and existing.status in IN_FORCE and not acts_as_manager:
+        if kind:
+            messages.error(request, _(
+                "%(date)s is already booked and approved. Ask for that to be cancelled "
+                "first — this cell cannot swap one for another."
+            ) % {"date": the_date.strftime("%d.%m.%Y")})
+            return redirect(back)
+        if existing.status == RequestStatus.CANCELLING:
+            messages.error(request, _("You have already asked for that to be cancelled."))
+            return redirect(back)
+        existing.status = RequestStatus.CANCELLING
+        existing.save(update_fields=["status"])
+        messages.success(request, _(
+            "Your manager has been asked to cancel %(date)s. It stays booked until "
+            "they answer."
+        ) % {"date": the_date.strftime("%d.%m.%Y")})
+        return redirect(back)
+
     with transaction.atomic():
         if existing is not None:
             # Withdrawn rather than deleted, the same as `absences.request_cancel`:
             # the record still says the conversation happened, and a manager who
             # remembers approving something is not left with no trace of it.
-            existing.status = RequestStatus.WITHDRAWN
-            existing.save(update_fields=["status"])
+            if existing.status in IN_FORCE:
+                existing.cancel(by=request.user)
+            else:
+                existing.status = RequestStatus.WITHDRAWN
+                existing.save(update_fields=["status"])
 
         if not kind:
             messages.success(request, _("%(date)s has no status any more.") % {
@@ -1415,7 +1543,7 @@ def _month_summary(employee, first, settings=None):
         # change the credited hours the moment it was approved — after the month
         # had been signed off on the figures without it.
         "waiting": employee.absences.filter(
-            status=RequestStatus.REQUESTED,
+            status__in=UNDECIDED,
             start_date__lte=last, end_date__gte=first,
         ).count(),
         "locked_days": locked,
@@ -1444,30 +1572,13 @@ def month_end_page(request):
         "month": first,
         "month_end": month_end(first),
         "people": people,
-        "months": _month_choices_for_everybody(first),
+        **_month_picker(first),
         "previous_month": month_shift(first, -1),
         "next_month": month_shift(first, 1),
         "this_month": month_start(dt.date.today()),
         "locked_people": sum(1 for row in people if row["is_locked"]),
         "waiting_total": sum(row["waiting"] for row in people),
     })
-
-
-def _month_choices_for_everybody(current):
-    """The dropdown for a page that is about the whole team.
-
-    ``_month_choices`` starts at one employee's opening date, which is not a
-    question with an answer here. Two years back and a year forward, which is
-    the range a month is ever closed in.
-    """
-    last = max(month_shift(month_start(dt.date.today()), 12), current)
-    first = min(month_shift(last, -36), current)
-    months = []
-    step = last
-    while step >= first:
-        months.append(step)
-        step = month_shift(step, -1)
-    return months
 
 
 @manager_required
@@ -1510,7 +1621,7 @@ def lock_month(request):
     blocked = [
         employee for employee in chosen
         if employee.absences.filter(
-            status=RequestStatus.REQUESTED,
+            status__in=UNDECIDED,
             start_date__lte=last, end_date__gte=first,
         ).exists()
     ]
