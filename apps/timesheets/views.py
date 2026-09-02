@@ -33,7 +33,7 @@ from apps.employees.models import Employee
 from apps.employees.permissions import is_manager, manager_required, own_or_manager
 from apps.organisation.models import OrgSettings
 from apps.roster.models import Shift
-from apps.timesheets import bookings, clocking
+from apps.timesheets import bookings, clocking, limits
 from apps.timesheets.balance import hours_balance
 from apps.timesheets.fields import SignedMinutesField
 from apps.timesheets.forms import DayForm, SegmentFormSet
@@ -106,10 +106,15 @@ def _facts_for(employee, first, last):
     for shift in Shift.objects.filter(employee=employee, date__gte=first, date__lte=last):
         shifts.setdefault(shift.date, []).append(shift)
 
+    # **One day earlier than the window asks for**, and the extra row is never
+    # drawn. §5 ArbZG is a question about the gap *between* two days, so the
+    # first of the month cannot be answered without the last of the month
+    # before — and fetching it per row would be a query the month does not
+    # otherwise need. It costs nothing: the same query, one date wider.
     records = {
         record.date: record
         for record in DayRecord.objects
-        .filter(employee=employee, date__gte=first, date__lte=last)
+        .filter(employee=employee, date__gte=first - dt.timedelta(days=1), date__lte=last)
         .prefetch_related("segments")
     }
 
@@ -209,6 +214,16 @@ def _day_row(employee, day, facts, settings, rules, today=None):
     # off did not; that difference has gone with the rule behind it. The one
     # that is left is a cancellation, which is undecided in the other direction
     # — the day *is* booked, and what is waiting is the asking to remove it.
+    # §3 and §5 ArbZG. Flagged and never refused — `apps/timesheets/limits.py`
+    # says why at length, and the short version is that an unlawful day still
+    # has to be recordable, because the record is the only evidence it happened.
+    # The previous date comes out of the same `records` dict, which is fetched
+    # one day wider than the window for exactly this.
+    limit_flags = limits.for_day(
+        record, records.get(day - dt.timedelta(days=1)),
+        zone_for(employee), worked,
+    )
+
     status_pending_note = ""
     if absence is not None and absence.status == RequestStatus.REQUESTED:
         status_pending_note = _(
@@ -280,6 +295,13 @@ def _day_row(employee, day, facts, settings, rules, today=None):
             and not record.matches_roster(planned)
         ),
         "break_is_override": bool(record and record.break_is_override),
+        # What §3 and §5 make of the day, and how badly. Two keys rather than
+        # one because the template needs the severity without looping: it
+        # colours a cell, and a `{% for %}` that exists only to find out whether
+        # anything in the list is serious is logic in a place no test reaches.
+        "limit_flags": limit_flags,
+        "limit_level": limits.worst(limit_flags),
+        "limit_note": " ".join(str(flag["text"]) for flag in limit_flags),
         # A stretch started and not stopped. The row draws it as running rather
         # than as a day of nought hours, which is what the totals would
         # otherwise make it look like.
@@ -609,6 +631,15 @@ def build_month(employee, first, settings=None):
         "difference": worked_total + credited_total - contracted_total,
         "balance_to_date": running,
         "awaiting": sum(1 for row in rows if row["awaiting"]),
+        # **How many days the month breaks a working time limit on, counted
+        # rather than only marked.** A flag on a row is found by somebody who
+        # is already looking at that row; the duty is to *detect*, which means
+        # the answer has to be visible from the top of the page without reading
+        # thirty-one of them. Two figures and not one, because §3's eight hours
+        # and its ten are different statements — one is lawful if it is paid
+        # back and the other never is.
+        "limit_breaches": sum(1 for row in rows if row["limit_level"] == limits.BREACH),
+        "limit_cautions": sum(1 for row in rows if row["limit_level"] == limits.CAUTION),
         "settings": settings,
         "rules": rules,
         # **No `clock` key.** Start and Stop are the topbar's now, supplied by
@@ -1242,6 +1273,14 @@ def _month_payload(employee, first, settings=None):
                 "running_minutes": row["running_saldo"],
                 "is_running": row["is_running"],
                 "differs_from_roster": row["differs_from_roster"],
+                # **The whole column, not only the edited row.** A day's hours
+                # decide the *next* day's rest period, so shortening Tuesday
+                # settles a flag on Wednesday — a reply carrying one row would
+                # leave that flag on the page saying something the database no
+                # longer says. The same argument the running total makes, and
+                # the reason this payload is the month rather than the day.
+                "limit_level": row["limit_level"],
+                "limit_note": row["limit_note"],
             }
             for row in month["rows"]
         ],
@@ -1256,6 +1295,10 @@ def _month_payload(employee, first, settings=None):
             "difference_minutes": month["difference"],
             "balance": hhmm_signed(month["balance_to_date"]),
             "balance_minutes": month["balance_to_date"],
+        },
+        "limits": {
+            "breaches": month["limit_breaches"],
+            "cautions": month["limit_cautions"],
         },
     }
 

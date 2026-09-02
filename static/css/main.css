@@ -74,6 +74,24 @@
   --danger: #B3261E;
   --danger-bg: #FBE9E7;
 
+  /* Working time the law objects to — §3 ArbZG's ten hours, §5's eleven hours
+     of rest. A meaning of its own, and deliberately neither of the two above
+     it: `--amber` is reserved for a figure somebody typed over a computed one,
+     and `--danger` for an action that destroys something. This is neither. It
+     is a fact about a day that has already happened, and the app *reports* it
+     rather than refusing it — `apps/timesheets/limits.py` says why at length,
+     and the short version is that an unlawful day still has to be recordable
+     because the record is the only evidence it happened.
+
+     Two steps of one hue rather than two hues, because §3 makes two statements
+     about the same thing and not two different statements. A day over eight
+     hours is not a lesser breach, it is an *undecided* one — lawful if a
+     shorter day pays it back across 24 weeks, and the app cannot yet say
+     whether one did. The soft step is that uncertainty. A second hue would
+     have had to be looked up in order to learn that it meant "maybe". */
+  --breach: #96201C;
+  --breach-soft: #B8746F;
+
   /* Saturday and Sunday on the timesheet. A shade of its own rather than
      `--snow`, which is the page's own background and therefore invisible
      against a white table: the weekend was already marked in the markup and
@@ -1667,6 +1685,47 @@ tr.is-off > * { color: var(--text-light); }
 /* The month's plan, under the totals. Quieter than the row above it, because
    it is the one figure on the page that is about what has not happened yet. */
 .month-plan th, .month-plan td { font-weight: 400; color: var(--text-light); border-top: 0; }
+
+/* ===== §3 AND §5 ARBZG =====
+   A day the working time law objects to. Marked on the **Actual** cell, because
+   that is the figure both statutes are about — how long the day was, and how
+   soon after the last one it started — and because it is where the eye already
+   goes for hours.
+
+   **An inset shadow and not a border**, the same choice the subnav makes and
+   for the same reason: this is a grid with a height written on every cell, and
+   a border would add its two pixels to the box and move every figure below it
+   by two pixels. An inset shadow is drawn inside the box the cell already has.
+
+   Colour is never the only carrier. The `title` says the sentence, `.limit-mark`
+   puts a glyph in the cell for anybody who cannot see the difference between
+   the two steps, and the summary under the table says both counts in words. */
+.month-actual[data-limit="breach"] {
+  color: var(--breach); font-weight: 700; cursor: help;
+  box-shadow: inset 0 -2px 0 var(--breach);
+}
+.month-actual[data-limit="caution"] {
+  color: var(--breach-soft); font-weight: 700; cursor: help;
+  box-shadow: inset 0 -2px 0 var(--breach-soft);
+}
+.limit-mark { font-weight: 700; padding-left: var(--space-2); }
+.month-actual[data-limit="breach"] .limit-mark { color: var(--breach); }
+.month-actual[data-limit="caution"] .limit-mark { color: var(--breach-soft); }
+
+/* The two counts under the table. **The flag on a row is found by somebody
+   already reading that row**, and the duty the draft ArbZG writes down is to
+   *detect* — which means the answer has to be legible from the top of the page
+   without reading thirty-one of them.
+
+   A count and a label rather than a sentence with the number inside it, so that
+   repainting after a save sets one text node and needs no plural form in the
+   JavaScript catalogue — the same reason `monthpicker.js` writes no month
+   names. */
+.limit-summary { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+.limit-summary p { margin: 0; font-size: var(--text-sm); }
+.limit-summary-count { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; }
+.limit-summary-breach { color: var(--breach); }
+.limit-summary-caution { color: var(--breach-soft); }
 
 /* ===== THE STATUS CELL =====
    **The cell is the control.** It opened a dialog with four fields until three

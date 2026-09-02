@@ -710,7 +710,30 @@ LATER = {
         "Zwei dieser Abschnitte überschneiden sich. Die überlappende Zeit würde doppelt gezählt; es lässt sich erst speichern, wenn einer davon korrigiert ist.",
 }
 
+# §3 and §5 ArbZG — the two working time limits the month flags.
+#
+# The paragraph numbers stay in the German because they *are* the German:
+# anybody who has to act on one of these will look the section up, and "§3
+# ArbZG" is how it is looked up. The sentences deliberately say what the app
+# cannot answer — the 24-week average — rather than implying a verdict it has
+# not reached, which is the same honesty the flag itself has: it reports the day
+# and never refuses it. See `apps/timesheets/limits.py`.
+LIMITS = {
+    "Working time limit": "Arbeitszeitgrenze",
+    "%(worked)s worked. §3 ArbZG allows ten hours at the very most, and no average makes an eleventh hour lawful.":
+        "%(worked)s gearbeitet. §3 ArbZG erlaubt höchstens zehn Stunden; keine Durchschnittsbetrachtung macht eine elfte Stunde zulässig.",
+    "%(worked)s worked. §3 ArbZG sets the day at eight hours and allows ten only if the average across 24 weeks comes back to eight — so this day needs a shorter one behind it.":
+        "%(worked)s gearbeitet. §3 ArbZG setzt den Arbeitstag auf acht Stunden und lässt zehn nur zu, wenn der Durchschnitt über 24 Wochen wieder acht Stunden ergibt — dieser Tag braucht also einen kürzeren zum Ausgleich.",
+    "Only %(rest)s off since the previous day’s work ended. §5 ArbZG requires eleven hours of uninterrupted rest.":
+        "Nur %(rest)s seit dem Ende der Arbeit am Vortag. §5 ArbZG verlangt elf Stunden ununterbrochene Ruhezeit.",
+    "Days over the ten hours §3 ArbZG allows at most, or with less than the eleven hours’ rest §5 requires:":
+        "Tage über den zehn Stunden, die §3 ArbZG höchstens erlaubt, oder mit weniger als den elf Stunden Ruhezeit nach §5:",
+    "Days over eight hours. Lawful if the average across 24 weeks comes back to eight — which this app does not yet work out:":
+        "Tage über acht Stunden. Zulässig, wenn der Durchschnitt über 24 Wochen wieder acht Stunden ergibt — was diese App noch nicht berechnet:",
+}
+
 PAGES.update(LATER)
+PAGES.update(LIMITS)
 
 # The djangojs catalogue — the strings the browser says for itself.
 JAVASCRIPT = {
@@ -762,4 +785,10 @@ JAVASCRIPT = {
         "Das ist keine Dauer, die diese App lesen kann. Zum Beispiel 30, 0:30 oder -15.",
     "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
         "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+
+    # The glyph the script puts back into the Actual cell after a save. In this
+    # table *and* in `LIMITS` below, because the template renders it on first
+    # load and the script redraws it afterwards — the same shape "still running"
+    # and "differs" have, and for the same reason.
+    "Working time limit": "Arbeitszeitgrenze",
 }

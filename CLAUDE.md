@@ -59,6 +59,16 @@ does about each, and — the useful column — what it does not. Several rules b
 are load-bearing for a legal reason rather than a design one, and that file is
 where the reason is written down.
 
+**`docs/AUDIT.md` is its companion and asks the other question**: not what the
+law requires of the employer, but *who turns up, under what standard, and what
+they want out of the software on the day*. The FKS, the DRV, the Finanzamt with
+the GoBD, the Arbeitsschutzbehörde, the Datenschutzaufsicht, the Betriebsrat, a
+labour court and — if a corporate customer asks for "the certificate" — an IDW
+PS 880 audit. The two lists are not the same: a rule can be fully implemented
+and still fail an audit, because nobody can *demonstrate* it was implemented on
+the day the record was written. That file also holds the ordered list of what is
+still missing, and the top of it is an audit trail.
+
 ## Stack
 
 - Django 6.1, Python 3.13, `uv` (`pyproject.toml` / `uv.lock`)
@@ -112,6 +122,7 @@ uv run python manage.py close_leave_year 2025 --expire
 
 uv run python manage.py makemessages -l de --no-obsolete --no-wrap
 uv run python manage.py makemessages -d djangojs -l de --no-obsolete --no-wrap
+uv run python tools/unwrap_references.py
 uv run python tools/apply_translations.py
 uv run python manage.py compilemessages -l de --ignore=.venv
 ```
@@ -133,6 +144,17 @@ simply are not there — and a long `msgstr` broken across continuation lines is
 valid `.po` that the completeness check reads as *empty*. Writing the file
 programmatically means neither has anywhere to occur. A new string is added to
 one of the two tables, not to the `.po`.
+
+**`unwrap_references.py` is the step before it, and it is not optional.**
+Writing the catalogue programmatically fixes the file `apply_translations`
+*writes*; it cannot fix the one `makemessages` hands it. `--no-wrap` governs
+`msgstr` and not the comment lines, so `xgettext` still wraps a long reference
+list — and `makemessages` runs `msgattrib` itself to honour `--no-obsolete`,
+which then refuses the file with `keyword "roster" unknown` pointing at a
+template name rather than at the wrap. The merge is already written by then, so
+nothing is lost; what happens instead is that `apply_translations` afterwards
+reports every new string as "matched nothing in the catalogue", and the fault
+looks like the table rather than like gettext.
 
 GNU gettext is not on PATH on the development machine; it ships with Git:
 `$env:PATH = "C:\Program Files\Git\usr\bin;$env:PATH"`.
@@ -410,6 +432,50 @@ Each of these is here because breaking it produces a page that still renders.
   question "what were you actually asked to work?" would have no answer. Keeping
   them apart is what lets the timesheet print *"you were rostered 08:00–14:00 and
   you have entered 08:00–15:30"*, which is the sentence the whole app exists for.
+- **§3 and §5 ArbZG are flagged and never refused, and that direction is the
+  whole design.** `apps/timesheets/limits.py`. The tempting implementation
+  refuses to save an eleven-hour day, and it is wrong in the way that costs the
+  most: §16 requires a record of the time *actually worked*, so refusing the
+  entry does not prevent the eleventh hour — somebody worked it either way — it
+  destroys the only evidence that it happened and leaves the employer with a tidy
+  timesheet and no answer. The unlawful day has to be recordable; what the app
+  owes is that nobody can say afterwards it went unnoticed, which is a mark on
+  the row and a count under the table. It is also what the June 2026 ArbZG draft
+  asks for in as many words: measures that **detect** breaches of the maximum
+  hours and the rest period. `test_limits.py` keeps a class of its own for it.
+- **Two levels, because §3 makes two statements about one thing.** Over ten hours
+  is a *breach* — the ceiling, with no averaging behind it. Over eight is a
+  *caution*, and not a lesser breach: §3 s.2 permits ten provided the average
+  across 24 weeks comes back to eight, so a nine-hour day is unlawful *unless* a
+  shorter one pays it back, and the app cannot yet say whether one did. Drawing
+  it as a breach would cry wolf on every busy Tuesday in Germany. **The 24-week
+  average is the missing half** and it belongs beside `balance.py`, because it
+  needs a window that crosses months and contract changes.
+- **The rest period is measured between the two *instants* a day's work stopped
+  and the next day's started**, not between two clock readings — the same rule
+  `zones.elapsed_minutes` exists for, and the case where it bites hardest: on the
+  October night the clocks go back, somebody who finished at 22:00 and started at
+  08:00 rested eleven real hours and the wall clock says ten, which is a breach
+  the app would report and that did not happen. Both nights are named in
+  `test_limits.py`. The day's *end* is the last stretch's, carried forward across
+  midnight the way `shape` carries its gaps — a two-stretch night (22:00–02:00,
+  03:00–06:00) has nothing in the second stretch's own readings to say it is on
+  the next date, and reading it per-segment puts the clock-out twenty hours before
+  the clock-in.
+- **`_facts_for` fetches one day earlier than the window it is asked for**, and
+  that row is never drawn. §5 is a question about the gap *between* two days, so
+  the first of a month cannot be answered from inside that month; asking per row
+  would be a query the month does not otherwise need, and the same query one date
+  wider is free.
+- **The flag is marked on the *Actual* cell**, with `data-limit` and the sentence
+  in a `title` on the `<td>` rather than on a span inside it — the script rewrites
+  that cell's contents after every save, and an attribute on the cell survives it.
+  The colour is `--breach` / `--breach-soft`, two steps of one hue and neither
+  `--amber` (a figure somebody typed over a computed one) nor `--danger` (an
+  action that destroys something); both of those already mean something else and
+  a third meaning on either would dilute a documented one. Drawn as an *inset
+  shadow*, because a border would add two pixels to a cell in a grid with a
+  height written on every one.
 - **The break is not resolved the obvious way, and the obvious way underpays it.**
   Reading the tiers as "worked over six hours, so take thirty minutes" against
   the clock-in-to-clock-out span gives a day of 6h05 a full thirty-minute break —
@@ -916,6 +982,14 @@ targets**, so a page added next month is covered the day it lands:
   asserts seven hours in March and nine in October — plus the invariant that on
   an ordinary day the zone-aware answer equals the plain subtraction, without
   which every existing night-shift test would be quietly wrong.
+- `apps/timesheets/test_limits.py` holds §3 and §5: both boundaries in both
+  directions (eight hours exactly is not over eight, ten exactly is not over
+  ten), the night shift whose end is on the following date, the two-stretch night
+  a per-segment test gets wrong by twenty hours, and the two clock-change nights
+  again — one where the wall clock would report a breach that did not happen and
+  one where it would miss a real one. **The class that matters most is the last
+  one**, `TestAnUnlawfulDayIsStillRecorded`: every case in it would still pass if
+  the flags were deleted, and none would pass if a flag ever became a refusal.
 - `apps/timesheets/test_clocking.py` holds Start and Stop, the open-ended day,
   and the four refusals (already running, nothing running, no length, inside an
   existing stretch).

@@ -22,12 +22,16 @@ or 24 weeks stays at eight.
 
 | | |
 |---|---|
-| **Does** | Nothing. A day of any length can be entered and saved. |
-| **Does not** | Warn at 8 h, refuse at 10 h, or compute the 24-week rolling average. |
+| **Does** | Flag a day over eight hours as a *caution* and a day over ten as a *breach*, on the day's Actual cell and in a count under the month. `apps/timesheets/limits.py`. The two are different sentences and not two shades of one: over eight is lawful precisely when a shorter day pays it back, and over ten never is, so collapsing them would either cry wolf on every busy Tuesday or say nothing about the day that actually breaks the ceiling. |
+| **Does** | Count the correction into the day's length, because §3 is about working time and a correction is working time somebody did not clock. |
+| **Does not** | *Refuse* a day of any length, and that is deliberate rather than unfinished. §16 requires a record of the time **actually worked**; refusing to save an eleven-hour day does not prevent the eleventh hour — somebody worked it either way — it destroys the only evidence that it happened and leaves the employer with a tidy timesheet and no answer. `test_limits.py` pins the direction with a class of its own. |
+| **Does not** | Compute the 24-week rolling average. |
 
 The rolling average is the harder half and the one that actually bites: an
 employer who runs ten-hour days through a busy quarter has to be able to show
-the compensating weeks. **This is the single largest compliance gap in the app.**
+the compensating weeks. **It is now the largest remaining gap in this section**,
+and the per-day flag makes it larger rather than smaller — the page can say a day
+was over eight hours and cannot yet say whether it was allowed to be.
 
 ### §4 — breaks
 
@@ -52,11 +56,12 @@ hospitals, gastronomy, agriculture) if compensated within four weeks.
 
 | | |
 |---|---|
-| **Does** | Nothing. |
-| **Does not** | Check the gap between one day's end and the next day's start, in the roster or in the timesheet. A closing shift ending 22:00 followed by an opening shift at 06:00 is eight hours' rest and is accepted silently. |
-
-Worth noting that the app already has the arithmetic: `minutes_between` and the
-segment model know when a day ends. The check is small; it is simply absent.
+| **Does** | Measure the gap between the *last* clock-out of one day and the *first* clock-in of the next, and flag it as a breach under eleven hours. A closing shift ending 22:00 followed by an opening shift at 06:00 is now marked as eight hours' rest instead of being accepted silently. |
+| **Does** | Measure it between two **instants**, so the night the clocks go back gives eleven real hours where the wall clock says ten — a false breach the naive subtraction would have reported every October, and a real one it would have missed every March. Both nights are named in `test_limits.py`. |
+| **Does** | Read a night shift's true end. 22:00–06:00 is filed under the first date and finishes on the second; a two-stretch night (22:00–02:00, 03:00–06:00) carries the date forward across both, which a per-segment "end before start" test gets wrong by twenty hours. |
+| **Does not** | Model §5(2)'s reduction to ten hours in care settings — which a *Kindergarten* may well be inside. Flagging anyway is the right answer rather than a bug: the reduction is conditional on compensation within four weeks, so an employer inside the exception still has to know **which** nights were short in order to show it. The message names §5 so the flag reads as the record it is. |
+| **Does not** | Check the roster. This is a rule about what happened, and the roster is a plan; a shift dragged into an eight-hour turnaround is not flagged until somebody works it. |
+| **Does not** | Look further back than the immediately preceding calendar day. A day with no record is a day nobody has answered for, and inventing a rest for it would be the app agreeing with a record that does not exist. |
 
 ### §6 — night work
 
@@ -463,11 +468,29 @@ a history of what was decided and not only as a to-do.
    all, so an employer with no record of the reminder finds that nothing lapses.
    What is still missing is *sending* the reminder — the app records that it went
    out and does not put it in anybody's inbox.
-6. **The 11-hour rest check** (§5 ArbZG). Small, and the arithmetic already
-   exists — more so now that `zones.elapsed_minutes` measures real elapsed time
-   between instants, which is exactly what a rest period is.
-7. **A daily-hours warning** at 8 h and a refusal at 10 h, plus the 24-week
-   average (§3 ArbZG).
+6. ~~**The 11-hour rest check** (§5 ArbZG).~~ **Done.**
+   `apps/timesheets/limits.py`, measured between instants, so the two nights a
+   year the clocks move do not produce a false breach in one direction and hide
+   a real one in the other.
+7. ~~**A daily-hours warning at 8 h and a refusal at 10 h**~~ — **half done, and
+   the other half was the wrong idea.** The warning is in; the *refusal* is not,
+   and will not be: §16 requires a record of the time actually worked, so
+   refusing an eleven-hour day removes the evidence rather than the hour. What is
+   still missing is the **24-week average** of §3 s.2, which is the half that
+   decides whether the over-eight days were lawful at all. It needs a window that
+   crosses months and contract changes, so it belongs beside `balance.py` rather
+   than beside a row.
+8. **A working-time export.** `docs/AUDIT.md` argues this at length and it is the
+   one feature that discharges five separate duties at once — GoBD Datenzugriff
+   Z3, §9 BVV machine-evaluability for the DRV, an FKS inspector at a desk, DSGVO
+   Art. 15(3), and the employee's right to a copy in the June 2026 ArbZG draft.
+   It reverses the "no in-app export" standing decision, deliberately.
+9. **When an entry was made**, as distinct from when the row was last touched.
+   The GoBD's *Zeitgerechtheit*, MiLoG §17's seven days and the draft ArbZG's
+   *am Tag der Arbeitsleistung* are one field and one report.
+
+`docs/AUDIT.md` is the companion list: who inspects this, under what standard,
+and what they will ask for on the day.
 8. **A guard on under-18s** (JArbSchG) — at minimum, a date of birth and a
    refusal, since every figure is currently wrong for them.
 9. **Sickness during leave** (§9 BUrlG) — give the days back instead of refusing

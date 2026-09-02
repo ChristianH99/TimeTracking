@@ -284,6 +284,24 @@
         actual.appendChild(star);
       }
     }
+    /* §3 and §5 ArbZG, repainted for **every** row and not only the edited one:
+       a day's hours decide the *next* day's rest period, so shortening Tuesday
+       settles a flag on Wednesday. The attributes live on the cell rather than
+       inside it precisely so the two lines above can rewrite its contents
+       without taking the flag with them; the glyph is put back the same way the
+       credited star is. The sentence comes from the server already written —
+       it names a duration, and a duration is formatted in one place. */
+    actual.dataset.limit = data.limit_level;
+    if (data.limit_note) actual.title = data.limit_note;
+    else actual.removeAttribute("title");
+    if (data.limit_level) {
+      const mark = document.createElement("span");
+      mark.className = "limit-mark";
+      mark.setAttribute("data-limit-mark", "");
+      mark.setAttribute("aria-label", gettext("Working time limit"));
+      mark.textContent = "!";
+      actual.appendChild(mark);
+    }
 
     const saldo = row.querySelector("[data-saldo-cell]");
     if (data.saldo === null) dash(saldo);
@@ -348,6 +366,21 @@
     runningTotal.textContent = totals.balance;
     runningTotal.classList.toggle("saldo--short", totals.balance_minutes < 0);
     runningTotal.classList.toggle("saldo--over", totals.balance_minutes > 0);
+
+    /* The two working time counts under the table. Numbers only — the sentences
+       beside them are rendered by the template and shown or hidden from here,
+       which is what keeps them out of the JavaScript catalogue and reading as
+       prose rather than as fragments glued to a digit. */
+    const summary = document.querySelector("[data-limit-summary]");
+    if (summary && month.limits) {
+      set("[data-limit-breaches]", String(month.limits.breaches));
+      set("[data-limit-cautions]", String(month.limits.cautions));
+      const breachLine = document.querySelector("[data-limit-breach-line]");
+      const cautionLine = document.querySelector("[data-limit-caution-line]");
+      if (breachLine) breachLine.hidden = month.limits.breaches === 0;
+      if (cautionLine) cautionLine.hidden = month.limits.cautions === 0;
+      summary.hidden = month.limits.breaches === 0 && month.limits.cautions === 0;
+    }
   }
 
   /* ---- the bookings pop-up --------------------------------------------- */

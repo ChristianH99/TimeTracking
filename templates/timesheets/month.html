@@ -350,10 +350,22 @@ app, so they sit at the top of it in the toolbar below.{% endcomment %}
               </button>
             </td>
 
-            <td class="numeric month-actual" data-actual>
+            {% comment %}**§3 and §5 ArbZG are marked here and refused nowhere.**
+            The day's figure is what both statutes are about — how long it was,
+            and how soon after the previous day it began — so the flag belongs on
+            the cell that carries it rather than on a fourteenth pill in a status
+            column that has no room for one.
+
+            `data-limit` and the `title` are on the `<td>` and not on a span
+            inside it, because the script writes this cell's *contents* after
+            every save and an attribute on the cell survives that. See
+            `apps/timesheets/limits.py` for why a flag and not a
+            refusal.{% endcomment %}
+            <td class="numeric month-actual" data-actual data-limit="{{ row.limit_level }}"
+                {% if row.limit_note %}title="{{ row.limit_note }}"{% endif %}>
               {% if row.worked_minutes is not None or row.credited_minutes %}
                 {{ row.counted_minutes|hhmm }}{% if row.credited_minutes %}<span class="hint" title="{% translate 'Credited, not worked — an absence the hours are paid for.' %}">*</span>{% endif %}
-              {% else %}<span class="hint">—</span>{% endif %}
+              {% else %}<span class="hint">—</span>{% endif %}{% if row.limit_level %}<span class="limit-mark" data-limit-mark aria-label="{% translate 'Working time limit' %}">!</span>{% endif %}
             </td>
 
             <td class="numeric month-due">
@@ -442,6 +454,32 @@ app, so they sit at the top of it in the toolbar below.{% endcomment %}
       {% blocktranslate with amount=opening|hhmm_signed date=opening_on|date:"d.m.Y" %}Includes {{ amount }} brought from a previous contract, as at {{ date }}.{% endblocktranslate %}
     </p>
   {% endif %}
+
+  {% comment %}**What the working time law makes of the month, counted.** A mark
+  on a row is found by somebody who is already reading that row; what the draft
+  §16 ArbZG asks an employer for is a system that *detects* breaches, which means
+  the answer has to be legible without reading thirty-one rows first.
+
+  Two lines and not one, because §3 makes two statements. Ten hours is a ceiling
+  and no average moves it; eight hours is the working day, and a longer one is
+  lawful precisely when a shorter one behind it pays it back — which is the
+  24-week average this app does not yet compute, and the line says so rather than
+  implying a judgement it cannot make.
+
+  The count is its own element with the label beside it, so a repaint after a
+  save sets one text node. A sentence with the number inside it would need a
+  plural form in the JavaScript catalogue for a figure that is nearly always a
+  digit.{% endcomment %}
+  <div class="limit-summary" data-limit-summary{% if not limit_breaches and not limit_cautions %} hidden{% endif %}>
+    <p class="limit-summary-breach" data-limit-breach-line{% if not limit_breaches %} hidden{% endif %}>
+      {% translate "Days over the ten hours §3 ArbZG allows at most, or with less than the eleven hours’ rest §5 requires:" %}
+      <span class="limit-summary-count" data-limit-breaches>{{ limit_breaches }}</span>
+    </p>
+    <p class="limit-summary-caution" data-limit-caution-line{% if not limit_cautions %} hidden{% endif %}>
+      {% translate "Days over eight hours. Lawful if the average across 24 weeks comes back to eight — which this app does not yet work out:" %}
+      <span class="limit-summary-count" data-limit-cautions>{{ limit_cautions }}</span>
+    </p>
+  </div>
 
   <p class="help">
     {% translate "A holiday, a day of leave or a sick day is credited at the contracted hours, so the month comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back." %}
