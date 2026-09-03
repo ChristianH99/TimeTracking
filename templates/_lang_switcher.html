@@ -4,7 +4,7 @@ The topbar language selector: a globe that toggles a menu of the configured
 LANGUAGES. Each option POSTs to django.views.i18n.set_language, which stores the
 choice (session + cookie) and redirects back to `next`.
 
-It lives outside the page's overridable topbar_actions block, so it is on every
+It lives outside the page's overridable page_actions block, so it is on every
 page — including the login page, where somebody who cannot read the sign-in form
 has no other way to change it. Behaviour is in static/js/shell.js; nothing here
 is inline, because the app ships a Content-Security-Policy.

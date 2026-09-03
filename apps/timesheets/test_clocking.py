@@ -63,8 +63,10 @@ class TestWhatItRecords:
         assert segment.start == dt.time(8, 0)
         assert segment.end == dt.time(17, 0)
         assert record.gross_minutes == 9 * 60
-        assert record.break_minutes == 45
-        assert record.worked_minutes == 9 * 60 - 45
+        # Nine hours exactly is not *over* nine hours, so the second tier does
+        # not bite — §4 ArbZG asks forty-five of a day longer than nine.
+        assert record.break_minutes == 30
+        assert record.worked_minutes == 9 * 60 - 30
 
     def test_a_running_stretch_is_worth_nothing_yet(self, org, anna, today):
         """The tempting answer is "up to now", and it is wrong for the one job

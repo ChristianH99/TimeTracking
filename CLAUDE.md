@@ -18,6 +18,38 @@ pattern reused deliberately, so that anything built to it is recognisable as the
 same product. Treat them as settled: a change to any of them is a change to the
 house style rather than a change to this app, and it wants a reason of that size.
 
+**The topbar says where you are; the page head says what can be done to it.**
+The bar carries the page's heading and its subtitle as one line — "My timesheet
+– September 2026" — plus the "?" for the page's help, Start and Stop, and the
+language menu. `{% block page_title %}` and `{% block page_subtitle %}` are what
+fill it, and it is the page's `<h1>`: **the heading is not written anywhere
+else.** It said "Time Tracking" until the day somebody noticed the brand in the
+corner of the sidebar was already saying that two inches away, so the one strip
+of chrome that is on screen at every moment was spending it repeating itself
+rather than answering which page this is. The subtitle is a second span with
+`:empty` on it — which is why base.html leaves no whitespace inside that tag,
+and why the " – " between them is drawn by CSS.
+
+The help button is rendered by `base.html` on *every* page and `hidden`;
+`shell.js` reveals it on the pages that turn out to define `{% block help_modal %}`.
+The server cannot tell whether a page has help — that is whether a template
+block was filled in — and without script the button could not open anything, so
+revealing it from the script is the one place that knows both.
+
+`{% block page_actions %}` is what is left of `.page-head`: a right-aligned row
+of buttons at the top of `<main>`, taken away entirely by `:empty` on the pages
+that have none. A page's own *controls* — the month picker, the week
+navigation — are not in the bar: they change what the page is showing, and the
+bar is a statement about where you are standing.
+
+The two figures up there tick on their own, from a timer in `shell.js` that adds
+real elapsed time to what the server rendered. It ticks *forward from that
+figure* rather than reading `new Date()`, because the browser's clock is the
+wrong one for anybody whose `Employee.time_zone` is filled in — which is the
+only case that field exists for. The bar is where clocking lives because it is a
+fact about the person and not about the page: it used to be buried on the
+timesheet, so answering "am I at work?" needed a navigation first.
+
 German is the default language and the only one the staff are expected to read;
 English is offered from the topbar globe.
 
@@ -27,6 +59,16 @@ does about each, and — the useful column — what it does not. Several rules b
 are load-bearing for a legal reason rather than a design one, and that file is
 where the reason is written down.
 
+**`docs/AUDIT.md` is its companion and asks the other question**: not what the
+law requires of the employer, but *who turns up, under what standard, and what
+they want out of the software on the day*. The FKS, the DRV, the Finanzamt with
+the GoBD, the Arbeitsschutzbehörde, the Datenschutzaufsicht, the Betriebsrat, a
+labour court and — if a corporate customer asks for "the certificate" — an IDW
+PS 880 audit. The two lists are not the same: a rule can be fully implemented
+and still fail an audit, because nobody can *demonstrate* it was implemented on
+the day the record was written. That file also holds the ordered list of what is
+still missing, and the top of it is an audit trail.
+
 ## Stack
 
 - Django 6.1, Python 3.13, `uv` (`pyproject.toml` / `uv.lock`)
@@ -34,6 +76,10 @@ where the reason is written down.
 - `mozilla-django-oidc` for the Synology SSO handshake
 - WhiteNoise (manifest storage), gunicorn
 - No JS framework — vanilla JS, one file per page under `static/js/`
+- `reportlab` for the printed timesheet. Pure Python with its own fonts, so the
+  container needs no system libraries — which is why it is this and not
+  WeasyPrint, whose Pango/Cairo stack would roughly double the image and add a
+  class of "works here, not there" failure to a deployment nobody watches.
 - **No dependency ships the German public holidays.** `apps/absences/bankholidays.py`
   computes them. See "Standing decisions".
 
@@ -56,8 +102,9 @@ same leave** — that is the pro-rata-by-days rule, and it is the thing that loo
 like a bug until you know why.
 
 To see the app working: open the roster, drag a card to another day, press Save,
-then open that person's timesheet and confirm the day. The break should appear
-by itself.
+then open that person's timesheet — the month — and press the ✓ beside the
+rostered times on that row. There is no Save on the timesheet: the ✓ writes the
+day and the break appears by itself.
 
 Since the contract became a history, a fixture or a seeder creates an employee
 and then calls `employee.set_hours([...], valid_from=...)`. A period dated today
@@ -79,6 +126,7 @@ uv run python manage.py close_leave_year 2025 --expire
 
 uv run python manage.py makemessages -l de --no-obsolete --no-wrap
 uv run python manage.py makemessages -d djangojs -l de --no-obsolete --no-wrap
+uv run python tools/unwrap_references.py
 uv run python tools/apply_translations.py
 uv run python manage.py compilemessages -l de --ignore=.venv
 ```
@@ -100,6 +148,17 @@ simply are not there — and a long `msgstr` broken across continuation lines is
 valid `.po` that the completeness check reads as *empty*. Writing the file
 programmatically means neither has anywhere to occur. A new string is added to
 one of the two tables, not to the `.po`.
+
+**`unwrap_references.py` is the step before it, and it is not optional.**
+Writing the catalogue programmatically fixes the file `apply_translations`
+*writes*; it cannot fix the one `makemessages` hands it. `--no-wrap` governs
+`msgstr` and not the comment lines, so `xgettext` still wraps a long reference
+list — and `makemessages` runs `msgattrib` itself to honour `--no-obsolete`,
+which then refuses the file with `keyword "roster" unknown` pointing at a
+template name rather than at the wrap. The merge is already written by then, so
+nothing is lost; what happens instead is that `apply_translations` afterwards
+reports every new string as "matched nothing in the catalogue", and the fault
+looks like the table rather than like gettext.
 
 GNU gettext is not on PATH on the development machine; it ships with Git:
 `$env:PATH = "C:\Program Files\Git\usr\bin;$env:PATH"`.
@@ -171,6 +230,203 @@ Each of these is here because breaking it produces a page that still renders.
 
 ### This app's own
 
+- **Hours cannot be entered in advance; a status can.** A booking is a record of
+  when somebody was demonstrably at work (§16 ArbZG) and nobody has been at work
+  tomorrow, so `save_day`, the day form and `confirm_day` all refuse a date
+  after today — the correction and the comment with them, because they sit on
+  the row and go through the same door. `_day_row.can_edit_hours` is that and
+  the lock together, and it is what the three cells key off; the status cell
+  keys off the lock alone, because booking leave in advance is exactly what a
+  future row is for. `confirm_week` already skipped the future.
+- **The future rule is *not* on `DayRecord.save`, where the lock's backstop is.**
+  A lock is a promise that a signed-off month cannot be altered, so it is worth
+  catching a forgotten view from the model. This is a rule about what a *person
+  may type*: `seed_demo` writes the current week — including tomorrow, when
+  today is a Monday — and a fixture dated relative to today is not somebody
+  entering hours in advance. Guarding the model would make the seeder fail one
+  day in seven.
+- **A month is locked, and a day is unlocked.** `DayLock` is one row per closed
+  date — not one per month, although a month is what a manager closes. Every
+  question the app asks is *"may this day be changed"* and never *"is this month
+  locked"*, so a month row with a table of per-day exceptions beside it would be
+  two representations of one answer, and the day they disagree is the day
+  somebody edits a day they should not have. A month is thirty-one rows written
+  at once; unlocking is deleting one.
+- **The lock is enforced at the model as well as at every door.**
+  `assert_unlocked` is called by `save_day`, `set_status`, the day form, both
+  confirm routes, Start/Stop and both absence forms — and `DayRecord.save`/
+  `delete` call it again, because a view that forgot would otherwise save in
+  silence and a lock one forgotten line can be walked past is not a lock.
+  `apps/timesheets/test_locks.py` sweeps the doors rather than naming three of
+  them.
+- **A month with an undecided request in it cannot be locked.** Approving one
+  afterwards would change the credited hours of a month that had already been
+  signed off without them, which is the one thing a lock is for. Unlocking
+  carries no such condition — a condition on an escape hatch is how somebody
+  ends up with a month they cannot correct.
+- **A status is set from the status cell, and the cell *is* the control.** Sick,
+  a day off, time in lieu — without opening the Time off page and without a
+  dialog. A `<select>` is laid over the cell at zero opacity, so what is read is
+  the pills and what is clicked is the dropdown: opacity does not affect hit
+  testing, and the option list is drawn by the browser over the page regardless
+  of the opacity of the control it belongs to. `.status-cell--editable` is what
+  the hover and the focus ring key off — **the ring has to be redrawn on the
+  cell**, because the app's own `:focus-visible` outline lands on something
+  transparent.
+- **Every status in the list has its half day directly under it, and each
+  granted special leave type is its own option.** That pair of decisions is what
+  let the dialog go: special leave cannot be saved without naming which
+  entitlement it comes from, so a single "Sonderurlaub" entry would be the one
+  choice the form always refuses, and "half a day" was a checkbox that needed a
+  dialog to hold it. Both are entries now — thirteen for a house with three
+  special types, which is a long list and still shorter than the dialog. The
+  halves sit *beside* the wholes rather than in a section of their own, so a
+  half day is found where the whole day is.
+- **What is posted comes off the option, never out of its value.** Each carries
+  `data-kind`, `data-special` and `data-half` — the three fields `set_status`
+  already read. `views.status_value` writes the option's value *and* the row's
+  `status_value`, and it is an opaque key: it exists so the template can mark
+  the current entry and so `data-saved` can tell "changed" from "arrowed away
+  and back". One function writes both ends of that comparison, because the day
+  they are spelled differently is the day the dropdown opens on the wrong entry
+  with nothing on the page to show it. **A note is still not offered from the
+  cell** and is written on the Time off page.
+- **`views.set_status` fills in the one date and hands the rest to
+  `AbsenceRequestForm` / `SickForm`.** Every rule about who may ask for what,
+  which special types are theirs and whether the dates are working days at all
+  stays in the absences app, because a second answer to "may this person book
+  this day" would disagree with the first the day either changed. It is a form
+  POST and a reload where the rest of the page saves through fetch — a status
+  changes what the whole month is worth, and it is something somebody does a few
+  times a month rather than a few times an hour. **One form for the table**, not
+  one per row: the dropdown points its action at the day and posts it.
+  A closure and a multi-day absence are read-only from a cell and say so in a
+  `title` — they are rendered with no dropdown at all, so there is no control
+  that could refuse. One belongs to everybody at once, and the other would have
+  to be split. A locked day is the same shape; `can_set_status` is
+  `status_editable` and the lock together, the way `can_edit_hours` is.
+- **An undecided absence is a dotted edge on its own pill, not a second pill
+  beside it.** "waiting" was a word costing most of a column nine and a half
+  rems wide, and it pushed the thing it qualified out of sight — a state belongs
+  to the thing it is a state of. `.pill.is-pending` draws it as an *inset
+  outline* rather than a border, so the pill is not two pixels taller than a
+  settled one on a grid whose rows are a fixed height, and in `currentColor` so
+  it comes out in each kind's own colour. The `title` still distinguishes the
+  two, because they are not the same statement: sickness is waiting to be
+  *acknowledged* and counts already, where a day off is waiting to be allowed.
+  **`status_pending_note` is built in `_day_row`, not in the template** —
+  `{% translate … as x %}` does not unset itself between rows of a loop, so the
+  first undecided day would make every day after it look undecided too.
+- **The timesheet is a month, and it has no Save button.** Ten columns — day,
+  status, bookings, break, correction, actual, supposed, saldo, running saldo,
+  comment — and a row per date. A comment is written when the box is left; the
+  bookings and the correction when their pop-up is accepted. Each is one POST to
+  `save_day`, which **answers with the whole month recomputed** — editing the
+  third moves the running total on every row below it and all six figures in the
+  footer, so a reply carrying only the edited row would leave the column stale,
+  and the alternative is repeating the prefix sum, the break rules and the
+  credited-hours branches in JavaScript. `build_month` and `build_week` are two
+  windows onto one `_day_row`, so the timesheet, the start page and the team
+  overview cannot say different things about one Tuesday.
+- **The grid never changes shape.** `table-layout: fixed` with a width on every
+  column, a height on every cell, and **four bookings shown per day** with the
+  rest behind a `+n` that opens the pop-up (`BOOKINGS_SHOWN`, and the template
+  reads it from the context so the two cannot disagree about how many four is).
+  A day that gained a fifth chip would be a taller row, and this is a grid read
+  *down* a column — a row that grows pushes every figure below it out of the
+  place the eye last found it. Saturday and Sunday have a ground of their own,
+  `--weekend-bg`, and not `--snow`: snow is the page's own background, which
+  against a white table is a difference of two or three values, so the weekends
+  were marked in the markup and could not actually be seen. They are the pair
+  the eye uses to find its place down thirty-one rows.
+- **Every duration in the app is `hh:mm`, and there is no setting.**
+  `hours.hhmm`, the `hhmm` / `hhmm_signed` filters, and `window.ttHours.hhmm`
+  for the pop-up's running summary — `test_month.py` runs the two against each
+  other. Ten columns read down only line up when every figure is the same width,
+  and 7,5 above 12,25 above 0,25 is a column somebody has to read twice.
+  **This removed a per-person preference** (decimal `7,5 h` versus clock
+  `7:30 h`) rather than leaving it dormant: once the grid ignored it, a Stop
+  message reading "10,20 recorded" sat beside a timesheet reading 10:12, and a
+  control that changes nothing is one people press, see no effect from, and
+  report as broken. `Preferences` was its only field and "My settings" its only
+  section, so the model, the page and its sidebar entry went with it — and the
+  Settings disclosure is staff-only now, because that entry was the one reason
+  anybody else opened it.
+- **A figure is set in `--font-numeric` with `tabular-nums`, never in
+  `--font-mono`.** The two tokens are for different things and the mono one is
+  for *machine text* — a version string, a callback URL, an endpoint: strings
+  that are copied rather than read, where a character mistaken for another one
+  is a support call. What a column of durations needs is not a typewriter, it is
+  digits of one fixed width, and Inter has them; using the mono stack for them
+  put a terminal transcript in the middle of a typeset page, which on Windows
+  meant Consolas. Both halves of the pair are load-bearing: the family alone
+  gives proportional digits and 7:30 stops lining up over 12:15, and
+  `tabular-nums` on the mono family is a terminal with aligned digits.
+- **An empty cell says it can be filled with colour, not with a word.** The
+  status and bookings cells printed "set" and "add" in every empty row, which is
+  thirty-one words saying what an empty cell already says, in German wider than
+  the column, in a grid whose columns cannot move. `is-empty` draws the wash and
+  the dashed edge instead — **on all three cells that can be filled**, the
+  correction with them, because it was the one clickable cell on the row with
+  nothing to show that it was one. `:not(:disabled)` in the stylesheet is what
+  keeps it honest — a locked day and a day that has not happened cannot be
+  filled in, and inviting somebody to press a control that refuses is worse than
+  an empty cell. `--fillable-bg` is the one translucent
+  value in the token block: the rows under it are three different grounds, and a
+  flat tint pale enough for white is *lighter* than a weekend row, so the same
+  marking read as a shaded box on a Tuesday and a white one on a Saturday.
+- **The running column has no opening row.** It carries the balance into the
+  month for itself — the first of the month is last month's total plus that day
+  — and a "Brought forward" row above it announced the same figure a second
+  time while costing a line of a grid that is read down. The figure has not
+  gone: it is what the column starts from, and the last row of it is still
+  `hours_balance`.
+- **The month is chosen from a year and a grid, not from a list.** Twelve links
+  in three columns with a year above them (`templates/_month_picker.html`,
+  `static/js/monthpicker.js`), used by the timesheet and by month end. It
+  replaced a `<select>` of a bounded window of months, and the bound was the
+  fault: the month being looked at had to be forced into the list, because a
+  select whose selected option is missing silently shows the first entry
+  instead. **Everything in the picker is a link and the panel is a
+  `<details>`**, so the whole control works before any script has run; the year
+  arrows point at the same month in the adjacent year for that reason, and the
+  script only stops them navigating and redraws the twelve hrefs in place. It
+  writes no text, which is what keeps month names out of the JavaScript
+  catalogue.
+- **A day is entered as a column of comings and goings; the database keeps
+  pairs.** `apps/timesheets/bookings.py` is the one door between the two and
+  `DayRecord.bookings` is the other direction. The punch list is what somebody
+  standing at a terminal does; the pairs are what every rule in this app is
+  built on — the break thresholds, the overlap check, the comparison against the
+  roster, `elapsed_minutes` across a clock change. A flat punch table would make
+  each of those re-derive the pairing first. Two comings in a row is refused
+  rather than guessed at, and a *trailing* coming is not a special case at all:
+  it is the segment with a null `end`, which is what a running shift always was.
+- **The saldo is actual minus supposed, and the running column carries
+  forward.** Positive is green, negative red, nought black. The other sign would
+  disagree with `build_week`'s `difference`, with `hours_balance`, and with every
+  figure on the start page — one page saying +0:30 while another says −0:30 about
+  the same Tuesday is not a presentation choice. The running column starts from
+  what the person carried *into* the month, so its last row is their balance to
+  date and the same number `hours_balance` gives.
+- **The month's totals cover the days that have happened, and the whole month's
+  contracted hours are reported separately.** Summing the future's contracted
+  hours in is what made an ordinary employee read as 176 hours short on the
+  first of the month; it also stops the table adding up, because the saldo column
+  would total one number while the running column reached another. A day in the
+  future therefore has no saldo either — the same clamp `hours_balance` makes.
+- **A correction is not a booking and is stored apart from one.**
+  `DayRecord.correction_minutes` is signed and `correction_reason` is required
+  for any non-zero value, in `clean` and in both forms. The bookings are a record
+  of when somebody was demonstrably here (§16 ArbZG) and a stretch nobody stood
+  through is not that; a correction that could only add would leave a doctored
+  booking as the only way to take time off a day. **It is applied after the
+  break**, never before: a day of 5h50 plus a ten-minute correction is not a
+  six-hour day, and adding it first deducts a break the person never took.
+- **A record carrying only a comment is not an answer about hours.** The month
+  lets a note be written against any date, so `_day_row` reports `None` rather
+  than nought for such a row. "They worked none of it" and "nobody has answered
+  yet" are different statements and the page has always drawn them differently.
 - **The roster and the timesheet are separate tables, and the roster is copied
   *from*, never *into*.** A `Shift` is what the manager arranged; a `DayRecord`
   is what happened. The tempting version makes them one row — the roster writes
@@ -180,19 +436,195 @@ Each of these is here because breaking it produces a page that still renders.
   question "what were you actually asked to work?" would have no answer. Keeping
   them apart is what lets the timesheet print *"you were rostered 08:00–14:00 and
   you have entered 08:00–15:30"*, which is the sentence the whole app exists for.
+- **Everything that is evidence is audited, and the audit table cannot be
+  touched.** `apps/audit/`. One append-only entry per create, change and delete,
+  carrying **the value before as well as after** — which is the whole point: the
+  current value is on the record itself, and the only reason to open the trail is
+  the other half. `AuditEntry.save` refuses an update and `delete` raises, at the
+  model rather than by permission, because a log a forgotten line can edit is not
+  a log. The GoBD does not forbid changing a record; it forbids changing one *so
+  that the original content is no longer ascertainable*.
+- **One table, not four.** "Who changed this record", "who signed in", "who
+  looked at whose hours" and "who exported what" read as four features and are
+  one question asked about different objects. Four tables would be four retention
+  stories, four pages, and four chances for one of them to be forgotten when the
+  retention policy finally lands. `action` is what tells them apart.
+- **Captured by signals against a registry, never by calls in the views.** The
+  exposure is never a check somebody removed, it is a check somebody forgot on a
+  path added last Tuesday — the same argument `assert_unlocked` makes one level
+  out, and the reason a management command, a data migration and the admin are
+  all covered without ever having called an audit function.
+  `apps/audit/registry.py` names every model in the project in one of three sets
+  and `apps/audit/tests.py` fails on a model in none of them.
+- **`bulk_create` fires no `post_save`, and a queryset `delete` fires every
+  `post_delete`.** Left alone that asymmetry would have recorded each bookings
+  edit as the day being *emptied* and never as it being filled in again, which is
+  worse than recording nothing because it reads as somebody having cleared the
+  day. So `set_bookings` and `from_shifts` save their segments one at a time —
+  one to four rows, and the batching bought a single round trip against a local
+  file — and `DayLock`/`BankHoliday` write **one** entry per act instead, because
+  the unit somebody locks is a month and thirty-one rows about consecutive dates
+  would bury the one sentence that matters.
+- **The actor is a thread-local set by middleware, directly below
+  `AuthenticationMiddleware`.** A signal handler gets a model instance and no
+  request, and a trail without a "who" is half a trail. Above that middleware
+  every entry in the app would read `system`. It is cleared in a `finally`, so a
+  view that raises cannot leave the worker carrying the last actor into the next
+  request — naming the wrong person is worse than naming nobody. **A write with
+  no request records as `system` rather than blank**, because "we do not know
+  who" and "nobody was signed in" are different statements and a seeder is
+  genuinely the second.
+- **The actor's and the employee's names are frozen as text beside the foreign
+  keys.** Both are `SET_NULL`, because deleting an account must not take a
+  timesheet with it — which means the day it happens, every entry pointing at
+  that account would say *nobody did this*. The key is for filtering; the text is
+  the record, and when they disagree the text is right.
+- **A field whose name looks like a secret records that it changed and never the
+  values.** `REDACTED_HINTS`. The one table nothing can delete must not
+  accumulate every OIDC client secret the installation has ever had.
+- **A save that changes nothing writes nothing.** Load-bearing rather than tidy:
+  the roster posts the whole week on every drag, so without it one card moved
+  would write fifty rows each saying that nothing about those fifty shifts is
+  different — and a log of nothing is a log nobody opens.
+- **The read log covers somebody else's records, on safe methods only, and does
+  not collapse.** Recorded inside `own_or_manager`, which is the app's one door
+  for "may this account see this person's time" — so the place that decides is
+  the place that records, and a view added next month is covered by having gone
+  through the door. A POST already writes an entry carrying its actor; reading
+  your own timesheet is not processing anybody else's data. The tempting
+  optimisation is one row per manager per employee per day, and it destroys the
+  answer to the question the log exists for, which is not "did my manager look at
+  my hours" but *how often*.
+- **A sign-in failure is recorded by username and by nothing else.** Django's
+  `user_login_failed` hands over the credentials, password included. No IP
+  address either, and that is a decision: this app deliberately holds no location
+  data about its staff, an address is personal data, and "who was refused" is
+  answerable without one for eleven people in one building.
+- **An employee can read their own trail.** `audit:mine`, in the sidebar under
+  "My time". An audit trail only the employer can read is one that protects only
+  the employer, and the person most likely to notice a figure they did not type
+  is the person whose figure it is.
+- **Failing to write an entry never fails the thing being audited.** It sounds
+  like the wrong way round for a compliance feature and it is not: a bug in
+  `apps/audit/recording.py` would otherwise make the timesheet unusable, and an
+  employer who cannot record hours at all is in deeper trouble under §16 ArbZG
+  than one whose trail has a hole. The writer logs and swallows; the hole is
+  visible in the log file and in the gap between the entries either side.
+- **`hours_entered_at` is stamped once and never updated.** When a day *first*
+  gained hours, which `created_at` cannot answer — the month lets a note be
+  written against any date, so a row created in March for a comment can gain
+  January's hours in April. A day corrected in June was still recorded on the 3rd,
+  and the correction is a separate fact the trail already holds; overwriting this
+  would turn the one field that answers "was it timely" into a second
+  `updated_at`. Stamped with a queryset `update`, which fires no signal and so
+  writes no audit entry — the one place in the app that reaches past the model on
+  an audited table, because a timestamp the system stamps is part of the record
+  being made rather than somebody changing it.
+- **The export is two formats because they answer two questions.** The CSV is for
+  a machine — an auditor sorts and filters it, and a PDF cannot be sorted. The PDF
+  is for a person: the employee's copy, and the sheet handed across a desk. Both
+  are built from `build_month`, so a printed sheet cannot disagree with the screen
+  it came from — that is the document somebody takes to a lawyer. `rows_for` is
+  the data and is what the tests hold to the figures; `to_csv` and `to_pdf` are
+  rendering.
+- **The CSV is `;`-delimited with a byte order mark**, which is the less standard
+  CSV and the one that opens correctly. A German Windows splits on `;` and reads a
+  file without a BOM as the legacy code page, turning every umlaut in every name
+  into mojibake — so a comma and no BOM is the more correct file and the one that
+  arrives looking broken. Durations stay `hh:mm` for the reason they are `hh:mm`
+  everywhere, with decimal hours offered as a **column of its own** rather than
+  instead: reconciling 7:30 against 7.5 is exactly what the auditor is doing.
+- **The export page has no JavaScript and two submit buttons that differ only in
+  the value they send.** The obvious version points each button at its own route
+  with `formaction` and needs a script to put the chosen employee's id into the
+  path — on the one page somebody opens with an inspector standing at the desk.
+  One small dispatching view instead, and the page works before anything has
+  loaded. A PDF for everybody is refused **with a sentence and the form still
+  filled in**, not by a disabled button: a control that refuses without saying why
+  is worse than one that explains.
+- **§3 and §5 ArbZG are flagged and never refused, and that direction is the
+  whole design.** `apps/timesheets/limits.py`. The tempting implementation
+  refuses to save an eleven-hour day, and it is wrong in the way that costs the
+  most: §16 requires a record of the time *actually worked*, so refusing the
+  entry does not prevent the eleventh hour — somebody worked it either way — it
+  destroys the only evidence that it happened and leaves the employer with a tidy
+  timesheet and no answer. The unlawful day has to be recordable; what the app
+  owes is that nobody can say afterwards it went unnoticed, which is a mark on
+  the row and a count under the table. It is also what the June 2026 ArbZG draft
+  asks for in as many words: measures that **detect** breaches of the maximum
+  hours and the rest period. `test_limits.py` keeps a class of its own for it.
+- **Two levels, because §3 makes two statements about one thing.** Over ten hours
+  is a *breach* — the ceiling, with no averaging behind it. Over eight is a
+  *caution*, and not a lesser breach: §3 s.2 permits ten provided the average
+  across 24 weeks comes back to eight, so a nine-hour day is unlawful *unless* a
+  shorter one pays it back, and the app cannot yet say whether one did. Drawing
+  it as a breach would cry wolf on every busy Tuesday in Germany. **The 24-week
+  average is the missing half** and it belongs beside `balance.py`, because it
+  needs a window that crosses months and contract changes.
+- **The rest period is measured between the two *instants* a day's work stopped
+  and the next day's started**, not between two clock readings — the same rule
+  `zones.elapsed_minutes` exists for, and the case where it bites hardest: on the
+  October night the clocks go back, somebody who finished at 22:00 and started at
+  08:00 rested eleven real hours and the wall clock says ten, which is a breach
+  the app would report and that did not happen. Both nights are named in
+  `test_limits.py`. The day's *end* is the last stretch's, carried forward across
+  midnight the way `shape` carries its gaps — a two-stretch night (22:00–02:00,
+  03:00–06:00) has nothing in the second stretch's own readings to say it is on
+  the next date, and reading it per-segment puts the clock-out twenty hours before
+  the clock-in.
+- **`_facts_for` fetches one day earlier than the window it is asked for**, and
+  that row is never drawn. §5 is a question about the gap *between* two days, so
+  the first of a month cannot be answered from inside that month; asking per row
+  would be a query the month does not otherwise need, and the same query one date
+  wider is free.
+- **The flag is marked on the *Actual* cell**, with `data-limit` and the sentence
+  in a `title` on the `<td>` rather than on a span inside it — the script rewrites
+  that cell's contents after every save, and an attribute on the cell survives it.
+  The colour is `--breach` / `--breach-soft`, two steps of one hue and neither
+  `--amber` (a figure somebody typed over a computed one) nor `--danger` (an
+  action that destroys something); both of those already mean something else and
+  a third meaning on either would dilute a documented one. Drawn as an *inset
+  shadow*, because a border would add two pixels to a cell in a grid with a
+  height written on every one.
 - **The break is not resolved the obvious way, and the obvious way underpays it.**
   Reading the tiers as "worked over six hours, so take thirty minutes" against
   the clock-in-to-clock-out span gives a day of 6h05 a full thirty-minute break —
   but the rule is about *working* time, and 6h05 minus thirty is 5h35, which is
   not over six hours at all. Applying them to the net time instead is circular.
-  The formula is
+  Read each tier as the constraint it is — *either the working time is inside
+  the tier, or the total break reaches it* — and take the largest answer.
+- **The break needs the *shape* of the day, not its totals.** §4 ArbZG has two
+  sentences: a day over six hours needs thirty minutes altogether, **and** nobody
+  may work "länger als sechs Stunden hintereinander ohne Ruhepause". So
+  `OrgSettings.required_break` takes `(blocks, gaps)` — each unbroken stretch and
+  the time between them, from `DayRecord.shape` — and answers
 
-      required = max over rules of  min(break, max(0, gross - over))
+      inside  = Σ over stretches of max over rules of min(break, max(0, stretch - over))
+      overall = max over rules of  min(max(0, gross - over), max(0, break - taken))
+      D       = max(inside, overall)
 
-  written out in `OrgSettings.required_break`, repeated in `static/js/hours.js`
-  so the day form can answer while somebody types, and held to the same answers
-  for every length of day by `apps/timesheets/tests.py`. If the two ever drift it
-  will be about that one line.
+  Both are "D must be at least this", so the larger is the least that satisfies
+  both. It is repeated in `static/js/hours.js` so the pop-up can answer while
+  somebody types, and `apps/timesheets/tests.py` runs the two against each other
+  over a table of shapes.
+- **A break only counts if it broke the work up, and only if it is long enough.**
+  09:30–15:30 and 16:00–18:00 is eight hours with thirty minutes off in the
+  middle and owes nothing further. 08:30–15:00 and then 16:00–17:00 has the same
+  hour off and still owes thirty, because the first stretch is six and a half
+  hours worked straight through and a break taken *afterwards* cannot pay for one
+  that was never taken — that was a real bug, and it made the deduction vanish
+  the moment an evening hour was added. And a gap under `MIN_BREAK_CHUNK` (15
+  minutes, §4 s.2) is not a Ruhepause at all: it counts towards nothing and the
+  stretches either side of it are one stretch.
+- **The gaps are walked in `position` order, not clock order.** A night shift's
+  second stretch starts earlier on the clock than its first, and sorting by time
+  reads the gap as nineteen hours.
+- **`apps/organisation/tests.py` pins the deduction from three sides.** The
+  working time left is never over a tier whose break was not granted; no stretch
+  is worked through without the break its own length owes; and one minute less
+  would always have broken one of those. The first alone is satisfied by "always
+  deduct 30", and the first two together were satisfied by the version that let
+  a late break pay for an early one.
 - **An empty break table means the defaults, not "no breaks".** The one place
   this app overrides what the database literally says. The direction is the
   point: a break not deducted *overstates* hours worked, which is the side an
@@ -223,6 +655,106 @@ Each of these is here because breaking it produces a page that still renders.
   is declined watches their days come back, which reads as the app having lost
   them. `Balance.remaining` and `Balance.remaining_if_all_approved` are both on
   the page, side by side.
+- **Time off is a year, and the square is the control.** Twelve month blocks, a
+  week to a line, and clicking a day is how time off is asked for — the same
+  argument the timesheet's status cell makes. A form with two date boxes cannot
+  answer the question somebody actually has when they open the page, which is
+  never "what is 14 March" but always "what does this fortnight look like and
+  what have I already got". `_year_calendar` builds it and `_day_cell` decides
+  each square, in Python for the reason `_day_row` is: a cell has to know six
+  things at once — working day, public holiday, locked, what is booked on it,
+  whether that is settled, whether it is half — and six nested `{% if %}`s is
+  logic no test can reach. `apps/absences/tests.py::TestTheYearAsAGrid` asserts
+  on the cell dictionary and never on the markup.
+- **Three figures at the top and the middle one is not part of the first.** Off
+  days, extra off days, unused off days. `special_entitled` is a total across
+  the granted types rather than one stat per type, because a house with three
+  of them would push the figure people came for off the end of the row.
+- **A day that costs nothing is drawn as costing nothing, whatever covers it.**
+  A weekend, a public holiday and a date the contract gives no hours are the
+  three subtractions `Absence.working_days` makes, so a fortnight booked over
+  Christmas comes out as blocks of colour with the holidays and the Sundays
+  pale between them — which is exactly what was spent. Painting the whole
+  stretch one colour would be the grid claiming days the balance never took,
+  and the page would then be arguing with itself.
+- **Extra off days are a button and not a fourth radio.** Sonderurlaub is not
+  chosen by looking at a year — the date is whatever the funeral or the move
+  forces — and it asks a question none of the other three does: *which*
+  entitlement it comes out of, without which it cannot be saved at all. A
+  fourth radio would be the one choice the form always refused until a second
+  control had been answered. No grant, no button: a form whose only possible
+  outcome is a refusal is worse than nothing at all.
+- **`views.book` is one door and the forms are still two.** `kind` decides
+  which of `AbsenceRequestForm` and `SickForm` answers, exactly as
+  `timesheets.views.set_status` decides it, and nothing else is added. It
+  replaced `request` and `sick`, which differed only in the form they built:
+  the calendar's pop-up offers holiday, time in lieu and sickness from one set
+  of radio buttons, and a dialog posting to a different URL depending on which
+  was ticked is a dialog with two ways to be wrong. A refusal is a message and
+  a reload — rebuilding a year through a POST to say one sentence is a lot of
+  machinery for a sentence.
+- **A blank end date is refused, never defaulted to the start.** An absence
+  with no end is what "off sick from Tuesday, I will say when it stops" used to
+  write, and it was the one row nothing else in the app could count. Both dates
+  are `required` in the pop-up and both arrive filled in, so a blank one
+  reaching `book` means something is wrong rather than something is unknown.
+- **`static/js/absences_year.js` writes no text.** Every sentence the dialogs
+  say is rendered by the template and shown or hidden from the script — the
+  same choice `monthpicker.js` makes about month names — so the German stays in
+  one catalogue and reads as prose rather than as fragments glued together. The
+  squares are also the *only* representation of the year: no array, no JSON
+  beside the grid, because two representations is the bug where the picture and
+  the booking disagree.
+- **Days booked together are drawn together and can only be taken back
+  together.** An absence is one row, one decision and one thing to withdraw, so
+  its days are joined into a bar with two rounded ends rather than drawn as a
+  line of separate tiles saying the opposite. `_join_runs` marks the middles
+  per week row and compares on *identity* — the run is "the same `Absence`",
+  which is exactly the unit that can be withdrawn, so two consecutive holidays
+  stay two bars because they are two decisions. A run breaks at a weekend or a
+  public holiday inside it, which is not a gap in the booking but the booking
+  not having been charged for those days — the same thing `working_days` says.
+  The pop-up follows: it is titled by the *span* rather than by the date that
+  was clicked, and it says out loud that the whole booking is what goes.
+  Somebody who clicked the Wednesday of a week off and pressed Withdraw
+  expecting to lose a Wednesday has lost a week.
+- **A run's inner edge is made transparent, never removed.** Every square
+  reserves a 2px border — three things want an edge (waiting, today, the ends
+  of a run) and a square that grows one only when it needs it is a square that
+  moves two pixels when it does. Taking the *width* away at a join would shift
+  the content box and wobble the number inside every middle day; taking the
+  colour away costs nothing and does the same job. It is the opposite of
+  `.pill.is-pending`'s choice for a reason: a pill's height comes from its
+  padding, and a square's is written down.
+- **Holiday and special leave share the green.** They are asked for through
+  different controls and counted against different entitlements, but neither of
+  those is something a square can say — what a square says is "you were off" —
+  and a second green claiming to be a distinction is a colour somebody has to
+  look up in order to learn it means nothing they can act on. For the same
+  reason neither Sonderurlaub nor "a day you were not due to work" is in the
+  key: one would be a duplicate swatch, and the other explains the page's own
+  background to somebody who has just seen three hundred of them.
+- **On the year grid, exactly one square may be positioned, and it is the
+  focused one.** A ring drawn *outside* an adjacent table cell has to escape
+  its own box to be seen, and escaping means depending on paint order against
+  the neighbour it spills into — cells paint in document order, so the ring's
+  right-hand two pixels were painted over by the next day and the focus ring
+  came out with three sides. `position: relative` on `:focus-visible` lifts it
+  above every sibling's background and the ring closes. Positioning the
+  *hovered* square as well, which has the same geometry and had the same bug,
+  fixed it standing still and broke it moving: among positioned siblings
+  document order decides again, and because `box-shadow` is transitioned the
+  square the pointer was resting on stayed positioned and kept clipping for
+  `--dur-3` after focus had left it. So the hover ring is `inset` instead and
+  never leaves its own cell. The answer to a clipped ring is one element
+  allowed to escape, not two fighting about it — and never a z-index, which
+  would claim a relationship to the sidebar and the modals this has nothing to
+  do with.
+- **Today is drawn on the border every square already has, never with an
+  `outline`.** `outline` is what the focus ring uses, so a rule for today would
+  have taken the ring off exactly one square of the year — the one somebody is
+  most likely to be standing on. Colour only, so a day that is both today and
+  still waiting keeps its dotted line and gets it in ember.
 - **The contract is seven columns, not a weekly total.** A weekly total cannot
   answer either question the app is built on: whether a given date is a working
   day for this person, and how long that day is. "20 hours a week" is 8/8/4 for
@@ -287,7 +819,11 @@ Each of these is here because breaking it produces a page that still renders.
   says somebody agreed to figures they have never seen, which is exactly the
   claim a timesheet exists to be able to make honestly.
 - **"Confirm the week" skips days that already have a record.** The one thing
-  that button must never do is overwrite a correction somebody made by hand.
+  that button must never do is overwrite a correction somebody made by hand. It
+  is on the *start page* now rather than on the timesheet: the month is where
+  hours are entered, and "have I confirmed" is a question the start page exists
+  to ask. Saving the month does not confirm — it withdraws confirmation on any
+  day whose hours changed, and a comment is not hours.
 - **`DayRecord.from_shifts` calls `refresh_from_db()` before applying the break
   rules.** `apply_break_rules` reads the segments through a cached relation, and
   on a record whose segments were just `bulk_create`d that cache is empty —
@@ -307,24 +843,26 @@ Each of these is here because breaking it produces a page that still renders.
   leave every year hands somebody their joining figure again each January;
   adding it to no year loses it, which is what happens when the date is null, so
   `opening_date` falls back to the start date and the form fills it in.
-- **`apps/timesheets/balance.py` and `build_week` must agree.** The running
-  balance and the week view are two readings of one thing computed by two
-  functions, and the day they drift is the day a timesheet says one number at
-  the top of the page and another in the middle. `test_opening.py` holds them to
-  it across a credited absence, a half day, a public holiday and a contract
-  change — the branches most likely to be added to one and not the other.
-- **A duration is written by `duration_clock`, a time of day by `clock`.** The
+- **`apps/timesheets/balance.py` and `_day_row` must agree.** The running
+  balance and the rows are two readings of one thing computed by two functions,
+  and the day they drift is the day a timesheet says one number at the top of
+  the page and another in the middle. `test_opening.py` holds them to it across
+  a credited absence, a half day, a public holiday and a contract change — the
+  branches most likely to be added to one and not the other — and
+  `test_month.py` adds the month's own version: the last row of the running
+  column must equal `hours_balance` for that date.
+- **A duration is written by `hhmm`, a time of day by `timeparse.clock`.** The
   two are wrong for each other in opposite directions and both silently:
   `clock` wraps at 24 and drops the sign, so used on a duration it renders 25
-  hours as `01:00` and fourteen hours *owed* as `10:00`. `static/js/hours.js`
-  makes the same split and calls its halves `clock` and `clockOfDay`.
+  hours as `01:00` and fourteen hours *owed* as `10:00`; `hhmm` pads and keeps
+  the sign, which on a time of day would print `-00:30`. `static/js/hours.js`
+  makes the same split and calls its halves `clockOfDay` and `hhmm`.
 - **Everything is whole minutes, as an integer**, from the roster to the balance.
   The one exception is the contracted hours on `Employee`, which are a `Decimal`
   of hours because that is how a contract is written;
   `apps/timesheets/hours.contracted_minutes` is the only door between the two.
-  No template divides by 60 — `{{ x|hours:hours_style }}` is the one way a
-  duration is written, and `hours_style` comes from the context processor so no
-  view can forget it.
+  No template divides by 60 — `{{ x|hhmm }}` is the one way a duration is
+  written.
 - **A duration can be negative and must format as `-1:15`, not `-1:-15`.** The
   balance column is worked minus contracted, and somebody who left early is
   legitimately below zero.
@@ -438,15 +976,45 @@ Each of these is here because breaking it produces a page that still renders.
   preference: the first version showed a fortnight's flu as eighty hours of
   shortfall, which is a debt German law says outright the employee does not owe.
   A half day credits half, through the same `portion_of` the balance uses, so
-  the hours and the days cannot disagree.
-- **A sick day counts from the moment it is reported, not from the moment a
-  manager acknowledges it.** Sickness is now `REQUESTED` so it appears on the
-  manager's list, but `credits_hours` returns True for anything not
-  `REJECTED` — the acknowledgement is a *receipt*, not a permission. An employer
-  does not grant illness. The one thing that withholds the credit is the
-  employer positively refusing to accept the absence, which requires a written
-  reason. A version that waited for the button would show somebody off with flu
-  as eighty hours short for as long as their manager was on holiday.
+  the hours and the days cannot disagree. **An absence credits nothing until it
+  is approved** — that is `IN_FORCE` and it is one rule for every kind.
+- **Sickness is asked for and decided like every other absence, and the only
+  thing left that is different about it is that it costs no leave.** This
+  **reverses** the rule that used to sit here, under which a sick day was
+  *reported* rather than requested, credited its hours the moment it was
+  entered, and was stopped only by a positive refusal — the manager's button
+  being a receipt rather than a permission. One absence type behaving unlike
+  every other cost more than it bought: the timesheet had to say two different
+  things about what a waiting day was worth, and a report against the wrong
+  dates credited hours until somebody noticed.
+  So `SickForm` saves `REQUESTED`, `credits_hours` is `status in IN_FORCE` for
+  every kind but time off in lieu, `end_date` is required, and there is no
+  open-ended sickness and no "say when it ended" route. **The cost is real and
+  is written down in `docs/COMPLIANCE.md` rather than hidden**: between an
+  illness being reported and a manager answering, the month shows a shortfall,
+  and under §3 EFZG that figure is not a debt the employee owes.
+- **What is not yet decided is the employee's; what has been approved is
+  asked about.** `request_cancel` withdraws a `REQUESTED` absence outright and
+  turns an `APPROVED` one into `CANCELLING`, which is a fifth status and not a
+  flag: it is **still in force** — crediting its hours, still costing the leave
+  — until a manager answers, because a cancellation that took effect on the
+  press would move the balance before anybody had responded. `IN_FORCE` is
+  `{APPROVED, CANCELLING}` and `UNDECIDED` is `{REQUESTED, CANCELLING}`; both
+  are written once because the places that ask are places to forget the second
+  half. Refusing a cancellation returns it to `APPROVED` rather than inventing
+  "approved, but somebody once asked" — a state nothing else could read.
+  `decide_cancellation` is a separate method from `decide` for the reason the
+  buttons are relabelled on that card: on a cancellation, yes means the absence
+  *stops* happening, and answering it with `decide` would approve the very thing
+  somebody asked to remove.
+- **From the timesheet cell the same line is drawn, and who is pressing decides
+  which side of it they are on.** An employee clearing an approved day asks for
+  a cancellation; a manager on somebody else's row takes it off outright through
+  `Absence.cancel`, which still records who. On their own row a manager is the
+  employee — a self-approving shortcut is exactly the audit trail this app
+  keeps. An approved day cannot be *swapped* for another status from the cell at
+  all: silently withdrawing it to make room is the version that loses somebody's
+  holiday without ever saying so.
 - **A half day is one date, and only one date.** `Absence.is_half_day` is
   refused on a range, by `clean` and by both forms. The general version — half at
   the start of a range, half at the end — is four more states and every one has
@@ -468,6 +1036,12 @@ Each of these is here because breaking it produces a page that still renders.
   and the exposure a forgotten one would create is covered from the other side,
   by tests that walk the URLconf for the `employees`, `roster` and `organisation`
   namespaces and refuse to let any route answer an account without the right.
+- **Nothing deletes an audit entry, and that is a decision with a cost.**
+  `AuditEntry.delete` raises. It makes the retention policy harder rather than
+  easier — there is now one more table that grows forever — and that is the right
+  way round: whatever eventually reaches it has to be one deliberate, documented
+  path rather than a view doing it by accident. `docs/AUDIT.md` carries the
+  numbers a retention policy has to choose between.
 - **This app stores no files, deliberately.** There is no `MEDIA_ROOT` and no
   upload path. A timesheet is rows; a sick note is a piece of paper that belongs
   in a personnel file under somebody else's retention policy, not in a
@@ -477,9 +1051,10 @@ Each of these is here because breaking it produces a page that still renders.
 - **A sick absence records that somebody was ill and never why.** There is no
   diagnosis field and no note on the sickness form, and adding one would turn an
   ordinary attendance record into a health record.
-- **Sickness is stated, not requested.** An employer does not grant it, so there
-  is no route by which a sick day becomes `REQUESTED` and no button a manager
-  can press to refuse one.
+- **A sick absence is still only dates.** It is requested and decided like
+  anything else now, but nothing about that added a field: no diagnosis, no
+  note on the sickness form, no certificate, and a refusal's written reason is
+  the manager's sentence rather than the employee's.
 - **The OIDC client secret is in the database**, encrypted at rest with a key
   derived from `DJANGO_SECRET_KEY`, never rendered back to a browser, and behind
   a superuser-only page. `apps/accounts/models.py` states the trade at length;
@@ -513,16 +1088,49 @@ targets**, so a page added next month is covered the day it lands:
   Sunday" is something every wrong answer also does.
 - `apps/timesheets/tests.py` holds the confirm/override core, and the check that
   `static/js/hours.js` still computes the break the way Python does.
+- `apps/timesheets/test_month.py` holds the month: the pairing of comings and
+  goings and each shape it refuses, the correction landing *after* the break,
+  the saldo's sign, and the invariant that the last row of the running column
+  equals `hours_balance` for that date. Saving is per day and answers with the
+  whole month, so a refusal is checked to leave that day — and only that day —
+  exactly as it was.
 - `apps/timesheets/test_zones.py` names the two real nights the clocks move and
   asserts seven hours in March and nine in October — plus the invariant that on
   an ordinary day the zone-aware answer equals the plain subtraction, without
   which every existing night-shift test would be quietly wrong.
+- `apps/audit/tests.py` holds the trail. Two cases matter more than the rest:
+  `TestNothingCanTouchIt` — an entry cannot be updated or deleted, including by
+  assigning an existing pk, which is an overwrite wearing an insert's clothes —
+  and `test_every_model_has_been_decided_about`, which walks every model in the
+  project against the registry and fails on one that is in none of the three
+  sets. The `bulk_create` blind spot is pinned by its own case, because it is the
+  one that would have failed silently and in the most misleading direction.
+- `apps/timesheets/test_export.py` holds the figures rather than the layout. The
+  Actual column is read *out of* `build_month` rather than written down, so the
+  test cannot pass by both being wrong the same way; the PDF is checked for being
+  a PDF, since asserting on reportlab's bytes is testing reportlab and a golden
+  image fails on a font update. `test_the_running_column_carries_into_a_partial_range`
+  is the one that catches the tempting implementation: a range starting on the
+  15th built from the 15th restarts the running total at nought.
+- `apps/timesheets/test_limits.py` holds §3 and §5: both boundaries in both
+  directions (eight hours exactly is not over eight, ten exactly is not over
+  ten), the night shift whose end is on the following date, the two-stretch night
+  a per-segment test gets wrong by twenty hours, and the two clock-change nights
+  again — one where the wall clock would report a breach that did not happen and
+  one where it would miss a real one. **The class that matters most is the last
+  one**, `TestAnUnlawfulDayIsStillRecorded`: every case in it would still pass if
+  the flags were deleted, and none would pass if a flag ever became a refusal.
 - `apps/timesheets/test_clocking.py` holds Start and Stop, the open-ended day,
   and the four refusals (already running, nothing running, no length, inside an
   existing stretch).
 - `apps/absences/test_leave_year.py` holds half days, credited hours, the
   contract history and the whole of carry-over and expiry — including the case
   that matters most: **without a recorded reminder, nothing lapses.**
+- `apps/timesheets/test_locks.py` walks the write paths against a locked day —
+  both pop-ups, the comment, the old day form, both confirm routes, Start, and
+  every way an absence can be written. A lock is worth as much as its
+  least-guarded door, and a test naming three of them passes for exactly as long
+  as it takes somebody to add a fourth.
 - `apps/employees/test_privacy.py` walks the *whole* URLconf and refuses to let
   any route answer somebody who is not signed in, then checks each of the
   cross-employee doors by hand. Its route-reverser fails loudly on a route it
@@ -648,13 +1256,23 @@ recognises them as decided rather than missed.
   time is an hour or two out all summer in a way that looks almost right.
   `test_zones.py` asserts four real zones resolve, so dropping it is a red
   build rather than a silent hour.
-- **No in-app export.** The database is one SQLite file under `/data`, which
-  Hyper Backup already covers, and a payroll export is a format question nobody
-  has asked yet. It is the obvious next feature and deliberately not guessed at.
-- **The break rules default stricter than the law, never looser.** The shipped
-  second tier is 8 h → 45 min where §4 ArbZG says 9 h. Stricter is always legal;
-  an administrator editing the table can go looser and nothing stops them, which
-  `docs/COMPLIANCE.md` lists as a gap.
+- ~~**No in-app export.**~~ **Reversed**, and the reason is written out in
+  `apps/timesheets/export.py`. The old argument — the database is one SQLite file
+  Hyper Backup already covers, and a payroll format is a question nobody has
+  asked — is still true in both halves. What changed is that five separate duties
+  turn out to be one feature and four of them have nothing to do with payroll:
+  GoBD Datenzugriff Z3, §9 BVV machine-evaluability for a DRV auditor, an FKS
+  inspector at a desk, DSGVO Art. 15(3), and the employee's right to obtain a
+  copy in the June 2026 ArbZG draft.
+- **The break rules default to the statute exactly**: 30 minutes over six hours
+  and 45 over nine (§4 ArbZG). **This reverses an earlier decision** that made
+  the second tier eight hours, on the argument that a default about a legal
+  minimum may only err towards the employee. It reads as a wrong figure to
+  anybody who has looked the law up, and a default that has to be explained is
+  not a safe default; a house that wants 45 minutes at eight hours says so in
+  one edit on the settings page. An administrator can still edit the table
+  looser than the law and nothing stops them, which `docs/COMPLIANCE.md` lists
+  as a gap.
 - **The app holds no health data and must not start.** Sickness is a date range
   and nothing else — no diagnosis, no note on the form, no certificate. The eAU
   flow keeps that between the doctor, the insurer and payroll, which is where it

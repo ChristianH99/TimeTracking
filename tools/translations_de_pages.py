@@ -22,11 +22,6 @@ PAGES = {
     "Show password (hold)": "Passwort anzeigen (gedrückt halten)",
 
     # -- my settings ------------------------------------------------------
-    "My settings": "Meine Einstellungen",
-    "Yours, not the organisation’s. The roster, your hours and your entitlement are agreed with your manager; this page is only about how the app reads to you.":
-        "Ihre eigenen, nicht die des Betriebs. Dienstplan, Stunden und Urlaubsanspruch werden mit Ihrer Leitung vereinbart; auf dieser Seite geht es nur darum, wie die App sich für Sie liest.",
-    "How a duration is written wherever this app shows one. Both say the same thing — 7,5 h and 7:30 h are one working day — so switching this never changes a total, only how you read it.":
-        "Wie eine Zeitdauer überall dort geschrieben wird, wo diese App eine anzeigt. Beide sagen dasselbe — 7,5 h und 7:30 h sind ein Arbeitstag — das Umstellen ändert also nie eine Summe, nur wie Sie sie lesen.",
 
     # -- time off ---------------------------------------------------------
     "My time off": "Meine Abwesenheiten",
@@ -36,19 +31,74 @@ PAGES = {
         "Beantragte Tage sind noch nicht abgezogen — ein abgelehnter Antrag hat nichts verbraucht. Wenn alles Wartende genehmigt wird, bleiben Ihnen %(left)s.",
     "You work %(days)s days a week. A full week here is %(full)s days and carries %(entitlement)s days of leave, so yours is that share of it. Days you are not due to work, and public holidays, never come out of it.":
         "Sie arbeiten %(days)s Tage pro Woche. Eine volle Woche sind hier %(full)s Tage und bringt %(entitlement)s Urlaubstage; Ihr Anspruch ist der entsprechende Anteil davon. Tage, an denen Sie nicht eingeteilt sind, und Feiertage gehen nie davon ab.",
-    "Ask for time off": "Abwesenheit beantragen",
-    "New request": "Neuer Antrag",
     "Send for approval": "Zur Genehmigung senden",
-    "Sickness": "Krankheit",
-    "You are recorded as ill.": "Sie sind als krank eingetragen.",
-    "Report sickness": "Krankheit melden",
-    "Record it": "Eintragen",
     "This year": "Dieses Jahr",
+
+    # -- time off: the year as a calendar ---------------------------------
+    #
+    # The three figures at the top of the page, and they are the reason the
+    # German matters here more than anywhere else: "Urlaubstage",
+    # "Sonderurlaubstage" and "Resturlaub" are the words people will use with
+    # payroll about them, so they are fixed here and not varied for reading.
+    "Off days": "Urlaubstage",
+    "Extra off days": "Sonderurlaubstage",
+    "Unused off days": "Resturlaub",
+    "Ask for extra off days": "Sonderurlaub beantragen",
+    "Everything asked for this year": "Alles, was in diesem Jahr beantragt wurde",
+    "Click a day to ask for it off, or to say you were ill. A day drawn in a solid colour has been approved; a dotted one is still with your manager. Weekends, public holidays and days your contract gives no hours are not squares you can book, because they cost you nothing.":
+        "Klicken Sie auf einen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Ein Tag in kräftiger Farbe ist genehmigt, ein gepunkteter liegt noch bei Ihrer Leitung. Wochenenden, Feiertage und Tage, für die Ihr Vertrag keine Stunden vorsieht, lassen sich nicht buchen — sie kosten Sie ohnehin nichts.",
+
+    # -- time off: the day pop-up -----------------------------------------
+    "What is it": "Worum geht es",
+    "Comes out of your leave.": "Geht von Ihrem Urlaub ab.",
+    "Costs no leave. The day reads as a shortfall against your contracted hours, and that shortfall is the overtime being taken back.":
+        "Kostet keinen Urlaub. Der Tag erscheint als Minus gegenüber Ihren vertraglichen Stunden — und genau dieses Minus ist der Abbau der Überstunden.",
+    "Costs no leave, and dates are all it records. There is no note and never a diagnosis — your manager is shown that you were ill, not why.":
+        "Kostet keinen Urlaub, und festgehalten werden nur die Daten. Es gibt keine Notiz und niemals eine Diagnose — Ihre Leitung sieht, dass Sie krank waren, nicht warum.",
+    "Half a day": "Halber Tag",
+    "Only when the two dates are the same one.": "Nur wenn beide Daten derselbe Tag sind.",
+    "Optional, and read by whoever decides it.":
+        "Freiwillig, und wird von der entscheidenden Person gelesen.",
+    "Booked": "Gebucht",
+    "When": "Wann",
+    "These days were booked together and can only be taken back together — the whole booking goes, not the day you clicked.":
+        "Diese Tage wurden zusammen gebucht und können nur zusammen zurückgenommen werden — es geht die ganze Buchung, nicht der angeklickte Tag.",
+    "Nobody has decided this yet, so it is still yours to take back. It stays in the record as withdrawn, which is what shows that it was asked for at all.":
+        "Darüber ist noch nicht entschieden, also können Sie es selbst zurückziehen. Es bleibt als zurückgezogen im Verlauf stehen — nur so ist überhaupt noch zu sehen, dass es beantragt wurde.",
+    "This is approved and the roster has been built around it, so your manager decides. It stays booked until they answer — the days stay spent and the hours stay credited.":
+        "Das ist genehmigt und der Dienstplan baut darauf auf, also entscheidet Ihre Leitung. Bis zur Antwort bleibt es gebucht — die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Your manager has been asked to cancel this and has not answered yet. There is nothing further to press.":
+        "Ihre Leitung wurde um die Rücknahme gebeten und hat noch nicht geantwortet. Hier gibt es nichts weiter zu drücken.",
+
+    # -- time off: the extra-off-days pop-up ------------------------------
+    "Days that come out of an entitlement of their own — a funeral, a move, a wedding. Which one it is has to be named, or the days cannot be counted against anything.":
+        "Tage aus einem eigenen Anspruch — eine Beerdigung, ein Umzug, eine Hochzeit. Welcher Anspruch es ist, muss benannt werden, sonst lassen sich die Tage nirgends anrechnen.",
+    "Which": "Welche Art",
+    "The figure in brackets is what is left of that type.":
+        "Die Zahl in Klammern ist der Rest dieser Art.",
+
+    # -- time off: the help panel -----------------------------------------
+    "Reading this page": "Diese Seite lesen",
+    "The three figures": "Die drei Zahlen",
+    "Off days is what this year is worth to you, including anything carried over from last year. Extra off days are the separate entitlements — a funeral, a move — and they are not part of the first figure. Unused off days is what is left once the approved days have come off; days still waiting are not taken off, because a request that is declined was never spent.":
+        "Urlaubstage ist das, was Ihnen dieses Jahr zusteht, einschließlich allem, was aus dem Vorjahr übertragen wurde. Sonderurlaubstage sind eigene Ansprüche — eine Beerdigung, ein Umzug — und in der ersten Zahl nicht enthalten. Resturlaub ist das, was nach Abzug der genehmigten Tage bleibt; Tage, über die noch nicht entschieden ist, werden nicht abgezogen, denn ein abgelehnter Antrag hat nie etwas verbraucht.",
+    "The calendar": "Der Kalender",
+    "A solid square is approved. A dotted one is still with your manager and counts for nothing yet. A square filled diagonally is half a day. A pale square is a day you were not due to work anyway — a weekend, a public holiday, or a day your contract gives no hours — and booking one would cost you nothing, so it cannot be clicked.":
+        "Ein ausgefülltes Feld ist genehmigt. Ein gepunktetes liegt noch bei Ihrer Leitung und zählt noch nichts. Ein diagonal gefülltes Feld ist ein halber Tag. Ein blasses Feld ist ein Tag, an dem Sie ohnehin nicht eingeteilt waren — ein Wochenende, ein Feiertag oder ein Tag ohne vertragliche Stunden — und ihn zu buchen würde Sie nichts kosten, deshalb lässt er sich nicht anklicken.",
+    "Click any other day to ask for it off or to say you were ill. The pop-up opens on that date at both ends; change the second one to ask for a run of days.":
+        "Klicken Sie auf jeden anderen Tag, um ihn freizunehmen oder eine Krankmeldung einzutragen. Das Fenster öffnet sich mit diesem Datum an beiden Enden; ändern Sie das zweite, um mehrere Tage am Stück zu beantragen.",
+    "Taking something back": "Etwas zurücknehmen",
+    "Click a day that is already booked. Anything your manager has not answered yet is yours to withdraw outright. Anything approved is a day the roster has been built around, so you ask instead and it stays booked — the days stay spent and the hours stay credited — until they answer.":
+        "Klicken Sie auf einen bereits gebuchten Tag. Alles, was Ihre Leitung noch nicht beantwortet hat, können Sie selbst zurückziehen. Alles Genehmigte ist ein Tag, auf dem der Dienstplan aufbaut, also bitten Sie darum — und bis zur Antwort bleibt es gebucht, die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Days asked for together are one booking and are drawn as one bar. They come back together too: clicking the Wednesday of a week off acts on the whole week, not on the Wednesday. To give back part of a booking, take the whole thing back and ask for the days you are keeping.":
+        "Zusammen beantragte Tage sind eine Buchung und werden als ein Balken gezeichnet. Sie kommen auch zusammen zurück: Ein Klick auf den Mittwoch einer freien Woche betrifft die ganze Woche, nicht den Mittwoch. Wenn Sie nur einen Teil zurückgeben möchten, nehmen Sie die ganze Buchung zurück und beantragen Sie die Tage, die Sie behalten wollen.",
+    "What each kind costs": "Was die einzelnen Arten kosten",
+    "Holiday and extra off days come out of an entitlement. Sickness never does, and it is paid as though you had worked the day. Time off in lieu costs no leave either, and is the one kind that credits no hours — that shortfall against your contracted hours is the overtime being taken back.":
+        "Urlaub und Sonderurlaub gehen von einem Anspruch ab. Krankheit nie — sie wird bezahlt, als hätten Sie den Tag gearbeitet. Überstundenabbau kostet ebenfalls keinen Urlaub und ist die einzige Art, die keine Stunden gutschreibt: das Minus gegenüber Ihren vertraglichen Stunden ist genau der Abbau.",
+
     "Withdraw this?": "Diesen Antrag zurückziehen?",
     "It stays in the list as withdrawn, so the record still shows that it was asked for.":
         "Er bleibt als zurückgezogen in der Liste, damit der Vorgang nachvollziehbar bleibt.",
-    "Last day of illness": "Letzter Krankheitstag",
-    "Say when it ended": "Ende eintragen",
     "Nothing recorded for this year.": "Für dieses Jahr ist nichts eingetragen.",
 
     # -- no contract ------------------------------------------------------
@@ -155,7 +205,7 @@ PAGES = {
 
     # -- people -----------------------------------------------------------
     "New account": "Neues Konto",
-    "Edit account": "Konto bearbeiten",
+
     "All people": "Alle Personen",
     "This account signs in both ways: with its own password, and through SSO. The two were linked because they share an e-mail address. Its name and e-mail address come from the identity provider and are refreshed at every sign-in, so they cannot be changed here.":
         "Dieses Konto meldet sich auf beiden Wegen an: mit eigenem Passwort und über SSO. Beide wurden verknüpft, weil sie sich eine E-Mail-Adresse teilen. Name und E-Mail-Adresse kommen vom Identitätsanbieter und werden bei jeder Anmeldung erneuert; sie lassen sich hier nicht ändern.",
@@ -233,6 +283,20 @@ PAGES = {
     "Only what this person has been given. A type that exists in the organisation but is not listed here is not theirs — it is not “zero days of it”.":
         "Nur, was dieser Person gewährt wurde. Eine Art, die es im Betrieb gibt und die hier nicht steht, gehört ihr nicht — es sind nicht „null Tage davon“.",
     "Days instead of the rule": "Tage abweichend von der Regel",
+    # -- time off: asking an approved absence back ------------------------
+    "Ask to cancel this?": "Rücknahme beantragen?",
+    "Your manager decides it. It stays booked until they answer — the days stay spent and the hours stay credited.":
+        "Ihre Leitung entscheidet darüber. Bis zur Antwort bleibt der Eintrag bestehen — die Tage bleiben verbraucht und die Stunden angerechnet.",
+    "Ask": "Beantragen",
+    "Ask to cancel": "Rücknahme beantragen",
+    "Your manager has it": "Liegt bei Ihrer Leitung",
+    # On the manager's card. „Approve“ over a cancellation would be a button
+    # whose word says the opposite of its effect, so both are named for what
+    # they do.
+    "asked to cancel": "Rücknahme beantragt",
+    "Cancel it": "Zurücknehmen",
+    "Keep it booked": "Bestehen lassen",
+
     "Grant a special leave type": "Sonderurlaubsart gewähren",
     "Save the contract": "Vertrag speichern",
     "Leave balance": "Urlaubskonto",
@@ -258,7 +322,7 @@ PAGES = {
 
     # -- closures and holidays --------------------------------------------
     "New closure": "Neue Schließzeit",
-    "Closure": "Schließzeit",
+
     "Saving this writes an absence for everybody currently employed, and re-saving it moves them rather than adding a second set. Somebody who joins afterwards does not get one — a closure they were not here for is not theirs.":
         "Das Speichern trägt für alle derzeit Beschäftigten eine Abwesenheit ein; erneutes Speichern verschiebt diese, statt einen zweiten Satz anzulegen. Wer später eintritt, bekommt keine — eine Schließzeit, in der jemand nicht hier war, ist nicht seine.",
     "Save and apply": "Speichern und eintragen",
@@ -287,7 +351,7 @@ PAGES = {
 
     # -- special leave types ----------------------------------------------
     "New leave type": "Neue Urlaubsart",
-    "Special leave type": "Sonderurlaubsart",
+
     "The table": "Die Tabelle",
     "Only read when the mode above is “from a table of working days per week”. Each row says: work at least this many days a week and get this many. It is a step, not a proportion — “three days or more gets one, five days gets two” means somebody on two days gets none, which is exactly what a table is for.":
         "Wird nur gelesen, wenn oben „aus einer Tabelle nach Arbeitstagen pro Woche“ gewählt ist. Jede Zeile sagt: wer mindestens so viele Tage pro Woche arbeitet, bekommt so viele. Es ist eine Stufe, kein Anteil — „ab drei Tagen einer, ab fünf Tagen zwei“ heißt, dass jemand mit zwei Tagen keinen bekommt, und genau dafür ist eine Tabelle da.",
@@ -324,8 +388,6 @@ PAGES = {
     "What that comes to": "Was dabei herauskommt",
     "Time at work": "Anwesenheit",
     "Counted as worked": "Als Arbeitszeit gezählt",
-    "Note the middle rows: a day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier. That is what the law asks for, and reading the rules the other way costs somebody break they were entitled to.":
-        "Beachten Sie die mittleren Zeilen: ein Tag, der nur wenig über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe. Das verlangt das Gesetz, und die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zustand.",
 
     # -- the roster --------------------------------------------------------
     "Draft this week from the contracts?": "Diese Woche aus den Verträgen entwerfen?",
@@ -363,7 +425,6 @@ PAGES = {
     "This day is confirmed. Saving a change here withdraws that confirmation, so the record never says somebody agreed to figures they have not seen.":
         "Dieser Tag ist bestätigt. Eine Änderung hier zu speichern zieht die Bestätigung zurück, damit der Nachweis nie behauptet, jemand habe Zahlen zugestimmt, die er nie gesehen hat.",
     "Save the day": "Tag speichern",
-    "Back to the week": "Zurück zur Woche",
 
     # -- the start page ----------------------------------------------------
     "Hello %(name)s": "Hallo %(name)s",
@@ -408,7 +469,162 @@ PAGES = {
         "Von Hand eingetragen. Die Regeln ergäben %(computed)s Minuten.",
     "The hours entered are not the hours rostered.":
         "Die eingetragenen Stunden sind nicht die eingeteilten.",
-    "Enter hours": "Stunden eintragen",
+
+    # -- the monthly timesheet -------------------------------------------
+    #
+    # "Saldo" rather than "Differenz": it is the word on every German time
+    # account anybody in this business has seen, and the column is read against
+    # the one their last employer showed them.
+    "Back to the timesheet": "Zurück zum Stundenzettel",
+    "The month before": "Vorheriger Monat",
+    "The month after": "Nächster Monat",
+    # The picker: a year above three columns of months. "Monat" on its own was
+    # the label of the select this replaced and has gone with it.
+    "The year before": "Vorheriges Jahr",
+    "The year after": "Nächstes Jahr",
+    "Choose a month": "Monat wählen",
+    "This month": "Dieser Monat",
+    "Status": "Status",
+    "Bookings": "Buchungen",
+    "Actual": "Ist",
+    "Supposed": "Soll",
+    "Saldo": "Saldo",
+    "Running": "Laufend",
+    "Comment": "Bemerkung",
+    "So far": "Bis heute",
+    "The whole month": "Ganzer Monat",
+    # -- the timesheet saves itself ---------------------------------------
+    "Saving": "Speichern",
+    "There is no Save button. A comment is written when you leave the box; bookings and a correction are written when you accept the pop-up. Everything the change moves — the running column and the totals — is worked out again by the server and redrawn.":
+        "Es gibt keine Schaltfläche „Speichern“. Eine Bemerkung wird geschrieben, sobald Sie das Feld verlassen; Buchungen und eine Korrektur werden geschrieben, sobald Sie das Fenster bestätigen. Alles, was sich dadurch ändert — die laufende Spalte und die Summen — wird vom Server neu berechnet und neu gezeichnet.",
+    "A day is a column of comings and goings, in the order they happened. Click the cell to enter them. The cell shows the first four and counts the rest; the pop-up has all of them. A coming with no going yet is a shift still running: it is worth nothing until it has an end, because a figure that changes on every refresh is not one anybody can sign off.":
+        "Ein Tag ist eine Spalte aus Kommen und Gehen, in der Reihenfolge, in der sie stattgefunden haben. Zum Eintragen auf die Zelle klicken. Die Zelle zeigt die ersten vier und zählt den Rest; im Fenster stehen alle. Ein Kommen ohne Gehen ist eine noch laufende Schicht: Sie zählt null, solange sie kein Ende hat — eine Zahl, die sich bei jedem Neuladen ändert, kann niemand abzeichnen.",
+    "The month": "Der Monat",
+
+    "Bookings for %(date)s": "Buchungen für %(date)s",
+    "Comment for %(date)s": "Bemerkung zu %(date)s",
+    "Correction for %(date)s": "Korrektur für %(date)s",
+    "Take the rostered times": "Geplante Zeiten übernehmen",
+    "Take the rostered times for %(date)s": "Geplante Zeiten für %(date)s übernehmen",
+    "Another booking": "Weitere Buchung",
+
+    "Clear the day": "Tag leeren",
+
+    "Remove the correction": "Korrektur entfernen",
+    "Includes %(amount)s brought from a previous contract, as at %(date)s.":
+        "Enthält %(amount)s aus einem früheren Vertrag, Stand %(date)s.",
+    "A holiday, a day of leave or a sick day is credited at the contracted hours, so the month comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back.":
+        "Ein Feiertag, ein Urlaubstag oder ein Krankheitstag wird mit den vertraglichen Stunden gutgeschrieben; der Monat geht damit auf und der Grund steht in der Zeile. Der Freizeitausgleich ist die Ausnahme und wird nicht gutgeschrieben — genau dieses Minus ist die Überstunde, die zurückgenommen wird.",
+
+    # The letters in this sentence are the keyboard shortcut, and they come from
+    # the first letter of „Kommen“ und „Gehen“ — see the JAVASCRIPT table below.
+    # An English "C and G" here would name keys that do nothing in German.
+    "One line per booking. Type the time, then say whether it is a coming or a going — the keyboard does it too: press C for coming or G for going and the line is entered.":
+        "Eine Zeile je Buchung. Zeit eintippen und dann angeben, ob es ein Kommen oder ein Gehen ist — über die Tastatur geht das auch: K für Kommen oder G für Gehen, und die Zeile ist eingetragen.",
+    # The pop-up's whole explanation, in one line. It was three sentences with
+    # three examples, read by somebody who has already decided to type a number
+    # and is looking for the box; the one thing it has to say is what a minus
+    # does, because that is the half nobody guesses. The long version below is
+    # the *day form's* and stays — that page is a form with room, and it carries
+    # the fact that a correction lands after the break, which is written down
+    # nowhere else on it.
+    "Time that was never clocked. A minus takes time off.":
+        "Zeit, die nie an einer Uhr erfasst wurde. Ein Minus zieht Zeit ab.",
+    "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. It is added after the break, so it can never push the day over a break threshold and deduct a break nobody took. A minus takes time off.":
+        "Zeit, die zu diesem Tag gehört und nie von einer Uhr abgelesen wurde — ein vergessenes Gehen, eine Fahrt zu einem zweiten Einsatzort, ein bezahlter Nachmittag. Sie wird nach der Pause aufgeschlagen und kann den Tag deshalb nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat. Ein Minus zieht Zeit ab.",
+
+    "Reading the timesheet": "Den Stundenzettel lesen",
+
+    "Worked out from the break rules and deducted from the bookings. A break somebody typed by hand is drawn in amber, because a break of 30 the rules produced and a break of 30 somebody entered are the same number and mean different things.":
+        "Wird aus den Pausenregeln berechnet und von den Buchungen abgezogen. Eine von Hand eingetragene Pause steht in Bernstein, denn eine Pause von 30 Minuten aus der Regel und eine von Hand eingetragene Pause von 30 Minuten sind dieselbe Zahl und bedeuten Verschiedenes.",
+    "Time that belongs on the day and was never read off a clock. It always needs a reason, and it is added after the break — so a correction can never push a day over a break threshold and deduct a break nobody took.":
+        "Zeit, die zum Tag gehört und nie von einer Uhr abgelesen wurde. Sie braucht immer eine Begründung und wird nach der Pause aufgeschlagen — eine Korrektur kann einen Tag also nie über eine Pausenschwelle heben und eine Pause abziehen, die niemand genommen hat.",
+    "Actual less supposed. Green is time over the contract, red is time under it. The running column carries on from the balance brought into the month, so the last row of the month is the balance to date.":
+        "Ist minus Soll. Grün ist Zeit über dem Vertrag, Rot ist Zeit darunter. Die laufende Spalte setzt den Übertrag in den Monat fort, die letzte Zeile des Monats ist also der Saldo bis heute.",
+
+    # -- the status pop-up -------------------------------------------------
+    "Status for %(date)s": "Status für %(date)s",
+    # What a clipped pill says on hover. The status column is nine and a half
+    # rems and a day can carry three pills, so every one of them names itself.
+    # The first entry in the status cell's dropdown, and the one that clears a
+    # day. "Which special leave?" went with the dialog: each granted type is its
+    # own option now. The dialog's opening paragraph did not go — it is a fact
+    # about how leave and sickness are treated rather than about the control,
+    # and it moved to the Help pop-up.
+    "Nothing — an ordinary working day": "Nichts — ein normaler Arbeitstag",
+    # The dotted edge's explanation. One sentence for every kind now: sickness
+    # used to count before anybody had answered and needed its own.
+    "Waiting for a decision. Nothing is credited and no days are spent until it is approved.":
+        "Wartet auf eine Entscheidung. Bis zur Genehmigung wird nichts angerechnet und werden keine Tage verbraucht.",
+    "Booked, and waiting for a manager to answer a request to cancel it.":
+        "Eingetragen, und wartet auf die Antwort der Leitung auf einen Rücknahmeantrag.",
+    "%(date)s is already booked and approved. Ask for that to be cancelled first — this cell cannot swap one for another.":
+        "Für %(date)s ist bereits etwas genehmigt eingetragen. Bitte zuerst die Rücknahme beantragen — diese Zelle kann nicht das eine gegen das andere tauschen.",
+    "Your manager has been asked to cancel %(date)s. It stays booked until they answer.":
+        "Ihre Leitung wurde um die Rücknahme für %(date)s gebeten. Bis zur Antwort bleibt der Eintrag bestehen.",
+    # Every status in the list has one of these directly under it, so the half
+    # day is found where the whole day is. Parenthesised rather than a second
+    # group, and lower case inside the brackets the way German writes it.
+    "%(status)s (half day)": "%(status)s (halber Tag)",
+    "What was true of this day. Everything here is asked for and waits for your manager to decide it — sickness too. Nothing is credited and no leave is spent until they have.":
+        "Was an diesem Tag war. Alles hier wird beantragt und wartet auf die Entscheidung Ihrer Leitung — Krankheit ebenso. Bis dahin wird nichts angerechnet und kein Urlaub verbraucht.",
+    "Click the status cell and choose from the list. Every status has its half day directly under it, and each kind of special leave you have been granted is its own entry. A day still waiting for a decision is drawn with a dotted edge — so is one you have asked to have cancelled, which stays booked until your manager answers.":
+        "Auf die Status-Zelle klicken und aus der Liste wählen. Zu jedem Status steht der halbe Tag direkt darunter, und jede Sonderurlaubsart, die Ihnen gewährt wurde, ist ein eigener Eintrag. Ein Tag, über den noch nicht entschieden ist, wird mit gepunktetem Rand gezeichnet — ebenso einer, dessen Rücknahme Sie beantragt haben und der bis zur Antwort Ihrer Leitung bestehen bleibt.",
+    "This day is part of something that was booked elsewhere — a workplace closure, or an absence covering several days. Change it on the Time off page.":
+        "Dieser Tag gehört zu etwas, das an anderer Stelle eingetragen wurde — einer Betriebsschließung oder einer Abwesenheit über mehrere Tage. Bitte auf der Seite „Abwesenheit“ ändern.",
+
+    # -- the break table's worked examples ---------------------------------
+    "Deducted": "Abgezogen",
+    "The day": "Der Tag",
+    "Three things this table is here to show. A day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier — reading the rules the other way costs somebody break they were entitled to. A break somebody already took counts: clocking out for half an hour and back in is half an hour off the day already. But it only counts if it broke the work up — the last row is six and a half hours worked straight through with the hour off afterwards, which is still six and a half hours without a break, and a pause under fifteen minutes is not a break at all.":
+        "Drei Dinge zeigt diese Tabelle. Ein Tag, der nur knapp über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe — die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zusteht. Eine bereits genommene Pause zählt: wer sich für eine halbe Stunde ausbucht und wieder einbucht, hat diese halbe Stunde schon nicht gearbeitet. Sie zählt aber nur, wenn sie die Arbeit unterbrochen hat — die letzte Zeile sind sechseinhalb Stunden am Stück und die Stunde frei danach, das bleiben sechseinhalb Stunden ohne Pause. Und eine Unterbrechung unter fünfzehn Minuten ist gar keine Pause.",
+
+    # -- closing a month ---------------------------------------------------
+    #
+    # "Sperren" and never "abschließen": ein Monatsabschluss ist das, was eine
+    # Buchhaltung mit dem Hauptbuch macht, und das hier ist enger — es schließt
+    # den *Stundenzettel* für Änderungen und sagt nichts über die Lohnabrechnung.
+    "Month end": "Monatsende",
+    "Closing a month": "Monat abschließen",
+    "Lock the month": "Monat sperren",
+    "Unlock the month": "Monat entsperren",
+    "Lock the month?": "Monat sperren?",
+    "Unlock the month?": "Monat entsperren?",
+    "Lock or unlock the month?": "Monat sperren oder entsperren?",
+    "Go ahead": "Weiter",
+    "Everything in this month becomes changeable again.":
+        "Alles in diesem Monat kann wieder geändert werden.",
+    "Nothing in this month can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again from its own row.":
+        "Danach kann nichts mehr in diesem Monat geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Ein einzelner Tag kann über seine eigene Zeile wieder entsperrt werden.",
+    "Locking closes that month for everybody you have ticked: nothing in it can be changed afterwards. A single day can be unlocked again on their own timesheet.":
+        "Das Sperren schließt den Monat für alle Angehakten: danach kann nichts mehr darin geändert werden. Ein einzelner Tag kann auf dem jeweiligen Stundenzettel wieder entsperrt werden.",
+    "Locking a month closes it: nothing in it can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again on that person's timesheet when something has to be put right.":
+        "Das Sperren schließt den Monat: danach kann nichts mehr darin geändert werden — weder Buchungen noch ein Status noch eine Korrektur noch eine Bemerkung. Muss etwas berichtigt werden, kann ein einzelner Tag auf dem Stundenzettel der Person wieder entsperrt werden.",
+    "Open the requests": "Zu den Anträgen",
+    "Everybody": "Alle",
+    "Still open": "Noch offen",
+    "Locked": "Gesperrt",
+    "locked": "gesperrt",
+    "open": "offen",
+    "%(locked)s of %(total)s days": "%(locked)s von %(total)s Tagen",
+    "Nobody is employed at the moment.": "Zurzeit ist niemand beschäftigt.",
+
+    # -- a locked day, on the timesheet ------------------------------------
+    "Unlock this day so it can be changed": "Diesen Tag entsperren, um ihn zu ändern",
+    "Lock this day again": "Diesen Tag wieder sperren",
+    "Unlock %(date)s": "%(date)s entsperren",
+    "Lock %(date)s": "%(date)s sperren",
+    "This day is locked. Ask a manager to unlock it.":
+        "Dieser Tag ist gesperrt. Bitten Sie Ihre Leitung, ihn zu entsperren.",
+    "Locked days": "Gesperrte Tage",
+    "A manager closes a month when its hours are agreed. Nothing in a locked day can be changed after that — not the bookings, not the status, not the correction, not the comment. If something has to be put right, a manager unlocks that one day with the padlock on its row, and locks it again afterwards.":
+        "Ihre Leitung schließt einen Monat ab, wenn die Stunden darin vereinbart sind. Danach kann an einem gesperrten Tag nichts mehr geändert werden — weder die Buchungen noch der Status noch die Korrektur noch die Bemerkung. Muss etwas berichtigt werden, entsperrt die Leitung genau diesen einen Tag über das Schloss in seiner Zeile und sperrt ihn danach wieder.",
+
+    "%(date)s has not happened yet, so there are no hours to record for it. Time off and sickness can be booked in advance from the timesheet's status column.":
+        "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Abwesenheit und Krankheit lassen sich im Voraus über die Status-Spalte des Stundenzettels eintragen.",
+    "Days that have not happened": "Tage, die noch nicht waren",
+    "Hours can only be entered for today and for days already past — a booking is a record of when you were demonstrably at work, and nobody has been at work tomorrow. A status is different: booking leave or naming a training day in advance is exactly what a future row is for.":
+        "Stunden lassen sich nur für heute und für bereits vergangene Tage eintragen — eine Buchung hält fest, wann Sie nachweislich da waren, und morgen war noch niemand da. Beim Status ist es anders: Urlaub zu beantragen oder eine Fortbildung im Voraus einzutragen ist genau das, wofür eine künftige Zeile da ist.",
 }
 
 # Plural entries: msgid -> (singular msgstr, plural msgstr). German has the same
@@ -436,7 +652,31 @@ PLURALS = {
         "%(counter)s Tag wartet auf Sie", "%(counter)s Tage warten auf Sie",
     ),
     "%(counter)s day": ("%(counter)s Tag", "%(counter)s Tage"),
-    "Confirm %(counter)s day": ("%(counter)s Tag bestätigen", "%(counter)s Tage bestätigen"),
+    "%(counter)s more booking — open the day to see it": (
+        "%(counter)s weitere Buchung — Tag öffnen, um sie zu sehen",
+        "%(counter)s weitere Buchungen — Tag öffnen, um sie zu sehen",
+    ),
+
+    # The month's save. Two messages rather than one carrying both counts —
+    # German inflects on the number and a single string cannot be right for
+    # both, which is how a save of one day announced itself as "1 Tage".
+
+    "%(count)s day was locked.": (
+        "%(count)s Tag wurde gesperrt.", "%(count)s Tage wurden gesperrt.",
+    ),
+    "%(count)s day was unlocked.": (
+        "%(count)s Tag wurde entsperrt.", "%(count)s Tage wurden entsperrt.",
+    ),
+    "%(counter)s day unanswered": (
+        "%(counter)s Tag offen", "%(counter)s Tage offen",
+    ),
+    "%(counter)s waiting for a decision": (
+        "%(counter)s wartet auf Entscheidung", "%(counter)s warten auf Entscheidung",
+    ),
+    "%(counter)s absence in this month is still waiting for a decision. A month cannot be locked over it — decide it first.": (
+        "%(counter)s Abwesenheit in diesem Monat wartet noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden.",
+        "%(counter)s Abwesenheiten in diesem Monat warten noch auf eine Entscheidung. Darüber lässt sich kein Monat sperren — bitte zuerst entscheiden.",
+    ),
 }
 
 # Added when the sign-in name replaced the e-mail address, when the time parser
@@ -470,7 +710,30 @@ LATER = {
         "Zwei dieser Abschnitte überschneiden sich. Die überlappende Zeit würde doppelt gezählt; es lässt sich erst speichern, wenn einer davon korrigiert ist.",
 }
 
+# §3 and §5 ArbZG — the two working time limits the month flags.
+#
+# The paragraph numbers stay in the German because they *are* the German:
+# anybody who has to act on one of these will look the section up, and "§3
+# ArbZG" is how it is looked up. The sentences deliberately say what the app
+# cannot answer — the 24-week average — rather than implying a verdict it has
+# not reached, which is the same honesty the flag itself has: it reports the day
+# and never refuses it. See `apps/timesheets/limits.py`.
+LIMITS = {
+    "Working time limit": "Arbeitszeitgrenze",
+    "%(worked)s worked. §3 ArbZG allows ten hours at the very most, and no average makes an eleventh hour lawful.":
+        "%(worked)s gearbeitet. §3 ArbZG erlaubt höchstens zehn Stunden; keine Durchschnittsbetrachtung macht eine elfte Stunde zulässig.",
+    "%(worked)s worked. §3 ArbZG sets the day at eight hours and allows ten only if the average across 24 weeks comes back to eight — so this day needs a shorter one behind it.":
+        "%(worked)s gearbeitet. §3 ArbZG setzt den Arbeitstag auf acht Stunden und lässt zehn nur zu, wenn der Durchschnitt über 24 Wochen wieder acht Stunden ergibt — dieser Tag braucht also einen kürzeren zum Ausgleich.",
+    "Only %(rest)s off since the previous day’s work ended. §5 ArbZG requires eleven hours of uninterrupted rest.":
+        "Nur %(rest)s seit dem Ende der Arbeit am Vortag. §5 ArbZG verlangt elf Stunden ununterbrochene Ruhezeit.",
+    "Days over the ten hours §3 ArbZG allows at most, or with less than the eleven hours’ rest §5 requires:":
+        "Tage über den zehn Stunden, die §3 ArbZG höchstens erlaubt, oder mit weniger als den elf Stunden Ruhezeit nach §5:",
+    "Days over eight hours. Lawful if the average across 24 weeks comes back to eight — which this app does not yet work out:":
+        "Tage über acht Stunden. Zulässig, wenn der Durchschnitt über 24 Wochen wieder acht Stunden ergibt — was diese App noch nicht berechnet:",
+}
+
 PAGES.update(LATER)
+PAGES.update(LIMITS)
 
 # The djangojs catalogue — the strings the browser says for itself.
 JAVASCRIPT = {
@@ -483,4 +746,169 @@ JAVASCRIPT = {
     "Dismiss": "Schließen",
     "Copied": "Kopiert",
     "Press Ctrl-C": "Strg-C drücken",
+
+    # -- the bookings pop-up ---------------------------------------------
+    #
+    # **These two carry the keyboard shortcut.** timesheet_month.js takes the
+    # key from the first letter of each label rather than hard-coding C and G,
+    # so „Kommen“ binds K and „Gehen“ binds G. Renaming either word here moves
+    # the shortcut with it, which is the only way the two can stay in step.
+    "Coming": "Kommen",
+    "Going": "Gehen",
+    "Time": "Zeit",
+    "Remove this booking": "Diese Buchung entfernen",
+
+    # The month writes as it goes, so these are the sentences that replace a
+    # page reload: what was saved, and what stopped it being saved.
+    "Saved.": "Gespeichert.",
+    "That could not be saved.": "Das konnte nicht gespeichert werden.",
+    "The change did not reach the server, so nothing was saved.":
+        "Die Änderung hat den Server nicht erreicht, es wurde also nichts gespeichert.",
+    # Redrawn into the row after a save, so they have to exist in both
+    # catalogues — the same words the template renders on first load.
+    "still running": "läuft noch",
+    "differs": "weicht ab",
+    "The hours entered are not the hours rostered.":
+        "Die eingetragenen Zeiten sind nicht die geplanten Zeiten.",
+    "Credited, not worked — an absence the hours are paid for.":
+        "Gutgeschrieben, nicht gearbeitet — eine Abwesenheit, die bezahlt wird.",
+    "Every booking has to say whether it is a coming or a going.":
+        "Bei jeder Buchung muss angegeben sein, ob sie ein Kommen oder ein Gehen ist.",
+    "There is a booking with no time on it.": "Es gibt eine Buchung ohne Uhrzeit.",
+    "There are two comings in a row with no going between them.":
+        "Es stehen zwei Kommen hintereinander, ohne ein Gehen dazwischen.",
+    "There is a going with no coming before it. A day starts with a coming.":
+        "Es gibt ein Gehen, vor dem kein Kommen steht. Ein Tag beginnt mit einem Kommen.",
+    "A coming and a going at the same moment is a stretch with no length.":
+        "Ein Kommen und ein Gehen zum selben Zeitpunkt ist ein Abschnitt ohne Länge.",
+    "That is not a length this app can read. Try 30, 0:30 or -15.":
+        "Das ist keine Dauer, die diese App lesen kann. Zum Beispiel 30, 0:30 oder -15.",
+    "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
+        "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+
+    # The glyph the script puts back into the Actual cell after a save. In this
+    # table *and* in `LIMITS` below, because the template renders it on first
+    # load and the script redraws it afterwards — the same shape "still running"
+    # and "differs" have, and for the same reason.
+    "Working time limit": "Arbeitszeitgrenze",
 }
+
+
+# The audit trail and the export — added when the app grew the thing every
+# auditor asks for first (docs/AUDIT.md).
+#
+# **"Änderungsprotokoll", not "Audit-Trail".** The English term is what the
+# standards use and it is not what the people reading this page use: a
+# Wirtschaftsprüfer asking after one asks for the *Protokoll*, and a
+# kindergarten's deputy head has never heard of the other. The words for the
+# statuses are the ones a German payroll or works council conversation already
+# uses — "Erfasst am", "Bestätigt von", "Zeitraum".
+AUDIT = {
+    # -- the actions, as the model spells them ---------------------------
+    #
+    # Past participles, because the column reads as a sentence about something
+    # that has already happened — "Ben hat geändert" and not "Ben Änderung".
+    # "locked" is not here: it already exists in the catalogue for the padlock on
+    # a timesheet row, and one word with two German spellings in two places on
+    # the same page is the bug a single table exists to prevent.
+    "created": "angelegt",
+    "changed": "geändert",
+    "deleted": "gelöscht",
+    "unlocked": "entsperrt",
+    "looked at": "eingesehen",
+    "exported": "exportiert",
+    "signed in": "angemeldet",
+    "sign-in refused": "Anmeldung abgelehnt",
+    "signed out": "abgemeldet",
+
+    # -- field labels the trail prints ------------------------------------
+    #
+    # These are `verbose_name`s on `DayRecord` and they exist *because* the
+    # audit trail prints them: "source" as a column heading on a page an auditor
+    # reads means nothing to them, and a label is cheaper than a lookup table in
+    # the audit app that would go stale the first time a field was renamed.
+    "how it was entered": "Art der Erfassung",
+    "confirmed at": "Bestätigt am",
+    "hours first recorded at": "Stunden erstmals erfasst am",
+
+    # -- the model's own field names -------------------------------------
+    "when": "Zeitpunkt",
+    "what happened": "Vorgang",
+    "who": "Wer",
+    "about": "Betrifft",
+    "record": "Datensatz",
+    "audit entry": "Protokolleintrag",
+    "audit entries": "Protokolleinträge",
+
+    # -- the page --------------------------------------------------------
+    "Audit trail": "Änderungsprotokoll",
+    "My history": "Meine Historie",
+    "every change": "jede Änderung",
+    "Every change ever made to your records, and who made it. Nothing here can be edited or removed — not by a manager, not by whoever runs the software. If a figure on your timesheet is not what you entered, this page says who changed it and what it was before.":
+        "Jede Änderung, die je an Ihren Aufzeichnungen vorgenommen wurde, und von wem. Nichts davon lässt sich bearbeiten oder löschen — weder durch die Leitung noch durch die Systemverwaltung. Wenn eine Zahl auf Ihrem Stundenzettel nicht die ist, die Sie eingetragen haben, steht hier, wer sie geändert hat und was vorher dort stand.",
+    "Every change ever made to this person’s records, and who made it. Nothing here can be edited or removed. Opening this page is itself recorded.":
+        "Jede Änderung, die je an den Aufzeichnungen dieser Person vorgenommen wurde, und von wem. Nichts davon lässt sich bearbeiten oder löschen. Der Aufruf dieser Seite wird selbst protokolliert.",
+    "Everything the app has recorded about itself: changes to the records, sign-ins and refusals, exports, and who looked at whose hours. Nothing here can be edited or removed — that is what it is for. §146 AO and the GoBD require a change to be traceable rather than forbidden, and this is where the trace is.":
+        "Alles, was die Anwendung über sich selbst festhält: Änderungen an den Aufzeichnungen, Anmeldungen und abgelehnte Anmeldungen, Exporte und wer wessen Stunden eingesehen hat. Nichts davon lässt sich bearbeiten oder löschen — genau dafür ist es da. §146 AO und die GoBD verlangen, dass eine Änderung nachvollziehbar ist, nicht dass sie unterbleibt; hier ist der Nachweis.",
+    "Person": "Person",
+    "Anybody": "Alle",
+    "What happened": "Vorgang",
+    "Anything": "Alles",
+    "Record": "Datensatz",
+    "Details": "Einzelheiten",
+    "Nothing has been recorded for that.": "Dazu wurde nichts protokolliert.",
+    "Pages": "Seiten",
+    "Newer": "Neuere",
+    "Older": "Ältere",
+    "Page %(current)s of %(total)s": "Seite %(current)s von %(total)s",
+    # The same sentence on the printed sheet. A second msgid rather than a shared
+    # one because the placeholders differ, and `msgfmt` checks that a translation
+    # names exactly the placeholders its msgid does — sharing would be a file
+    # that refuses to compile.
+    "Page %(page)s of %(total)s": "Seite %(page)s von %(total)s",
+    "History": "Historie",
+
+    # -- the export page --------------------------------------------------
+    "Export": "Export",
+    "hand the records over": "Aufzeichnungen herausgeben",
+    "A copy of the working time records, for whoever has asked for one. The spreadsheet is what a tax or social-insurance auditor wants — it can be sorted and filtered, which a printout cannot. The PDF is what a person wants: an employee’s own copy, or the sheet handed across a desk. Every export is recorded in the audit trail, including who asked for it.":
+        "Eine Kopie der Arbeitszeitaufzeichnungen für alle, die danach fragen. Die Tabelle ist das, was eine Betriebsprüfung oder die Rentenversicherung braucht — sie lässt sich sortieren und filtern, ein Ausdruck nicht. Das PDF ist das, was ein Mensch braucht: die eigene Kopie einer Mitarbeiterin oder der Bogen, den man über den Tisch reicht. Jeder Export wird im Änderungsprotokoll festgehalten, samt der Person, die ihn angefordert hat.",
+    "Everybody (spreadsheet only)": "Alle (nur Tabelle)",
+    "Spreadsheet (CSV)": "Tabelle (CSV)",
+    "Printable (PDF)": "Zum Ausdrucken (PDF)",
+    "A printable sheet is one person at a time. The spreadsheet can hold everybody at once.":
+        "Ein Ausdruck umfasst immer eine Person. Die Tabelle kann alle auf einmal enthalten.",
+    "Both files are built from exactly the figures the timesheet shows, so a printed sheet cannot disagree with the screen it came from. Durations are written hh:mm; the spreadsheet repeats every total as decimal hours in a column of its own, so nobody has to convert.":
+        "Beide Dateien entstehen aus genau den Zahlen, die der Stundenzettel anzeigt — ein Ausdruck kann dem Bildschirm, von dem er stammt, also nicht widersprechen. Dauern stehen als hh:mm; die Tabelle wiederholt jede Summe zusätzlich als Dezimalstunden in einer eigenen Spalte, damit niemand umrechnen muss.",
+    "A printable sheet is one person at a time — it is the copy somebody is handed, and eleven of them stapled together cannot be handed to any one of them. Choose a person, or take the spreadsheet.":
+        "Ein Ausdruck umfasst immer eine Person — er ist die Kopie, die jemandem ausgehändigt wird, und elf zusammengeheftete lassen sich niemandem aushändigen. Bitte eine Person auswählen oder die Tabelle nehmen.",
+    "PDF": "PDF",
+    "CSV": "CSV",
+    "everybody": "alle",
+
+    # -- the columns in the exported file ---------------------------------
+    #
+    # These are read by a payroll clerk or an auditor, so they are the words
+    # those two use rather than the words the screen uses where the two differ.
+    "Break from": "Pause aus",
+    "Why corrected": "Grund der Korrektur",
+    "Credited": "Gutgeschrieben",
+    "Actual (hours)": "Ist (Stunden)",
+    "Working time note": "Hinweis zur Arbeitszeit",
+    "Recorded on": "Erfasst am",
+    "Days to record": "Tage bis zur Erfassung",
+    "Confirmed on": "Bestätigt am",
+    "Confirmed by": "Bestätigt von",
+    "by hand": "von Hand",
+    "rules": "Regeln",
+    "yes": "ja",
+    "Period": "Zeitraum",
+    "Exported": "Exportiert",
+    "Total": "Summe",
+    "Every duration is hh:mm. “Actual” includes hours credited for an approved absence, which are paid as though worked (§3 EFZG, §11 BUrlG); time off in lieu credits nothing, and that shortfall is the overtime being taken back. Breaks are deducted under §4 ArbZG.":
+        "Alle Dauern stehen als hh:mm. „Ist“ enthält Stunden, die für eine genehmigte Abwesenheit gutgeschrieben wurden und wie gearbeitete Zeit vergütet werden (§3 EFZG, §11 BUrlG); der Freizeitausgleich wird nicht gutgeschrieben — genau dieses Minus ist der Abbau der Überstunden. Pausen werden nach §4 ArbZG abgezogen.",
+    "by": "von",
+    "Working time record": "Arbeitszeitnachweis",
+}
+
+PAGES.update(AUDIT)

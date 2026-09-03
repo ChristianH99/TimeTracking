@@ -50,6 +50,13 @@
              href="{% url 'timesheets:mine' %}">{% translate "Timesheet" %}</a>
           <a class="shell-nav-subitem{% if 'mine.absences' in nav_current %} active{% endif %}"
              href="{% url 'absences:mine' %}">{% translate "Time off" %}</a>
+          {% comment %}Every change ever made to your own records, and who made
+          it. Under "My time" rather than in Settings because it is *your*
+          history: an audit trail only the employer can read is one that protects
+          only the employer, and the person most likely to notice a figure they
+          did not type is the person whose figure it is.{% endcomment %}
+          <a class="shell-nav-subitem{% if 'mine.history' in nav_current %} active{% endif %}"
+             href="{% url 'audit:mine' %}">{% translate "My history" %}</a>
         </div>
 
         {% comment %}Manager-only, and hiding it is presentation rather than
@@ -64,6 +71,8 @@
                href="{% url 'roster:plan' %}">{% translate "Roster" %}</a>
             <a class="shell-nav-subitem{% if 'team.timesheets' in nav_current %} active{% endif %}"
                href="{% url 'timesheets:team' %}">{% translate "Timesheets" %}</a>
+            <a class="shell-nav-subitem{% if 'team.month-end' in nav_current %} active{% endif %}"
+               href="{% url 'timesheets:month-end' %}">{% translate "Month end" %}</a>
             <a class="shell-nav-subitem{% if 'team.requests' in nav_current %} active{% endif %}"
                href="{% url 'absences:requests' %}">{% translate "Requests" %}{% if pending_request_count %}
                  <span class="nav-badge">{{ pending_request_count }}</span>{% endif %}</a>
@@ -71,6 +80,12 @@
                href="{% url 'employees:list' %}">{% translate "Employees" %}</a>
             <a class="shell-nav-subitem{% if 'team.year-end' in nav_current %} active{% endif %}"
                href="{% url 'absences:year-end' %}">{% translate "Year end" %}</a>
+            {% comment %}Handing the records over — to an inspector, an auditor,
+            or an employee asking for their copy. Last in the group, because it
+            is the entry somebody opens a few times a year and the five above it
+            are weekly.{% endcomment %}
+            <a class="shell-nav-subitem{% if 'team.export' in nav_current %} active{% endif %}"
+               href="{% url 'timesheets:export-page' %}">{% translate "Export" %}</a>
           </div>
         {% endif %}
       </nav>
@@ -88,16 +103,15 @@
         Every view behind these carries its own permission check — hiding a link
         is presentation, not access control, and a test walks the URLconf to
         make sure none of them has lost it.{% endcomment %}
-        {% if user.is_authenticated %}
+        {% comment %}Staff and superusers only. Every entry inside is about the
+        app rather than about the person, and the one that was not — "My
+        settings", which held the hours format — went when hh:mm became the only
+        notation. An empty disclosure is the same failure as a control that does
+        nothing.{% endcomment %}
+        {% if user.is_staff or user.is_superuser %}
           <details class="shell-settings" data-shell-settings{% if 'settings' in nav_current %} open{% endif %}>
             <summary class="shell-settings-summary">{% translate "Settings" %}</summary>
             <div class="shell-nav-sub shell-settings-items">
-              {% comment %}First, and for everybody: it is the only entry here
-              that is about the person rather than about the organisation, and
-              it is the only reason somebody without staff rights opens this
-              menu at all.{% endcomment %}
-              <a class="shell-nav-subitem{% if 'settings.me' in nav_current %} active{% endif %}"
-                 href="{% url 'accounts:preferences' %}">{% translate "My settings" %}</a>
               {% if user.is_staff %}
                 {% comment %}The rules the whole app computes against: break
                 thresholds, the full-time entitlement, the Land whose public
@@ -106,6 +120,14 @@
                    href="{% url 'organisation:settings' %}">{% translate "Working time" %}</a>
                 <a class="shell-nav-subitem{% if 'settings.users' in nav_current %} active{% endif %}"
                    href="{% url 'accounts:user-list' %}">{% translate "People" %}</a>
+                {% comment %}The whole trail: what changed and what it was
+                before, who signed in, who was refused, who looked at whose
+                hours, and what left the app as a file. Here rather than under
+                Team because it is a page about the *software* as much as about
+                the people — and because it is the page an auditor is
+                shown.{% endcomment %}
+                <a class="shell-nav-subitem{% if 'settings.audit' in nav_current %} active{% endif %}"
+                   href="{% url 'audit:log' %}">{% translate "Audit trail" %}</a>
               {% endif %}
               {% comment %}Superuser only, and below People on purpose: "may add
               an account" and "may repoint the whole app at a different identity
@@ -153,16 +175,59 @@
                 aria-label="{% translate 'Toggle navigation' %}">
           <span class="shell-hamburger-icon"><span></span><span></span><span></span></span>
         </button>
-        <div class="topbar-titles">
-          <span class="topbar-page">{% block topbar_title %}{% translate "Time Tracking" %}{% endblock %}</span>
-          <span class="topbar-sub">{% block topbar_sub %}{% endblock %}</span>
-        </div>
+        {% comment %}**Where you are, and it is the only place that says so.**
+        The bar used to carry the app's name, which the brand in the top-left
+        corner of the sidebar was already saying two inches away — so the one
+        line of chrome that is on screen at every moment spent it repeating
+        something rather than answering "which page am I on". It now carries the
+        page's heading, and the page's own subtitle after it: "My timesheet –
+        September 2026" is one sentence and both halves of it are the answer.
+
+        It is the page's `<h1>`, and there is still exactly one per page. The
+        heading is not repeated in `.page-head` below — printing it twice, three
+        centimetres apart, is the same fault the app's name was removed for.
+
+        A page's *controls* are still the page's and stay down there. The month
+        picker in particular is not up here: it is a control that changes what
+        the page is showing, and the bar is a statement about where you are
+        standing.{% endcomment %}
+        <h1 class="topbar-page">
+          <span class="topbar-page-title">{% block page_title %}{% translate "Time Tracking" %}{% endblock %}</span
+          >{% comment %}No whitespace between the two, because `:empty` is what
+          hides the subtitle on the pages that have none — and a newline inside
+          the span is content as far as `:empty` is concerned. The separator is
+          drawn by CSS on the non-empty case for the same reason.{% endcomment %}<span class="topbar-page-sub">{% block page_subtitle %}{% endblock %}</span>
+        </h1>
         <div class="topbar-actions">
-          {% block topbar_actions %}{% endblock %}
+          {% comment %}Page help, and it is in the bar on every page that has
+          any — the "?" used to sit in each page's own head, which put a control
+          that means the same thing everywhere in a different place on every
+          page. Rendered hidden and revealed by shell.js when the page turns out
+          to define a help modal: without script it could not open anything, and
+          a button that does nothing is worse than no button. That also means no
+          page has to remember to render it.{% endcomment %}
+          <button type="button" class="topbar-help" data-help-open hidden
+                  aria-label="{% translate 'Help for this page' %}"
+                  title="{% translate 'Help for this page' %}">?</button>
+          {% include "_clock.html" %}
           {% include "_lang_switcher.html" %}
         </div>
       </header>
-      <main class="content" id="main-content">
+      {% comment %}Most pages are prose or a form and are held to one
+      reading measure. A page whose content is a wide grid — the timesheet
+      is ten columns — says so and gets the room instead of scrolling inside
+      it at every window size.{% endcomment %}
+      <main class="content{% block content_class %}{% endblock %}" id="main-content">
+        {% comment %}What can be done to this page — Save, Add, Delete. The
+        heading and the subtitle are not here: they are in the topbar, which is
+        on screen when this row has scrolled away.
+
+        Rendered with nothing around it and nothing inside it but the block, so
+        that `:empty` in the stylesheet can take the whole row away on the pages
+        that have no buttons. A newline in here would defeat that — `:empty`
+        counts whitespace as content — which is why the block sits hard against
+        both tags.{% endcomment %}
+        <div class="page-head">{% block page_actions %}{% endblock %}</div>
         {% comment %}role="status" (an aria-live="polite" region), so a message
         is announced rather than silently added to the page — it is the app's
         answer to something somebody just did. shell.js gives each one a dismiss
@@ -215,7 +280,8 @@
     </div>
   </div>
 
-  {% comment %}Page help: the topbar "?" (block topbar_actions) opens this. A
+  {% comment %}Page help: the "?" in the page head (block page_actions) opens
+  this. A
   page supplies the *whole* overlay, not just its contents — see
   templates/roster/plan.html for the shape.{% endcomment %}
   {% block help_modal %}{% endblock %}

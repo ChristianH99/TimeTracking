@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load i18n hours %}
 {% block title %}{% translate "Employees" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Employees" %}{% endblock %}
+{% block page_title %}{% translate "Employees" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <a class="button button--small" href="{% url 'employees:add' %}">{% translate "Add someone" %}</a>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Employees" %}</h1>
   <p class="page-lead">
     {% blocktranslate with days=settings.full_time_days_per_week leave=settings.full_time_leave_days %}A full week here is {{ days }} days and carries {{ leave }} days of leave. Everybody’s entitlement is that share of it, worked out from the days their contract gives hours to.{% endblocktranslate %}
   </p>
@@ -67,8 +66,8 @@
           Balance does not say which way.{% endcomment %}
           <td class="numeric">
             <span class="{% if row.running.total < 0 %}is-short{% elif row.running.total > 0 %}is-over{% endif %}"
-                  {% if row.running.opening %}title="{% blocktranslate with opening=row.running.opening|hours_signed:hours_style %}Includes {{ opening }} brought from a previous contract.{% endblocktranslate %}"{% endif %}>
-              {{ row.running.total|hours_signed:hours_style }}
+                  {% if row.running.opening %}title="{% blocktranslate with opening=row.running.opening|hhmm_signed %}Includes {{ opening }} brought from a previous contract.{% endblocktranslate %}"{% endif %}>
+              {{ row.running.total|hhmm_signed }}
             </span>
           </td>
           <td>

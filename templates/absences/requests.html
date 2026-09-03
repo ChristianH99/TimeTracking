@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Requests" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Requests" %}{% endblock %}
+{% block page_title %}{% translate "Time off waiting for a decision" %}{% endblock %}
 
 {% block content %}
-  <h1>{% translate "Time off waiting for a decision" %}</h1>
 
   {% if rows %}
     <div class="request-list">
@@ -22,6 +21,15 @@
             {% endcomment %}
             {% if row.absence.is_half_day %}
               <span class="pill pill--muted">{% translate "half day" %}</span>
+            {% endif %}
+            {% comment %}**Which question this card is asking.** A cancellation
+            reaches the same buttons and they mean the opposite thing on it —
+            Approve removes the absence rather than granting it — so the card has
+            to say which it is before anybody reads the buttons. Marked here
+            rather than by two lists, because a manager works down one pile and a
+            second one below the fold is a pile nobody clears.{% endcomment %}
+            {% if row.absence.is_cancelling %}
+              <span class="pill pill--attention">{% translate "asked to cancel" %}</span>
             {% endif %}
           </header>
 
@@ -58,8 +66,17 @@
             <input type="text" id="note-{{ row.absence.pk }}" name="note" maxlength="200"
                    placeholder="{% translate 'A sentence back to them — required when declining' %}">
             <div class="request-buttons">
-              <button type="submit" name="approve" value="1" class="button">{% translate "Approve" %}</button>
-              <button type="submit" class="button button--secondary">{% translate "Decline" %}</button>
+              {% if row.absence.is_cancelling %}
+                {% comment %}Named for what they do, not for the field they post.
+                "Approve" over a cancellation is a button whose word says the
+                opposite of its effect, and this is the one press on the page
+                that cannot be taken back.{% endcomment %}
+                <button type="submit" name="approve" value="1" class="button">{% translate "Cancel it" %}</button>
+                <button type="submit" class="button button--secondary">{% translate "Keep it booked" %}</button>
+              {% else %}
+                <button type="submit" name="approve" value="1" class="button">{% translate "Approve" %}</button>
+                <button type="submit" class="button button--secondary">{% translate "Decline" %}</button>
+              {% endif %}
             </div>
           </form>
         </article>

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static i18n hours %}
+{% block title %}{% translate "Month end" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% translate "Closing a month" %}{% endblock %}
+{% block page_subtitle %}{{ month|date:"F Y" }}{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    {% include "_month_picker.html" %}
+  </div>
+
+  <p class="page-lead">
+    {% translate "Locking a month closes it: nothing in it can be changed afterwards — not the bookings, not a status, not a correction, not a comment. A single day can be unlocked again on that person's timesheet when something has to be put right." %}
+  </p>
+
+  {% if waiting_total %}
+    {% comment %}Said before the button rather than after the refusal. A month
+    locked over an undecided request would have its credited hours changed the
+    moment somebody approved it — after it had been signed off without them —
+    which is the one thing a lock is supposed to make impossible.{% endcomment %}
+    <p class="notice notice--info">
+      {% blocktranslate count counter=waiting_total %}{{ counter }} absence in this month is still waiting for a decision. A month cannot be locked over it — decide it first.{% plural %}{{ counter }} absences in this month are still waiting for a decision. A month cannot be locked over them — decide them first.{% endblocktranslate %}
+      <a href="{% url 'absences:requests' %}">{% translate "Open the requests" %}</a>
+    </p>
+  {% endif %}
+
+  {% comment %}The confirmation is on the *form*, which is what shell.js reads —
+  and it asks whichever button was pressed, which is right: unlocking a month is
+  worth a moment's pause too.{% endcomment %}
+  <form method="post" action="{% url 'timesheets:lock-month' %}" data-lock-form
+        data-confirm-title="{% translate 'Lock or unlock the month?' %}"
+        data-confirm="{% translate 'Locking closes that month for everybody you have ticked: nothing in it can be changed afterwards. A single day can be unlocked again on their own timesheet.' %}"
+        data-confirm-accept="{% translate 'Go ahead' %}">
+    {% csrf_token %}
+    <input type="hidden" name="month" value="{{ month|date:'Y-m' }}">
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col" class="tick-column">
+            {% comment %}Ticks the lot. A page whose whole point is "everybody,
+            this month" and which makes somebody tick eleven boxes to say so is
+            a page that has missed it.{% endcomment %}
+            <label class="sr-only" for="tick-all">{% translate "Everybody" %}</label>
+            <input type="checkbox" id="tick-all" data-tick-all>
+          </th>
+          <th scope="col">{% translate "Employee" %}</th>
+          <th scope="col" class="numeric">{% translate "Actual" %}</th>
+          <th scope="col" class="numeric">{% translate "Supposed" %}</th>
+          <th scope="col" class="numeric">{% translate "Saldo" %}</th>
+          <th scope="col">{% translate "Still open" %}</th>
+          <th scope="col">{% translate "Locked" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in people %}
+          <tr>
+            <td class="tick-column">
+              <label class="sr-only" for="tick-{{ row.employee.pk }}">{{ row.employee.full_name }}</label>
+              <input type="checkbox" id="tick-{{ row.employee.pk }}" name="employee"
+                     value="{{ row.employee.pk }}" data-tick>
+            </td>
+            <th scope="row">
+              <a href="{% url 'timesheets:employee' row.employee.pk %}?month={{ month|date:'Y-m' }}">{{ row.employee.full_name }}</a>
+            </th>
+            <td class="numeric">{{ row.counted|hhmm }}</td>
+            <td class="numeric">{{ row.contracted|hhmm }}</td>
+            <td class="numeric">
+              <span class="saldo{% if row.difference < 0 %} saldo--short{% elif row.difference > 0 %} saldo--over{% endif %}">
+                {{ row.difference|hhmm_signed }}
+              </span>
+            </td>
+            <td>
+              {% comment %}The two things that mean a month is not ready. A day
+              somebody was rostered for and has not answered is a hole in the
+              record; a request nobody has decided is a figure that can still
+              move.{% endcomment %}
+              {% if row.awaiting %}
+                <span class="pill pill--pending pill--small">
+                  {% blocktranslate count counter=row.awaiting %}{{ counter }} day unanswered{% plural %}{{ counter }} days unanswered{% endblocktranslate %}
+                </span>
+              {% endif %}
+              {% if row.waiting %}
+                <span class="pill pill--attention pill--small">
+                  {% blocktranslate count counter=row.waiting %}{{ counter }} waiting for a decision{% plural %}{{ counter }} waiting for a decision{% endblocktranslate %}
+                </span>
+              {% endif %}
+              {% if not row.awaiting and not row.waiting %}<span class="hint">—</span>{% endif %}
+            </td>
+            <td>
+              {% if row.is_locked %}
+                <span class="pill pill--ok pill--small">{% translate "locked" %}</span>
+              {% elif row.is_partly_locked %}
+                {% comment %}A real third state: a manager unlocks one day to
+                correct it, and until they lock it again the month is neither
+                open nor shut. Saying "locked" here would be a lie about the
+                other thirty days.{% endcomment %}
+                <span class="pill pill--pending pill--small">
+                  {% blocktranslate with locked=row.locked_days total=row.total_days %}{{ locked }} of {{ total }} days{% endblocktranslate %}
+                </span>
+              {% else %}
+                <span class="hint">{% translate "open" %}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty">{% translate "Nobody is employed at the moment." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Lock the month" %}</button>
+      {% comment %}Unlocking is the escape hatch and carries no conditions — a
+      condition on an escape hatch is how somebody ends up with a month they
+      cannot correct. It is the quieter button all the same.{% endcomment %}
+      <button type="submit" name="unlock" value="1" class="button button--secondary">
+        {% translate "Unlock the month" %}
+      </button>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/monthpicker.js' %}"></script>
+  <script src="{% static 'js/month_end.js' %}"></script>
+{% endblock %}

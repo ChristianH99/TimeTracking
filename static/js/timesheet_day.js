@@ -135,9 +135,40 @@
     return clashing.size > 0;
   }
 
+  /* How the day was split up: each unbroken stretch, and the time between them.
+   *
+   * The break rules need the shape and not the totals — a day of 08:30–15:00
+   * and then 16:00–17:00 has an hour off in it and still contains six and a
+   * half hours worked straight through. The same walk DayRecord.shape makes, in
+   * row order, which is the order the stretches happened. */
+  function shape() {
+    const blocks = [];
+    const gaps = [];
+    let lastEnd = null;
+    form.querySelectorAll("[data-row]").forEach((row) => {
+      const deleted = row.querySelector("input[name$='-DELETE']");
+      if (deleted && deleted.checked) return;
+      const start = row.querySelector("input[name$='-start']");
+      const end = row.querySelector("input[name$='-end']");
+      if (!start || !end || !end.value.trim()) return;
+      const from = hours.parse(start.value, true);
+      const to = hours.parse(end.value, true);
+      if (from === null || to === null) return;
+      if (lastEnd !== null) {
+        let gap = from - lastEnd;
+        if (gap < 0) gap += 24 * 60;
+        gaps.push(gap);
+      }
+      blocks.push(to <= from ? to + 24 * 60 - from : to - from);
+      lastEnd = to;
+    });
+    return { blocks: blocks, gaps: gaps };
+  }
+
   function refresh() {
     const gross = grossMinutes();
-    const required = hours.requiredBreak(gross, rules);
+    const day = shape();
+    const required = hours.requiredBreak(day.blocks, day.gaps, rules);
     overlapping();
 
     // The box follows the rules only while the checkbox says it should. Writing

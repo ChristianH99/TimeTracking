@@ -55,18 +55,7 @@ YEAR_END = {
     "half day": "halber Tag",
 
     # -- sickness as a report, not a request -------------------------------
-    "Your manager has already seen that. Ask them to correct the dates.":
-        "Ihre Leitung hat das bereits gesehen. Bitten Sie sie, die Daten zu korrigieren.",
-    "Recorded, and your manager has been shown it. It counts from now — it does not come out of your leave, the hours are credited, and the days you were not due to work are not counted.":
-        "Erfasst, und Ihrer Leitung angezeigt. Es zählt ab sofort — es geht nicht von Ihrem Urlaub ab, die Stunden werden gutgeschrieben, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt.",
-    "%(who)s’s sickness was acknowledged.":
-        "Die Krankmeldung von %(who)s wurde zur Kenntnis genommen.",
-    "%(who)s’s sickness was recorded as not accepted, and they were told why. Those days no longer count as time worked.":
-        "Die Krankmeldung von %(who)s wurde als nicht anerkannt erfasst, mit Begründung. Diese Tage zählen nicht mehr als Arbeitszeit.",
-    "not yet seen": "noch nicht gesehen",
-    "not accepted": "nicht anerkannt",
-    "You are telling the app, not asking it. It counts from the moment you record it: the hours for those days are credited, it does not come out of your leave, and days you were not due to work are not counted. Your manager is shown it so they know, and confirms that they have seen it — that is a receipt, not a permission.":
-        "Sie teilen es der App mit, Sie fragen nicht. Es zählt ab dem Moment der Erfassung: die Stunden dieser Tage werden gutgeschrieben, es geht nicht von Ihrem Urlaub ab, und Tage, an denen Sie nicht eingeteilt waren, werden nicht gezählt. Ihre Leitung sieht es und bestätigt, dass sie es zur Kenntnis genommen hat — das ist eine Empfangsbestätigung, keine Genehmigung.",
+
 
     # -- the year-end messages ---------------------------------------------
     "%(count)s people are carrying days into %(next_year)s.":
@@ -189,21 +178,19 @@ YEAR_END = {
     "Started at %(time)s.": "Um %(time)s begonnen.",
     "Stopped at %(time)s. %(hours)s recorded for %(date)s so far.":
         "Um %(time)s beendet. Für den %(date)s sind bisher %(hours)s erfasst.",
-    "at work": "im Dienst",
+
     "since %(time)s": "seit %(time)s",
-    "It is %(time)s now.": "Es ist jetzt %(time)s.",
+
     "Stop": "Beenden",
     "still running": "läuft noch",
-    "running": "läuft",
+
     "Leave the end empty to record a start and stop later — the day then counts as still running and cannot be confirmed until it has an end. A stretch that ends at or before it starts runs past midnight, so 23:00 to 03:00 is four hours.":
         "Lassen Sie das Ende leer, um einen Beginn zu erfassen und später zu beenden — der Tag gilt dann als laufend und kann erst bestätigt werden, wenn er ein Ende hat. Ein Abschnitt, der zur Startzeit oder davor endet, läuft über Mitternacht: 23:00 bis 03:00 sind also vier Stunden.",
 
     # -- credited hours on the timesheet -----------------------------------
-    "Credited": "Gutgeschrieben",
+
     "Credited, not worked — an absence the hours are paid for.":
         "Gutgeschrieben, nicht geleistet — eine Abwesenheit, für die die Stunden bezahlt werden.",
-    "A holiday, a day of leave or a sick day is credited at the contracted hours, so the week comes out level and the reason is named on the row. Time off in lieu is the exception and is credited nothing — that shortfall is the overtime being taken back.":
-        "Ein Feiertag, ein Urlaubstag oder ein Krankheitstag wird mit den Sollstunden gutgeschrieben; die Woche geht damit auf und der Grund steht in der Zeile. Der Überstundenausgleich ist die Ausnahme und wird nicht gutgeschrieben — dieses Minus ist gerade der Abbau der Überstunden.",
 
     # -- the year-end page -------------------------------------------------
     "Year end": "Jahresabschluss",
@@ -289,11 +276,10 @@ YEAR_END = {
     "Balance now": "Saldo aktuell",
     "Of which brought with them": "davon mitgebracht",
     "Balance": "Saldo",
-    "Balance to date": "Saldo bis heute",
+
     "Includes %(opening)s brought from a previous contract.":
         "Enthält %(opening)s aus einem früheren Vertrag.",
-    "Includes %(opening)s brought from a previous contract, as at %(date)s.":
-        "Enthält %(opening)s aus einem früheren Vertrag, Stand %(date)s.",
+
     "German case law says statutory leave only lapses if the employee was told, before the year ended, how many days were left and that they would expire. Until a date is recorded on the Year end page, these days go on being owed.":
         "Nach der deutschen Rechtsprechung verfällt gesetzlicher Urlaub nur, wenn die Person vor Jahresende erfahren hat, wie viele Tage offen sind und dass sie verfallen. Solange auf der Seite „Jahresabschluss“ kein Datum erfasst ist, bleiben diese Tage geschuldet.",
 }
@@ -302,5 +288,8 @@ YEAR_END = {
 # started and not yet stopped — which is the one the browser writes for itself
 # while somebody is typing.
 JAVASCRIPT_YEAR = {
+    # What the day form writes beside a stretch that has been started and not
+    # stopped. A duration, not a time, and deliberately not a number.
     "running": "läuft",
+
 }

@@ -1,5 +1,13 @@
-"""Time off. The first five are anybody's own; the last two are manager-only,
-enforced per view."""
+"""Time off. The first three are anybody's own; the rest are manager-only,
+enforced per view.
+
+``book`` is one route for a day off, hours taken back and an illness alike —
+the calendar's pop-up offers all three from one set of radio buttons, and a
+dialog that had to post to a different URL depending on which one was ticked is
+a dialog with two ways to be wrong. It replaced ``request`` and ``sick``, which
+differed only in the form they built; the *forms* are still two, and
+``views.book`` says why that is where the difference belongs.
+"""
 
 from django.urls import path
 
@@ -9,10 +17,8 @@ app_name = "absences"
 
 urlpatterns = [
     path("", views.mine, name="mine"),
-    path("request/", views.request_absence, name="request"),
+    path("book/", views.book, name="book"),
     path("request/<int:pk>/withdraw/", views.request_cancel, name="request-cancel"),
-    path("sick/", views.report_sick, name="sick"),
-    path("sick/<int:pk>/end/", views.end_sickness, name="sick-end"),
 
     path("requests/", views.requests, name="requests"),
     path("requests/<int:pk>/decide/", views.decide, name="decide"),

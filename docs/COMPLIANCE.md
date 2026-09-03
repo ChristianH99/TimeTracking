@@ -22,12 +22,16 @@ or 24 weeks stays at eight.
 
 | | |
 |---|---|
-| **Does** | Nothing. A day of any length can be entered and saved. |
-| **Does not** | Warn at 8 h, refuse at 10 h, or compute the 24-week rolling average. |
+| **Does** | Flag a day over eight hours as a *caution* and a day over ten as a *breach*, on the day's Actual cell and in a count under the month. `apps/timesheets/limits.py`. The two are different sentences and not two shades of one: over eight is lawful precisely when a shorter day pays it back, and over ten never is, so collapsing them would either cry wolf on every busy Tuesday or say nothing about the day that actually breaks the ceiling. |
+| **Does** | Count the correction into the day's length, because §3 is about working time and a correction is working time somebody did not clock. |
+| **Does not** | *Refuse* a day of any length, and that is deliberate rather than unfinished. §16 requires a record of the time **actually worked**; refusing to save an eleven-hour day does not prevent the eleventh hour — somebody worked it either way — it destroys the only evidence that it happened and leaves the employer with a tidy timesheet and no answer. `test_limits.py` pins the direction with a class of its own. |
+| **Does not** | Compute the 24-week rolling average. |
 
 The rolling average is the harder half and the one that actually bites: an
 employer who runs ten-hour days through a busy quarter has to be able to show
-the compensating weeks. **This is the single largest compliance gap in the app.**
+the compensating weeks. **It is now the largest remaining gap in this section**,
+and the per-day flag makes it larger rather than smaller — the page can say a day
+was over eight hours and cannot yet say whether it was allowed to be.
 
 ### §4 — breaks
 
@@ -38,10 +42,12 @@ consecutively without a break.**
 
 | | |
 |---|---|
-| **Does** | Computes the required break per day and applies it. The resolution is deliberately the constraint form — `required = max over rules of min(break, max(0, gross − over))` — so a 6 h 05 day gets 5 minutes rather than a full 30, and an 8 h 05 day does not jump to the higher tier. `OrgSettings.required_break` explains it; `apps/organisation/tests.py` pins it against the naive reading. An empty rule table falls back to the statutory defaults rather than to nothing, because a break not deducted overstates hours worked. |
-| **Does not** | Enforce the **six-hours-consecutive** rule. The break is a number attached to a *day*, not a position in it, so a ten-hour day recorded as one unbroken stretch minus 45 minutes is accepted — and that is a §4 breach the app cannot see. |
+| **Does** | Computes the break each day still owes and deducts it, from the *shape* of the day — each unbroken stretch and the gaps between them. `D = max(Σ per-stretch requirement, whole-day requirement)`, both in the constraint form, so a 6 h 05 day gets 5 minutes rather than a full 30 and a 9 h 05 day does not jump to the higher tier. `OrgSettings.required_break` explains it; `apps/organisation/tests.py` pins it from three sides — the working time left is never over an ungranted tier, no stretch is worked through without the break its own length owes, and one minute less would always have broken one of those. An empty rule table falls back to the statutory defaults rather than to nothing, because a break not deducted overstates hours worked. |
+| **Does** | Count a break the employee **actually took** — the gap between clocking out and clocking back in — against what the tier requires. 09:30–15:30 and 16:00–18:00 is eight hours at work with thirty minutes off, which is what §4 asks; nothing further comes off. Deducting the statutory figure on top of a break already taken charged the employee twice for it. |
+| **Does** | Apply §4 sentence 3 — *no more than six hours in a row without a break* — to the deduction. Each unbroken stretch owes the break its own length asks for, so 08:30–15:00 followed by 16:00–17:00 still has thirty minutes taken off: the hour off afterwards cannot pay for a break that was never taken during the six and a half. A gap under 15 minutes is not a Ruhepause (§4 s.2), counts towards nothing, and does not split the stretch either. |
+| **Does not** | *Refuse* a stretch over six hours, or place the break at a particular time. It deducts what should have been taken; it does not stop the record being entered, and the working time left can still exceed six hours on a long enough stretch — which is a §4 breach the app deducts for but does not report. |
 | **Does not** | Model breaks as *fixed in advance*. The roster carries shift start and end, not planned break windows. |
-| **Note** | The shipped second tier is **8 hours → 45 minutes**, which is stricter than the statutory 9. That is a house rule and legal (stricter always is). An administrator editing the table must not go looser than 6 h → 30 and 9 h → 45. Nothing in the app stops them. |
+| **Note** | The shipped tiers are **the statute exactly**: 6 h → 30 min and 9 h → 45 min. The second was 8 hours for a while, on the argument that a default may only err towards the employee; it was changed back because a figure that does not match the law somebody has looked up has to be explained, and a house wanting 45 minutes at eight hours can say so in one edit. An administrator editing the table must not go looser than 6 h → 30 and 9 h → 45. Nothing in the app stops them. |
 
 ### §5 — rest between shifts
 
@@ -50,11 +56,12 @@ hospitals, gastronomy, agriculture) if compensated within four weeks.
 
 | | |
 |---|---|
-| **Does** | Nothing. |
-| **Does not** | Check the gap between one day's end and the next day's start, in the roster or in the timesheet. A closing shift ending 22:00 followed by an opening shift at 06:00 is eight hours' rest and is accepted silently. |
-
-Worth noting that the app already has the arithmetic: `minutes_between` and the
-segment model know when a day ends. The check is small; it is simply absent.
+| **Does** | Measure the gap between the *last* clock-out of one day and the *first* clock-in of the next, and flag it as a breach under eleven hours. A closing shift ending 22:00 followed by an opening shift at 06:00 is now marked as eight hours' rest instead of being accepted silently. |
+| **Does** | Measure it between two **instants**, so the night the clocks go back gives eleven real hours where the wall clock says ten — a false breach the naive subtraction would have reported every October, and a real one it would have missed every March. Both nights are named in `test_limits.py`. |
+| **Does** | Read a night shift's true end. 22:00–06:00 is filed under the first date and finishes on the second; a two-stretch night (22:00–02:00, 03:00–06:00) carries the date forward across both, which a per-segment "end before start" test gets wrong by twenty hours. |
+| **Does not** | Model §5(2)'s reduction to ten hours in care settings — which a *Kindergarten* may well be inside. Flagging anyway is the right answer rather than a bug: the reduction is conditional on compensation within four weeks, so an employer inside the exception still has to know **which** nights were short in order to show it. The message names §5 so the flag reads as the record it is. |
+| **Does not** | Check the roster. This is a rule about what happened, and the roster is a plan; a shift dragged into an eight-hour turnaround is not flagged until somebody works it. |
+| **Does not** | Look further back than the immediately preceding calendar day. A day with no record is a day nobody has answered for, and inventing a rest for it would be the app agreeing with a record that does not exist. |
 
 ### §6 — night work
 
@@ -131,6 +138,22 @@ and it is worth being precise because the position is unusual.
 | **Does not** | Make records tamper-evident. A manager can edit a confirmed day and the only trace is that the confirmation is withdrawn — there is no audit trail of *what it was before*. For a document that is evidence in a wage dispute, that is thin. **See §11 below; this is the second-largest gap.** |
 
 ---
+
+### Recording in advance
+
+| | |
+|---|---|
+| **Does not** | Accept hours on a day that has not happened. §16 ArbZG asks for a record of the time actually worked, and a booking dated tomorrow is not one — so bookings, corrections and the day's comment are refused after today, at `save_day`, the day form and `confirm_day` alike. |
+| **Does** | Accept a *status* for any future date. Booking leave or recording a training day in advance is the ordinary use of a roster, and it is a statement about a plan rather than about hours worked. |
+
+### Closing a month
+
+| | |
+|---|---|
+| **Does** | Let a manager lock a month, per person, after which no booking, status, correction or comment in it can be changed. `DayLock` is one row per closed date; `assert_unlocked` gates every write path and `DayRecord.save`/`delete` gate it again. Who locked it and when is on every row. |
+| **Does** | Refuse to lock a month with an absence still waiting for a decision in it, because approving one afterwards would change hours the month had been signed off on. |
+| **Does not** | Prevent a manager unlocking a day and changing it. That is the point of the unlock, and the row records who locked it and when — but there is no log of *what changed* while it was open. §16 ArbZG asks for the record to be kept two years; it does not ask for an edit history, and this app does not keep one. |
+| **Does not** | Stop `close_year` materialising a company closure into a locked month. It is the employer's own act on its own page, and the year it runs over is normally long shut. |
 
 ## 3. MiLoG §17 — the stricter recording duty
 
@@ -253,7 +276,7 @@ the health insurer and the employee no longer hands over paper.
 
 | | |
 |---|---|
-| **Does** | Records sick days, self-reported, approved on arrival, costing no leave. Counts them per year. |
+| **Does** | Records sick days: reported by the employee, decided by a manager, costing no leave. Counts them per year. |
 | **Does not** | Track the six-week entitlement, distinguish one illness from another, or know about certificates at all. |
 
 **Not tracking certificates is deliberate and should stay that way.** A
@@ -352,7 +375,8 @@ out level rather than showing a shortfall.
 | | |
 |---|---|
 | **Does** | Credit at the contracted hours for the day, halved for a half day (`Absence.credited_minutes`). The credited figure is kept in its own column beside the worked one, so a timesheet can still say "you were ill" and "you worked eight hours" as different sentences. |
-| **Does** | Credit a reported sick day **immediately**, before any manager has acknowledged it. Illness is a fact, not a permission; waiting for a button would show a fortnight's flu as eighty hours of shortfall for as long as the manager was away. Only a positive refusal, with a written reason, withholds the credit. |
+| **Does** | Credit a sick day once it is approved, exactly as it credits a day of leave. |
+| **Does not** | Credit it before then. **This reverses an earlier decision** that credited a reported sick day immediately, on the argument that illness is a fact rather than a permission. That made sickness the one absence type behaving unlike every other, and the price was paid on the timesheet, which had to say two different things about what a waiting day was worth. The cost of the reversal is real and is stated here rather than hidden: between reporting an illness and a manager answering, the month shows a shortfall — and that figure is **not** a debt the employee owes under §3 EFZG. The mitigation is that the request is on the manager's list the moment it is made. |
 | **Does not** | Credit time off in lieu, deliberately — that shortfall *is* the overtime being taken back. |
 | **Does not** | Use the §11 BUrlG *Lohnausfallprinzip* reference period (the last thirteen weeks' average earnings). It credits the **contracted** hours, which is the right figure for an hours report and not necessarily the right one for a payslip. This app reports hours; it does not run payroll. |
 
@@ -365,12 +389,12 @@ A time tracking system is employee monitoring and is squarely inside this.
 | Article | Requirement | App |
 |---|---|---|
 | **Art. 5(1)(c)** | Data minimisation | Good. No uploads, no e-mail addresses (removed), no reason field on sickness, no location, no device data. |
-| **Art. 5(1)(e)** | Storage limitation | **Absent.** Nothing is ever deleted or anonymised. Working time records may be kept 2 years (ArbZG/MiLoG); payroll-relevant records fall under §28f SGB IV and §147 AO, which push to 6 years and beyond. Somebody has to decide the number and the app has to enforce it. |
+| **Art. 5(1)(e)** | Storage limitation | **Absent, and now the largest gap in the code.** Nothing is ever deleted or anonymised, and the audit trail has added a table that grows forever and refuses deletion at the model on purpose. Working time records may be kept 2 years (ArbZG/MiLoG); payroll-relevant records fall under §28f SGB IV and §147 AO, which push to 6 years and beyond. Somebody has to decide the number and the app has to enforce it. |
 | **Art. 6(1)(c) / §26 BDSG** | Lawful basis | Legal obligation (ArbZG, MiLoG) plus performance of the employment contract. Note that ECJ C-34/21 cast doubt on §26 BDSG(1) as a standalone basis; the ArbZG duty is the safer footing. |
 | **Art. 9** | Health data | Sickness *dates* are attendance data and are fine. **Diagnoses, certificates and disability status are not**, and the app must stay out of them — see EFZG and SGB IX above. |
-| **Art. 15** | Right of access | Partly. An employee can see their own timesheet and balance in the app; there is no export. |
+| **Art. 15** | Right of access | Yes. An employee sees their own timesheet and balance, can take a copy as a spreadsheet or a printable sheet without asking anybody, and can read every change ever made to their own records — including who made it. |
 | **Art. 30** | Record of processing activities | The employer's job, not the app's, but it needs writing. |
-| **Art. 32** | Security of processing | Sessions, CSP, encrypted OIDC secret, SSO, per-view authorisation. **No audit log.** |
+| **Art. 32** | Security of processing | Sessions, CSP, encrypted OIDC secret, SSO, per-view authorisation, and an append-only audit log (`apps/audit/`) covering both the records and the sign-ins. |
 | **Art. 35** | Data protection impact assessment | Systematic monitoring of employees is on most supervisory authorities' DPIA blacklist. **Assume one is required** before this goes live. |
 
 ---
@@ -444,11 +468,29 @@ a history of what was decided and not only as a to-do.
    all, so an employer with no record of the reminder finds that nothing lapses.
    What is still missing is *sending* the reminder — the app records that it went
    out and does not put it in anybody's inbox.
-6. **The 11-hour rest check** (§5 ArbZG). Small, and the arithmetic already
-   exists — more so now that `zones.elapsed_minutes` measures real elapsed time
-   between instants, which is exactly what a rest period is.
-7. **A daily-hours warning** at 8 h and a refusal at 10 h, plus the 24-week
-   average (§3 ArbZG).
+6. ~~**The 11-hour rest check** (§5 ArbZG).~~ **Done.**
+   `apps/timesheets/limits.py`, measured between instants, so the two nights a
+   year the clocks move do not produce a false breach in one direction and hide
+   a real one in the other.
+7. ~~**A daily-hours warning at 8 h and a refusal at 10 h**~~ — **half done, and
+   the other half was the wrong idea.** The warning is in; the *refusal* is not,
+   and will not be: §16 requires a record of the time actually worked, so
+   refusing an eleven-hour day removes the evidence rather than the hour. What is
+   still missing is the **24-week average** of §3 s.2, which is the half that
+   decides whether the over-eight days were lawful at all. It needs a window that
+   crosses months and contract changes, so it belongs beside `balance.py` rather
+   than beside a row.
+8. **A working-time export.** `docs/AUDIT.md` argues this at length and it is the
+   one feature that discharges five separate duties at once — GoBD Datenzugriff
+   Z3, §9 BVV machine-evaluability for the DRV, an FKS inspector at a desk, DSGVO
+   Art. 15(3), and the employee's right to a copy in the June 2026 ArbZG draft.
+   It reverses the "no in-app export" standing decision, deliberately.
+9. **When an entry was made**, as distinct from when the row was last touched.
+   The GoBD's *Zeitgerechtheit*, MiLoG §17's seven days and the draft ArbZG's
+   *am Tag der Arbeitsleistung* are one field and one report.
+
+`docs/AUDIT.md` is the companion list: who inspects this, under what standard,
+and what they will ask for on the day.
 8. **A guard on under-18s** (JArbSchG) — at minimum, a date of birth and a
    refusal, since every figure is currently wrong for them.
 9. **Sickness during leave** (§9 BUrlG) — give the days back instead of refusing

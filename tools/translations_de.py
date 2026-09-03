@@ -41,8 +41,6 @@ SINGULAR = {
     "Say which special leave this is.": "Bitte angeben, um welchen Sonderurlaub es sich handelt.",
     "You already have time off recorded that overlaps these dates.":
         "Für diesen Zeitraum ist bei Ihnen bereits eine Abwesenheit eingetragen.",
-    "Leave empty if you do not know yet — you can say when it ended later.":
-        "Leer lassen, wenn es noch nicht absehbar ist — das Ende können Sie später nachtragen.",
     "reply": "Antwort",
     "Say why. Somebody whose time off is declined without a reason has to come and ask for one.":
         "Bitte begründen. Wer eine Absage ohne Grund bekommt, muss nachfragen kommen.",
@@ -52,6 +50,11 @@ SINGULAR = {
     "Workplace closed": "Betrieb geschlossen",
     "Waiting for approval": "Wartet auf Genehmigung",
     "Approved": "Genehmigt",
+    # The fifth status: an approved absence somebody has asked to have taken off
+    # again. „Rücknahme“ rather than „Stornierung“ — the second is what a travel
+    # agent does to a booking, and this is somebody asking for a decision to be
+    # undone.
+    "Cancellation requested": "Rücknahme beantragt",
     "Declined": "Abgelehnt",
     "Withdrawn": "Zurückgezogen",
     "date": "Datum",
@@ -80,18 +83,40 @@ SINGULAR = {
     "Your request was sent for approval. It shows as waiting until your manager decides, and the days are not taken off your balance before then.":
         "Ihr Antrag wurde zur Genehmigung weitergeleitet. Er steht auf „wartet“, bis Ihre Leitung entscheidet; bis dahin werden die Tage nicht von Ihrem Guthaben abgezogen.",
     "That is not something you can withdraw.": "Das können Sie nicht zurückziehen.",
-    "That time off has already started. Ask your manager to change it.":
-        "Diese Abwesenheit hat bereits begonnen. Bitte wenden Sie sich an Ihre Leitung.",
     "The request was withdrawn.": "Der Antrag wurde zurückgezogen.",
-    "Those dates could not be read.": "Diese Daten konnten nicht gelesen werden.",
-    "That date could not be read.": "Dieses Datum konnte nicht gelesen werden.",
-    "That is before the illness started.": "Das liegt vor dem Beginn der Krankheit.",
-    "Thank you — the sickness is recorded as ended.": "Danke — die Krankheit ist als beendet eingetragen.",
+    "That could not be saved: %(why)s": "Das konnte nicht gespeichert werden: %(why)s",
     "That request has already been decided.": "Über diesen Antrag wurde bereits entschieden.",
+
+    # -- absences: what a square of the year calendar says for itself -----
+    #
+    # The two states a day can be in that make it *not* a control. Both are
+    # `title` text and nothing else — the square says it by being pale, and
+    # this is what somebody gets when they point at it and wonder why nothing
+    # happens.
+    "This day has been locked and nothing can be booked on it.":
+        "Dieser Tag ist gesperrt; darauf lässt sich nichts buchen.",
+    "You are not due to work on this day.": "An diesem Tag sind Sie nicht eingeteilt.",
     "That could not be saved.": "Das konnte nicht gespeichert werden.",
     "%(who)s’s time off was approved.": "Die Abwesenheit von %(who)s wurde genehmigt.",
     "%(who)s’s request was declined and they were told why.":
         "Der Antrag von %(who)s wurde abgelehnt, mit Begründung.",
+
+    # -- absences: asking for an approved one back ------------------------
+    #
+    # The line is approval, and it is the same line for every kind. Nothing a
+    # manager has not answered is theirs yet; something they have approved is a
+    # day the roster was built around, so taking it back is asked for and waits
+    # on the same list.
+    "Your manager has been asked to cancel it. It stays booked until they answer — the days are still spent and the hours still credited.":
+        "Ihre Leitung wurde um die Rücknahme gebeten. Bis zur Antwort bleibt der Eintrag bestehen — die Tage sind weiterhin verbraucht und die Stunden weiterhin angerechnet.",
+    "You have already asked for that to be cancelled.":
+        "Sie haben die Rücknahme bereits beantragt.",
+    "That has already been decided.": "Darüber wurde bereits entschieden.",
+    "%(who)s’s absence was cancelled.": "Die Abwesenheit von %(who)s wurde zurückgenommen.",
+    "%(who)s’s absence stays booked, and they were told why.":
+        "Die Abwesenheit von %(who)s bleibt bestehen, mit Begründung.",
+    "Recorded, and your manager has been shown it. It shows as waiting until they decide — it does not come out of your leave either way, and the days you were not due to work are not counted.":
+        "Eingetragen, und Ihrer Leitung angezeigt. Der Eintrag steht auf „wartet“, bis sie entscheidet — vom Urlaub geht er so oder so nicht ab, und Tage, an denen Sie ohnehin nicht eingeteilt waren, zählen nicht mit.",
 
     # -- accounts: forms -----------------------------------------------
     "Password": "Passwort",
@@ -157,12 +182,6 @@ SINGULAR = {
         "An ein bereits vorhandenes Konto angehängt, statt ein neues anzulegen.",
     "provider identity": "Anbieter-Identität",
     "provider identities": "Anbieter-Identitäten",
-    "decimal — 7,5 h": "dezimal — 7,5 h",
-    "clock — 7:30 h": "Uhrzeit — 7:30 h",
-    "hours": "Stunden",
-    "How durations are written on every page that shows one.":
-        "Wie Zeitdauern auf jeder Seite geschrieben werden, die eine anzeigt.",
-    "preferences": "Einstellungen",
 
     # -- accounts: sso views -------------------------------------------
     "Saved, but the endpoints could not be read from %(url)s: %(error)s. Fill them in by hand under “Enter the endpoints by hand”.":
@@ -211,7 +230,6 @@ SINGULAR = {
     "“%(name)s” was deleted.": "„%(name)s“ wurde gelöscht.",
     "“%(name)s” can sign in again.": "„%(name)s“ kann sich wieder anmelden.",
     "“%(name)s” can no longer sign in.": "„%(name)s“ kann sich nicht mehr anmelden.",
-    "Your settings were saved.": "Ihre Einstellungen wurden gespeichert.",
 
     # -- employees ------------------------------------------------------
     "They cannot leave before they started.": "Das Austrittsdatum liegt vor dem Eintritt.",
@@ -413,7 +431,6 @@ SINGULAR = {
     "Delete": "Löschen",
     "Remove": "Entfernen",
     "Back": "Zurück",
-    "Help": "Hilfe",
     "Show": "Anzeigen",
     "Copy": "Kopieren",
     "Name": "Name",
@@ -440,7 +457,6 @@ SINGULAR = {
     "never": "nie",
     "left": "ausgeschieden",
     "manager": "Leitung",
-    "waiting": "wartet",
     "confirmed": "bestätigt",
     "not confirmed": "nicht bestätigt",
     "differs": "abweichend",
@@ -456,12 +472,12 @@ SINGULAR = {
     "Previous": "Zurück",
     "This week": "Diese Woche",
     "Next": "Weiter",
-    "Total": "Summe",
+
     "Difference": "Differenz",
     "Worked": "Gearbeitet",
     "Rostered": "Eingeteilt",
     "Contracted": "Vertraglich",
-    "Confirm": "Bestätigen",
+
     "Approve": "Genehmigen",
     "Decline": "Ablehnen",
     "Withdraw": "Zurückziehen",
@@ -476,4 +492,66 @@ SINGULAR = {
     "Waiting": "Wartet",
     "Actions": "Aktionen",
     "Rights": "Rechte",
+
+    # -- the timesheet: bookings, corrections, and saving a month --------
+    #
+    # "Buchung" is what a German time terminal prints and what payroll calls
+    # it; "Kommen" and "Gehen" are the two words on the terminal's own buttons,
+    # which is why static/js/timesheet_month.js takes its keyboard shortcut from
+    # the first letter of each of these two rather than hard-coding C and G.
+    "Every booking has to say whether it is a coming or a going.":
+        "Bei jeder Buchung muss angegeben sein, ob sie ein Kommen oder ein Gehen ist.",
+    "There are two comings in a row — %(first)s and %(second)s — with no going between them. Add the going, or remove one of them.":
+        "Es stehen zwei Kommen hintereinander — %(first)s und %(second)s — ohne ein Gehen dazwischen. Bitte das Gehen ergänzen oder eine der beiden Buchungen entfernen.",
+    "The going at %(time)s has no coming before it. A day starts with a coming.":
+        "Vor dem Gehen um %(time)s steht kein Kommen. Ein Tag beginnt mit einem Kommen.",
+    "The coming and the going at %(time)s are the same moment, so that stretch has no length.":
+        "Kommen und Gehen um %(time)s sind derselbe Zeitpunkt, dieser Abschnitt hat also keine Länge.",
+    "Two of those stretches overlap. The overlapping time would be counted twice, so the day cannot be added up.":
+        "Zwei dieser Abschnitte überschneiden sich. Die überschneidende Zeit würde doppelt zählen, der Tag lässt sich so nicht summieren.",
+    "There is more than one day with a coming and no going — %(dates)s. Only one stretch can be left open at a time, or Stop has no way of knowing which one it ended.":
+        "Es gibt mehr als einen Tag mit einem Kommen ohne Gehen — %(dates)s. Es darf immer nur ein Abschnitt offen sein, sonst weiß „Ende“ nicht, welchen es beendet.",
+
+    "A correction cannot be longer than a day.": "Eine Korrektur kann nicht länger als ein Tag sein.",
+    "Correction": "Korrektur",
+    "correction": "Korrektur",
+    "why": "Grund",
+    "Minutes, or 0:30. A minus takes time off the day.":
+        "Minuten oder 0:30. Ein Minus zieht Zeit vom Tag ab.",
+    "Minutes added to — or taken off — this day by hand.":
+        "Minuten, die diesem Tag von Hand hinzugefügt — oder abgezogen — werden.",
+    "Required whenever there is a correction.": "Erforderlich, sobald eine Korrektur eingetragen ist.",
+    "Say why the day was corrected.": "Bitte angeben, warum der Tag korrigiert wurde.",
+    "Say why the day was corrected. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
+        "Bitte angeben, warum der Tag korrigiert wurde. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+    "There is a correction with nothing saying why. A correction nobody can account for is the one entry on a timesheet that cannot be defended.":
+        "Es gibt eine Korrektur ohne Begründung. Eine Korrektur, die niemand begründen kann, ist der eine Eintrag auf einem Stundenzettel, der sich nicht verteidigen lässt.",
+
+    # -- a status, set from the timesheet's own cell ----------------------
+    "That day is a workplace closure, which is the employer's to declare and not something one timesheet can take back.":
+        "Dieser Tag ist eine Betriebsschließung. Die erklärt der Betrieb, und ein einzelner Stundenzettel kann sie nicht zurücknehmen.",
+    "That absence runs from %(from)s to %(to)s. Change it where it was booked — taking one day out of a range from here would have to split it, and a split nobody asked for is worse than an extra click.":
+        "Diese Abwesenheit läuft vom %(from)s bis zum %(to)s. Bitte dort ändern, wo sie eingetragen wurde — einen einzelnen Tag von hier aus herauszunehmen würde sie teilen, und eine Teilung, die niemand wollte, ist schlimmer als ein Klick mehr.",
+    "%(date)s has no status any more.": "%(date)s hat keinen Status mehr.",
+    "%(date)s was recorded as %(status)s.": "%(date)s wurde als %(status)s eingetragen.",
+    "%(date)s could not be saved: %(why)s": "%(date)s konnte nicht gespeichert werden: %(why)s",
+
+    # -- locking a month ---------------------------------------------------
+    "locked day": "gesperrter Tag",
+    "locked days": "gesperrte Tage",
+    "%(date)s is locked and cannot be changed. Ask a manager to unlock that day — locking a month is how the hours in it are signed off.":
+        "%(date)s ist gesperrt und kann nicht geändert werden. Bitten Sie Ihre Leitung, den Tag zu entsperren — mit dem Sperren eines Monats werden die Stunden darin abgezeichnet.",
+    "%(dates)s is locked, so nothing can be booked across it. Ask a manager to unlock it.":
+        "%(dates)s ist gesperrt, dort kann nichts eingetragen werden. Bitten Sie Ihre Leitung, den Tag zu entsperren.",
+    "Nobody was ticked, so nothing was changed.":
+        "Es war niemand angehakt, es wurde also nichts geändert.",
+    "%(names)s still have time off waiting for a decision in that month. Decide it first — approving it afterwards would change hours the month had already been signed off on.":
+        "Bei %(names)s wartet in diesem Monat noch eine Abwesenheit auf eine Entscheidung. Bitte zuerst entscheiden — eine spätere Genehmigung würde Stunden ändern, für die der Monat bereits abgezeichnet wurde.",
+    "%(date)s was unlocked and can be changed again.":
+        "%(date)s wurde entsperrt und kann wieder geändert werden.",
+    "%(date)s was locked.": "%(date)s wurde gesperrt.",
+
+    # -- a day that has not happened --------------------------------------
+    "%(date)s has not happened yet, so there are no hours to record for it. A status — time off, sickness — can be set for a future day; hours cannot.":
+        "%(date)s war noch nicht, es gibt dafür also keine Stunden zu erfassen. Ein Status — Abwesenheit, Krankheit — kann für einen künftigen Tag gesetzt werden, Stunden nicht.",
 }

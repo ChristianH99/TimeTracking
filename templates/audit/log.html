@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% if subject %}{{ subject.full_name }}{% else %}{% translate "Audit trail" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% if is_own %}{% translate "My history" %}{% elif subject %}{{ subject.full_name }}{% else %}{% translate "Audit trail" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if subject %}{% translate "every change" %}{% endif %}{% endblock %}
+{% comment %}The table is wide — when, who, what, and a diff — and the diff is
+the column that must not be squeezed, because "08:00 → 09:00" folded onto three
+lines is the one thing on the page nobody can read at a glance.{% endcomment %}
+{% block content_class %} content--wide{% endblock %}
+
+{% block content %}
+  {% comment %}**What this page is for, said once at the top.** Every other page
+  in this app is used weekly and needs no explanation; this one is opened by
+  somebody who has just been asked a question — by an auditor, by an employee who
+  thinks a figure is wrong, or by a works council — and the first thing they need
+  is to know that the answer is here.{% endcomment %}
+  <p class="help">
+    {% if is_own %}
+      {% translate "Every change ever made to your records, and who made it. Nothing here can be edited or removed — not by a manager, not by whoever runs the software. If a figure on your timesheet is not what you entered, this page says who changed it and what it was before." %}
+    {% elif subject %}
+      {% translate "Every change ever made to this person’s records, and who made it. Nothing here can be edited or removed. Opening this page is itself recorded." %}
+    {% else %}
+      {% translate "Everything the app has recorded about itself: changes to the records, sign-ins and refusals, exports, and who looked at whose hours. Nothing here can be edited or removed — that is what it is for. §146 AO and the GoBD require a change to be traceable rather than forbidden, and this is where the trace is." %}
+    {% endif %}
+  </p>
+
+  <form method="get" class="list-toolbar audit-filters">
+    {% if is_whole_log %}
+      <div class="field">
+        <label for="filter-employee">{% translate "Person" %}</label>
+        <select name="employee" id="filter-employee">
+          <option value="">{% translate "Anybody" %}</option>
+          {% for person in people %}
+            <option value="{{ person.pk }}"{% if employee_filter == person.pk|stringformat:"s" %} selected{% endif %}>{{ person.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+
+    <div class="field">
+      <label for="filter-action">{% translate "What happened" %}</label>
+      <select name="action" id="filter-action">
+        <option value="">{% translate "Anything" %}</option>
+        {% for value, label in actions %}
+          <option value="{{ value }}"{% if action == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% comment %}`type="date"` is right here and wrong for a *time*: the trap the
+    app avoids everywhere else is the native time widget emptying itself on `830`
+    so the page cannot say what was typed. A date filter has no such notation to
+    guess at, and the browser's own picker is better than anything here.{% endcomment %}
+    <div class="field">
+      <label for="filter-from">{% translate "From" %}</label>
+      <input type="date" name="from" id="filter-from" value="{{ date_from|date:'Y-m-d' }}">
+    </div>
+    <div class="field">
+      <label for="filter-to">{% translate "To" %}</label>
+      <input type="date" name="to" id="filter-to" value="{{ date_to|date:'Y-m-d' }}">
+    </div>
+
+    <button type="submit" class="button button--secondary button--small">{% translate "Show" %}</button>
+  </form>
+
+  <div class="table-scroll">
+    <table class="data-table audit-table">
+      <colgroup>
+        <col class="col-audit-when"><col class="col-audit-who">
+        <col class="col-audit-what"><col class="col-audit-record">
+        <col class="col-audit-detail">
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">{% translate "When" %}</th>
+          <th scope="col">{% translate "Who" %}</th>
+          <th scope="col">{% translate "What happened" %}</th>
+          <th scope="col">{% translate "Record" %}</th>
+          <th scope="col">{% translate "Details" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in page %}
+          <tr class="audit-row audit-row--{{ entry.action }}">
+            <td class="audit-when">{{ entry.at|date:"d.m.Y H:i" }}</td>
+            {% comment %}The frozen name, not the account. They are allowed to
+            disagree and when they do this one is right: it is what was true at
+            the time, and the account may since have been deleted.{% endcomment %}
+            <td>{{ entry.actor_label }}</td>
+            <td><span class="audit-action">{{ entry.get_action_display }}</span></td>
+            <td class="audit-record">
+              {% if entry.employee_label and is_whole_log %}
+                <span class="audit-subject-person">{{ entry.employee_label }}</span>
+              {% endif %}
+              {% if entry.subject_date %}
+                <span class="audit-subject-date">{{ entry.subject_date|date:"d.m.Y" }}</span>
+              {% endif %}
+              {% if entry.subject %}
+                <span class="hint">{{ entry.subject }}</span>
+              {% endif %}
+            </td>
+            <td class="audit-detail">
+              {% if entry.note %}<p class="audit-note">{{ entry.note }}</p>{% endif %}
+              {% comment %}Old on the left, new on the right, with an arrow
+              between them. A diff that showed only the new value would be the
+              thing this whole app was missing — "what it says now" is what the
+              record itself says, and the point of the trail is the other
+              half.{% endcomment %}
+              {% if entry.change_list %}
+                <dl class="audit-changes">
+                  {% for field, old, new in entry.change_list %}
+                    <div class="audit-change">
+                      <dt>{{ field }}</dt>
+                      <dd>
+                        {% if old %}<span class="audit-old">{{ old }}</span>{% else %}<span class="audit-old hint">—</span>{% endif %}
+                        <span class="audit-arrow" aria-hidden="true">→</span>
+                        {% if new %}<span class="audit-new">{{ new }}</span>{% else %}<span class="audit-new hint">—</span>{% endif %}
+                      </dd>
+                    </div>
+                  {% endfor %}
+                </dl>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="hint">{% translate "Nothing has been recorded for that." %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page.has_other_pages %}
+    {% comment %}Links rather than a script, so the whole control works with
+    nothing loaded — the same choice the month picker makes. The querystring is
+    carried through so paging does not silently drop the filters, which is the
+    bug where page two shows somebody else's records.{% endcomment %}
+    <nav class="pager" aria-label="{% translate 'Pages' %}">
+      {% if page.has_previous %}
+        <a class="button button--secondary button--small" href="?{{ querystring }}page={{ page.previous_page_number }}">{% translate "Newer" %}</a>
+      {% endif %}
+      <span class="pager-state">
+        {% blocktranslate with current=page.number total=page.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktranslate %}
+      </span>
+      {% if page.has_next %}
+        <a class="button button--secondary button--small" href="?{{ querystring }}page={{ page.next_page_number }}">{% translate "Older" %}</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

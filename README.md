@@ -155,6 +155,7 @@ static/           css (one file), js (one per page), fonts, the icon
 templates/        base.html and one directory per app
 tools/            the German catalogues, as tables, and the script that writes them
 docs/             COMPLIANCE.md — the German statutes and what the app does about them
+                  AUDIT.md — who inspects a time-tracking system here, and what they ask it for
 deploy/           Dockerfile, compose files, entrypoint
 locale/de/        the compiled catalogue (.po and .mo are both committed)
 ```
@@ -229,12 +230,27 @@ somebody who joins or leaves mid-year, and the §7(3) BUrlG carry-over — inclu
 the *Hinweispflicht*, which is the part most systems get wrong. It records
 whether each person was told their days were about to lapse, and if there is no
 such record it treats the days as **not expiring**, because under German case law
-they do not. What it still does *not* cover is the eight-hour daily cap, the
-eleven-hour rest period, the six-month waiting period of §4 BUrlG, a retention
-policy, or an audit trail on an edited timesheet.
+they do not.
 
-None of that file is legal advice, and if there is a works council then §87
-BetrVG makes talking to them a precondition rather than a courtesy.
+It also flags the two working-time limits — a day over eight or ten hours (§3
+ArbZG) and a rest period under eleven (§5) — on the row and in a count under the
+month. **Flagged and never refused**, because §16 requires a record of the time
+actually worked and refusing an eleven-hour day removes the evidence rather than
+the hour. What it still does *not* cover is the 24-week average that decides
+whether the long days were lawful, the six-month waiting period of §4 BUrlG, a
+retention policy, an export, or an audit trail on an edited timesheet.
+
+`docs/AUDIT.md` is the companion and asks the other question: **who turns up.**
+The FKS with §17 MiLoG, the DRV every four years, the Finanzamt with the GoBD,
+the Arbeitsschutzbehörde, the data protection authority, the works council, a
+labour court — and, if a corporate customer asks for "the certificate", an
+IDW PS 880 *Softwarebescheinigung*. It says what each of them wants out of the
+software, and it holds the ordered list of what is still missing. The short
+version of that list: an audit trail, an export, and a retention policy, in that
+order, because those three are what more than one of them asks for.
+
+Neither file is legal advice, and if there is a works council then §87 BetrVG
+makes talking to them a precondition rather than a courtesy.
 
 ## Status
 
@@ -258,6 +274,8 @@ lists what works is not much use:
   before it goes in front of staff, especially the explanatory paragraphs on the
   leave and break pages — those are the strings that stop somebody opening a
   ticket about a number they think is wrong.
-- **No retention policy and no audit trail on an edited timesheet.** Both are
-  named in `docs/COMPLIANCE.md` as the two largest remaining gaps, and both want
-  a decision from whoever runs the business rather than a guess from the code.
+- **No audit trail on an edited timesheet, no export, and no retention policy.**
+  `docs/AUDIT.md` ranks them in that order and says which auditor each one is
+  for; the audit trail is the only item that appears in every column of that
+  file. All three want a decision from whoever runs the business rather than a
+  guess from the code.

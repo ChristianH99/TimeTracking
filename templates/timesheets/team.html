@@ -1,25 +1,30 @@
 {% extends "base.html" %}
 {% load i18n hours %}
 {% block title %}{% translate "Team timesheets" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Team timesheets" %}{% endblock %}
-{% block topbar_sub %}{{ monday|date:"d.m.Y" }} – {{ days|last|date:"d.m.Y" }}{% endblock %}
+{% block page_title %}{% translate "Team timesheets" %}{% endblock %}
+{% block page_subtitle %}{{ monday|date:"d.m.Y" }} – {{ days|last|date:"d.m.Y" }}{% endblock %}
 
 {% block content %}
   <div class="list-toolbar">
     <div class="week-nav">
-      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}">&larr; {% translate "Previous" %}</a>
+      {% comment %}Drawn chevrons rather than the &larr; and &rarr; entities
+      these used to carry: those are type, and they render in whatever the
+      surrounding family has for them — three weights and two lengths across
+      Inter, the system fallbacks and a phone. The same icon the month picker
+      uses, so the two navigations look like one thing.{% endcomment %}
+      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>{% translate "Previous" %}</a>
       <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
-      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %} &rarr;</a>
+      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></a>
     </div>
   </div>
 
   <div class="stat-row">
     <div class="stat">
-      <span class="stat-value">{{ worked_total|hours:hours_style }}</span>
+      <span class="stat-value">{{ worked_total|hhmm }}</span>
       <span class="stat-label">{% translate "Worked, everybody" %}</span>
     </div>
     <div class="stat">
-      <span class="stat-value">{{ contracted_total|hours:hours_style }}</span>
+      <span class="stat-value">{{ contracted_total|hhmm }}</span>
       <span class="stat-label">{% translate "Contracted, everybody" %}</span>
     </div>
     <div class="stat">
@@ -43,7 +48,7 @@
       {% for week in weeks %}
         <tr>
           <th scope="row">
-            <a href="{% url 'timesheets:employee' week.employee.pk %}?week={{ monday|date:'Y-m-d' }}">
+            <a href="{% url 'timesheets:employee' week.employee.pk %}?month={{ monday|date:'Y-m' }}">
               {{ week.employee.full_name }}
             </a>
           </th>
@@ -62,7 +67,7 @@
               {% if row.absence %}
                 <abbr title="{{ row.absence.get_kind_display }}">{{ row.absence.get_kind_display|slice:":1" }}</abbr>
               {% elif row.record %}
-                {{ row.worked_minutes|hours:hours_style }}
+                {{ row.worked_minutes|hhmm }}
               {% elif row.awaiting %}
                 <abbr title="{% translate 'Rostered, but nobody has said what was worked' %}">?</abbr>
               {% else %}
@@ -70,9 +75,9 @@
               {% endif %}
             </td>
           {% endfor %}
-          <td class="numeric">{{ week.worked_total|hours:hours_style }}</td>
+          <td class="numeric">{{ week.worked_total|hhmm }}</td>
           <td class="numeric{% if week.difference < 0 %} is-short{% elif week.difference > 0 %} is-over{% endif %}">
-            {{ week.difference|hours_signed:hours_style }}
+            {{ week.difference|hhmm_signed }}
           </td>
         </tr>
       {% empty %}

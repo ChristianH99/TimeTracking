@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static i18n hours %}
 {% block title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %}{% endblock %}
+{% block page_title %}{% if employee %}{{ employee.full_name }}{% else %}{% translate "New employee" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{% translate "Contract" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="employee-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Contract" %}</h1>
 
   <form method="post" id="employee-form" data-unsaved-guard data-employee-form>
     {% csrf_token %}
@@ -172,12 +172,12 @@
         <div>
           <dt>{% translate "Balance now" %}</dt>
           <dd class="{% if running.total < 0 %}is-short{% elif running.total > 0 %}is-over{% endif %}">
-            {{ running.total|hours_signed:hours_style }}
+            {{ running.total|hhmm_signed }}
           </dd>
         </div>
         <div>
           <dt>{% translate "Of which brought with them" %}</dt>
-          <dd>{{ preview.opening_minutes|hours_signed:hours_style }}</dd>
+          <dd>{{ preview.opening_minutes|hhmm_signed }}</dd>
         </div>
       </dl>
     {% endif %}

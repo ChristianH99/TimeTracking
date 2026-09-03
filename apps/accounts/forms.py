@@ -28,7 +28,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from apps.accounts.models import Preferences, SSOConfiguration, SignAlgorithm
+from apps.accounts.models import SSOConfiguration, SignAlgorithm
 
 
 def is_sso_account(user):
@@ -339,18 +339,3 @@ class SSOConfigurationForm(forms.ModelForm):
         if commit:
             configuration.save()
         return configuration
-
-
-class PreferencesForm(forms.ModelForm):
-    """One person's own settings.
-
-    A radio group rather than a select: there are two choices and the labels
-    are the answer — "7,5 h" and "7:30 h" show what you get. A dropdown would
-    hide one of the two behind a click on the page whose whole purpose is
-    comparing them.
-    """
-
-    class Meta:
-        model = Preferences
-        fields = ["hours_format"]
-        widgets = {"hours_format": forms.RadioSelect}
