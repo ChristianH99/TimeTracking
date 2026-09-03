@@ -53,12 +53,14 @@ spot.
 |---|---|
 | **Requires** | Start, end and **duration** of each day, recorded **within seven calendar days** of the day worked, kept **two years**, held **in Germany**, **in German**, produced on demand. §21 MiLoG: fines to €30,000. |
 | **Does** | Records exactly those three figures per day and keeps them indefinitely. German is the default language of the interface and of the data. The database is one SQLite file on the employer's own NAS, which is trivially "in Germany". |
-| **Does not** | Know which employees are minijobbers, enforce the seven-day deadline for them, flag a record entered late, or produce a printable or exportable record for an inspector standing at a desk. **An inspector asking for "the records for these four people for last year" has to be shown the screen, a month at a time.** |
+| **Does** | Produce the records for a named person, or for everybody, over any range, as a spreadsheet or as a printable sheet — `apps/timesheets/export.py`. An inspector asking for "these four people for last year" is answered with four files or one. |
+| **Does** | Record *when* each day's hours were first entered, and how many days after the fact. `DayRecord.hours_entered_at` and `days_to_record`, both in the export. |
+| **Does not** | Know which employees are minijobbers, so it cannot flag the seven-day deadline for the people it actually binds. The figure is recorded for everybody; the judgement is not made. |
 
 The seven-day deadline is the strictest number anywhere in this file and the
 easiest to fail, because failing it is invisible: the record looks identical
-whether it was written on the day or six weeks later. The app does not store
-*when* a day's hours were entered as distinct from when the row was last touched.
+whether it was written on the day or six weeks later. It is at least now
+*visible* — what is missing is knowing whose deadline it is.
 
 ### 1.2 DRV — the Betriebsprüfung under §28p SGB IV
 
@@ -71,7 +73,7 @@ because the hours and the money have to agree.
 |---|---|
 | **Requires** | The *Entgeltunterlagen* of §8 BVV, which since 2022 must be kept **electronically** and under §9 BVV must be **maschinell auswertbar** — machine-evaluable, not a stack of screenshots. Kept until the end of the calendar year following the last audit. |
 | **Does** | Holds the hours per person per day in a relational database, with the contract history beside them, so that "what were they contracted to work that month" reproduces for a past month rather than being answered with today's contract. |
-| **Does not** | Export anything. "Machine-evaluable" is precisely what a screen is not. |
+| **Does** | Export it. A `;`-delimited CSV per person or one for the whole team, over any range, with a decimal-hours column beside the `hh:mm` one so it can be summed without conversion. "Machine-evaluable" is precisely what a screen is not, and this is the answer to it. |
 
 ### 1.3 The Finanzamt — Außenprüfung, and the GoBD
 
@@ -84,7 +86,8 @@ how the software is built, and section 2 goes through it line by line.
 |---|---|
 | **Requires** | §§145–147 AO: orderly, complete, correct, timely, ordered and **unalterable** records; the *Verfahrensdokumentation*; retention; and **Datenzugriff** in three forms — Z1 direct read access to the system, Z2 the auditor asking the employer to run evaluations, Z3 handing the data over on a medium in an evaluable format. |
 | **Does** | Keeps the data in one relational file with a per-person, per-day shape an auditor would recognise, and can grant a read-only account for Z1. |
-| **Does not** | Satisfy **Unveränderbarkeit** (nothing records what a value was before it changed), **Datenzugriff Z3** (no export), or **Verfahrensdokumentation** (does not exist yet). Three of the GoBD's headline requirements, and the first is the one the whole standard is built around. |
+| **Does** | Satisfy **Unveränderbarkeit** (`apps/audit/` — an append-only entry per change, carrying the previous value) and **Datenzugriff Z3** (`apps/timesheets/export.py`). |
+| **Does not** | Have a **Verfahrensdokumentation**. One of the GoBD's headline requirements, and now the only one of the three outstanding — which also makes it the cheapest, since two of the four parts it has to describe now describe themselves. |
 
 Retention is not one number. **2 years** under ArbZG §16(2) and MiLoG §17;
 **6 years** for the *Lohnkonto* and the *Arbeitszeitlisten* that support it
@@ -120,8 +123,10 @@ performance control on the list requiring a **Datenschutz-Folgenabschätzung**.
 | | |
 |---|---|
 | **Requires** | A DPIA before go-live (Art. 35), a *Verzeichnis von Verarbeitungstätigkeiten* (Art. 30), technical and organisational measures (Art. 32), data minimisation (Art. 5(1)(c)), **storage limitation with a real deletion concept** (Art. 5(1)(e)), and the ability to answer an access request with a copy of the data (Art. 15(3)). |
-| **Does** | Data minimisation, unusually well and deliberately: no uploads at all, no diagnosis field, no location, no device data, no performance scoring. Authorisation is per-view and tested by a suite that walks the whole URLconf. The OIDC secret is encrypted at rest. |
-| **Does not** | Delete anything, ever. Produce a copy of one person's data on request. Log who *read* whose timesheet — which matters here more than usual, because "the manager looked at my hours" is exactly the processing a works council asks about. |
+| **Does** | Data minimisation, unusually well and deliberately: no uploads at all, no diagnosis field, no location, no device data, no performance scoring — and the audit trail keeps that discipline, recording a failed sign-in by username with no IP address attached. Authorisation is per-view and tested by a suite that walks the whole URLconf. The OIDC secret is encrypted at rest and is redacted in the trail. |
+| **Does** | Produce a copy of one person's data on request (Art. 15(3)), as a spreadsheet or a printable sheet — and the employee can take their own without asking anybody. |
+| **Does** | Log who *read* whose timesheet, which matters here more than usual because "the manager looked at my hours" is exactly the processing a works council asks about. **The employee can read that log themselves**, which is the half that makes it worth anything to the person being recorded. |
+| **Does not** | Delete anything, ever — and there is now one more table that grows forever. A deletion concept is the outstanding item. |
 
 The DPIA and the Art. 30 record are the employer's documents, not the app's, but
 neither can be written without the app describing itself. That description is the
@@ -188,12 +193,18 @@ Not audits of the software but of the *organisation running it*, and a corporate
 buyer passes the questionnaire down. The parts that land on the app:
 
 - **ISO/IEC 27001 A.5.15–A.5.18** — access control, privileged access, removal of
-  rights on leaving. Partly there: roles are split into manager and staff and both
-  are tested from either side. Missing: any record of *who was granted what, when*.
+  rights on leaving. Roles are split into manager and staff and both are tested
+  from either side, and `Employee.is_manager` is an audited field, so a promotion
+  or a revocation is a dated entry naming who made it. What is still missing is
+  the same for Django's own `is_staff` and `is_superuser`, which live on `User` —
+  covered from the other side by every sign-in being recorded, and not the same
+  thing.
 - **A.8.15 Logging** — event logs of user activities, exceptions and security
-  events, protected against tampering. Sign-ins are logged to a **rotating file
-  with three backups**, which is to say they are deleted after roughly eight
-  megabytes. That is not a log an auditor accepts.
+  events, protected against tampering. **Answered.** Sign-ins, refusals,
+  sign-outs, exports and cross-employee reads are rows in `apps/audit/`, which
+  refuses to be edited or deleted at the model rather than by permission. The
+  rotating file stays as the thing you read with the server in front of you; it
+  is no longer the record.
 - **BSI IT-Grundschutz APP.3.1 / CON.8** — web application and secure development.
   The CSP with no nonce, the absence of any upload path, and the URLconf-walking
   authorisation tests are all strong answers here.
@@ -209,16 +220,16 @@ The closest thing to a pass/fail sheet that exists.
 
 | GoBD criterion | What it means in practice | App |
 |---|---|---|
-| **Nachvollziehbarkeit / Nachprüfbarkeit** (Rz. 30–36) | A knowledgeable third party must be able to follow the records in reasonable time, from the individual entry to the total and back — the *progressive* and *retrograde* trail | **Partly.** The month adds up on the page, every figure derives from stored minutes, and `build_month`/`build_week` are one implementation so two pages cannot disagree. But there is no trail from a figure to *who wrote it and when*, and no Verfahrensdokumentation to follow it with. |
+| **Nachvollziehbarkeit / Nachprüfbarkeit** (Rz. 30–36) | A knowledgeable third party must be able to follow the records in reasonable time, from the individual entry to the total and back — the *progressive* and *retrograde* trail | **Nearly.** The month adds up on the page, every figure derives from stored minutes, `build_month`/`build_week` are one implementation so two pages cannot disagree, and there is now a trail from any figure to who wrote it and when. What is still missing is the Verfahrensdokumentation to follow it with. |
 | **Vollständigkeit** (Rz. 36–43) | Every transaction recorded, none missing, none twice | **Good.** One row per person per day, enforced by a unique constraint. A date with no row is deliberately distinguishable from a day of nought hours, which is the completeness question actually asked. |
 | **Richtigkeit** (Rz. 44) | Records reflect the facts | **Good, unusually so.** Clocking does not round. Times are read however they are typed and normalised on screen before saving. A span is measured between instants, so the two nights a year the clocks move come out right. |
-| **Zeitgerechte Erfassung** (Rz. 45–53) | Recorded without delay; a record made much later is suspect | **Weak.** Hours on a future day are refused, which is the right half of the rule. The other half — *how late was this entry* — is not recorded. `created_at` is the row's creation, not the day's entry, and a row created for a comment in March can gain January's hours in April with nothing to show it. |
+| **Zeitgerechte Erfassung** (Rz. 45–53) | Recorded without delay; a record made much later is suspect | **Recorded, not yet judged.** Hours on a future day are refused, and `DayRecord.hours_entered_at` now stamps the moment a day first gains hours — `days_to_record` is the figure §17 MiLoG and the draft ArbZG are measured against, and both exports carry it. What is still missing is knowing *whose* deadline is seven days, which needs the minijob flag. |
 | **Ordnung** (Rz. 54–59) | Systematically arranged, findable | **Good.** Per person, per date, indexed, with the month as the unit somebody reads. |
-| **Unveränderbarkeit** (Rz. 107–112) | A record once made may not be changed so that the original content is no longer ascertainable. Changes are permitted; **silently overwriting is not.** Log who, when, from what, to what | **Absent, and this is the finding.** `DayRecord` fields are updated in place. A locked month cannot be changed and `DayLock` records who locked it and when — but unlocking is one click, and after it the edit is invisible. Editing hours withdraws the confirmation, which shows *that* something changed and never *what*. |
+| **Unveränderbarkeit** (Rz. 107–112) | A record once made may not be changed so that the original content is no longer ascertainable. Changes are permitted; **silently overwriting is not.** Log who, when, from what, to what | **Done.** `apps/audit/` writes an append-only entry for every create, change and delete on every model in the registry, carrying the previous value beside the new one. The table refuses to be updated or deleted at the model, not by permission — a log a forgotten line can edit is not a log. |
 | **Aufbewahrung** (Rz. 115–125) | For the statutory period, readable and available throughout | **Partly.** Nothing is ever deleted, which meets the minimum by accident rather than by policy and breaches the DSGVO maximum for the same reason. |
-| **Maschinelle Auswertbarkeit** (Rz. 126–128) | The data must stay sortable and filterable by the auditor, not merely printable | **Partly.** The database is relational and would satisfy this through Z1, but there is nothing to hand over. |
-| **Datenzugriff Z1 / Z2 / Z3** (Rz. 158–179) | Direct read access / evaluations run for the auditor / **data handed over on a medium** | **Z1 possible** with a read-only account. **Z2 by hand.** **Z3 absent** — there is no export, and Z3 is the form auditors most often choose. |
-| **Internes Kontrollsystem** (Rz. 100–102) | Access rules, separation of duties, controls that the process was followed, and evidence they ran | **Partly.** Roles are separated and tested from both sides, the lock is enforced at every door *and* at the model, and both confirm routes refuse a running day. What is missing is evidence: no record of a control having been exercised. |
+| **Maschinelle Auswertbarkeit** (Rz. 126–128) | The data must stay sortable and filterable by the auditor, not merely printable | **Done.** A `;`-delimited CSV with a BOM — the two concessions that make a German spreadsheet open it correctly rather than as one column of mojibake — carrying every figure the timesheet holds, plus a decimal-hours column so nobody has to convert. |
+| **Datenzugriff Z1 / Z2 / Z3** (Rz. 158–179) | Direct read access / evaluations run for the auditor / **data handed over on a medium** | **Z1** with a read-only account. **Z2** by hand. **Z3 done** — one CSV per person or one for everybody, over any range. |
+| **Internes Kontrollsystem** (Rz. 100–102) | Access rules, separation of duties, controls that the process was followed, and evidence they ran | **Done, or as near as code gets.** Roles are separated and tested from both sides, the lock is enforced at every door *and* at the model, and both confirm routes refuse a running day — and every one of those acts now leaves an entry naming who performed it. Confirming, locking, deciding a request and exporting are each their own action in the trail. |
 | **Datensicherheit** (Rz. 103–106) | Loss and unauthorised change must be prevented; backup must be demonstrable | **Partly.** SSO, CSP without a nonce, encrypted secret, per-view authorisation, HSTS, secure cookies. Backup is Hyper Backup on the NAS, which is real but is nowhere described — and an undescribed backup does not count. |
 | **Verfahrensdokumentation** (Rz. 151–157) | Four parts: general description, user documentation, technical system documentation, operating documentation — plus a **history of its own versions** | **Absent as such.** The material largely exists — `CLAUDE.md`, `docs/COMPLIANCE.md`, `DEPLOYMENT.md`, `README.md` — but it is written for the next developer, not for an auditor, and the GoBD asks for a specific four-part structure with a change history. The cheapest large win in this document. |
 
@@ -249,42 +260,87 @@ will not.
 Ordered by how much trouble each causes, not by effort. The first three appear in
 more than one auditor's column, which is what makes them worth doing first.
 
-1. **An audit trail on every record that is evidence.** Who changed what, from
-   what value to what, when. Append-only, never edited, never rotated away.
-   Required by GoBD *Unveränderbarkeit*, expected by IDW PS 880, asked for by
-   ISO 27001 A.8.15, and the difference between a document and a claim in front of
-   a labour court. **The single item that appears in every column of this file.**
-2. **An export.** Per employee and per period, in a machine-evaluable format, plus
-   a printable record. Discharges GoBD Datenzugriff Z3, the DRV's §9 BVV
-   *maschinelle Auswertbarkeit*, an FKS inspector at a desk, DSGVO Art. 15(3) and
-   the employee's right to a copy in the draft ArbZG. Five duties, one feature. It
-   reverses a standing decision, deliberately.
-3. **A retention policy, enforced in both directions.** Pick the number per class
+1. ~~**An audit trail on every record that is evidence.**~~ **Done.**
+   `apps/audit/`. One table, append-only at the model — `save` refuses an update
+   and `delete` raises — carrying who changed what, from what value to what, and
+   when. Captured by `pre_save`/`post_save`/`post_delete` against a **registry**,
+   so a write path added next month is covered without anybody remembering, and
+   `apps/audit/tests.py` walks every model in the project and fails on one that
+   is in neither the audited nor the exempt set. The actor comes from a
+   thread-local set by middleware; a write with no request records as *system*
+   rather than lying. Names are frozen beside the foreign keys, because
+   `SET_NULL` on a deleted account would otherwise erase who did it.
+
+   Three residual gaps, all deliberate and all written down:
+   `bulk_create` fires no signal, so `WorkSegment`'s bulk creates were changed
+   into ordinary saves and `DayLock`/`BankHoliday` write **one** entry per act
+   (a month locked is one sentence, not thirty-one rows); `QuerySet.update()`
+   is used once on an audited table, in `DayRecord.stamp_entry`, because a
+   timestamp the system stamps is not somebody changing a record; and a failure
+   to write an entry is logged and swallowed rather than failing the save, since
+   an employer who cannot record hours at all is in deeper trouble under §16
+   ArbZG than one whose trail has a visible hole.
+2. ~~**An export.**~~ **Done.** `apps/timesheets/export.py`. CSV and PDF, per
+   employee and per range, plus one CSV for everybody — which is the shape an FKS
+   inspector's question actually has. Both are built from `build_month`, so a
+   printed sheet cannot disagree with the screen it came from. Every export is
+   itself an audit entry, including an employee taking their own copy: the draft
+   ArbZG gives them the right and an employer has to be able to show they
+   honoured it. It reverses the "no in-app export" standing decision,
+   deliberately and at length in that module's docstring.
+3. ~~**Recording *when* an entry was made.**~~ **Done.**
+   `DayRecord.hours_entered_at`, stamped the first time a day gains hours and
+   never updated afterwards — a day corrected in June was still *recorded* on the
+   3rd, and the correction is a separate fact the trail already holds.
+   `days_to_record` is the figure §17 MiLoG's seven days and the draft ArbZG's
+   *am Tag der Arbeitsleistung* are measured against, and both exports carry it.
+   `created_at` could not answer it: the month lets a note be written against any
+   date, so a row created in March for a comment can gain January's hours in
+   April.
+4. ~~**A durable security log.**~~ **Done**, as part of the same table rather
+   than beside it — "who changed this record", "who signed in" and "who looked at
+   whose hours" are one question asked about different objects, and three tables
+   would be three retention stories. Sign-ins, refusals and sign-outs are
+   recorded by username and by nothing else: no credentials, and **no IP
+   address**, which is a decision rather than an oversight — this app holds no
+   location data about its staff, an address is personal data, and "who was
+   refused" is answerable without one for eleven people in one building. The
+   rotating log file stays; it is what you read with the server in front of you,
+   and the record is the table.
+5. ~~**A read log for cross-employee access.**~~ **Done.** Recorded inside
+   `own_or_manager` — the app's one door for "may this account see this person's
+   time", so the place that decides is the place that records — plus the manager
+   pages that show everybody at once. Two narrowings: safe methods only (a POST
+   already writes an entry carrying its actor), and somebody else's only (reading
+   your own timesheet is not processing anybody else's data). **No collapsing to
+   one row per day**, because the question the log exists for is not "did my
+   manager look at my hours" but "how often".
+6. **A retention policy, enforced in both directions.** Pick the number per class
    of record — 2 years ArbZG/MiLoG, 6 years for what supports the Lohnkonto,
    longer where the employer says so — resist deletion before it, erase after it.
-   The app currently neither keeps nor deletes deliberately, which is the wrong
-   answer to the AO and the DSGVO at the same time.
-4. **Recording *when* an entry was made**, distinctly from when the row was last
-   touched. The GoBD's *Zeitgerechtheit*, the MiLoG's seven days and the draft
-   ArbZG's *am Tag der Arbeitsleistung* are one field and one report.
-5. **The 24-week average of §3 ArbZG.** The per-day flags landed with
+   The app still neither keeps nor deletes deliberately, which is the wrong answer
+   to the AO and the DSGVO at the same time. **This is now the largest remaining
+   gap in the code**, and the audit trail has made it larger rather than smaller:
+   there is now one more table that grows forever and one more thing a deletion
+   concept has to have an answer for. `AuditEntry.delete` raises on purpose, so
+   whatever reaches it will have to be a deliberate, single, documented path.
+7. **The 24-week average of §3 ArbZG.** The per-day flags landed with
    `apps/timesheets/limits.py`; the averaging window that decides whether a run of
    ten-hour days was lawful did not, and it is the half an Arbeitsschutz inspector
    actually asks for.
-6. **A Verfahrensdokumentation** in the GoBD's four parts, with its own version
+8. **A Verfahrensdokumentation** in the GoBD's four parts, with its own version
    history. The material mostly exists and needs restructuring for a different
-   reader.
-7. **A durable security log.** Sign-ins, refusals, permission changes, locks and
-   unlocks, exports — to something other than a file rotated away after eight
-   megabytes.
-8. **A read log for cross-employee access.** Who looked at whose timesheet. The
-   works council will ask, and it is the one piece of processing this app does
-   that the people recorded in it cannot see.
+   reader — and it has grown cheaper, because the audit trail and the export are
+   two of the four things it has to describe and both now describe themselves.
 9. **Minijob status on the employee**, so the seven-day MiLoG deadline can be
-   enforced for the people it applies to and nobody else.
+   enforced for the people it applies to and nobody else. `days_to_record` is now
+   recorded for everybody; what is missing is knowing whose deadline is seven days
+   and whose is the GoBD's looser "without undue delay".
 10. **The process artefacts, which are not code and block go-live anyway**: the
     DPIA, the Art. 30 record, and the Betriebsvereinbarung where there is a works
-    council.
+    council. The DPIA has got easier to write and harder to skip: there is now a
+    read log, which is a processing activity in its own right and has to appear in
+    the Art. 30 record beside the reason it exists.
 
 ---
 
@@ -318,6 +374,19 @@ say what was decided and why.
 - **The daily limits of §3 and the rest period of §5 are flagged and never
   enforced**, which is the right way round: an unlawful day still has to be
   recordable, because the record is the evidence.
+- **Every change to every record is kept, with the value it had before**, in a
+  table that refuses to be edited or deleted at the model rather than by
+  permission — and the **employee can read their own**, which is the half that
+  makes it worth anything to the person being recorded.
+- **A manager opening somebody else's timesheet is itself an entry**, recorded by
+  the same door that allowed it.
+- **The records can be handed over** as a spreadsheet or a printable sheet, over
+  any range, for one person or the whole team — and the export is itself an
+  entry, so "who took a copy of what, and when" is answerable.
+- **When a day's hours were first recorded is stored**, distinctly from when the
+  row was last touched, which is the only way the seven-day and same-day
+  deadlines can be shown to have been met rather than asserted.
 
 Each of those is a question an auditor asks and a sentence that answers it.
-Section 4 is what is left.
+Section 4 is what is left, and the top of it is now a retention policy rather
+than a trail.

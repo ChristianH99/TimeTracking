@@ -61,9 +61,27 @@ def own_or_manager(request, employee):
     get subtly wrong apart — an employee whose account has been unlinked has no
     ``user``, and ``employee.user_id == request.user.id`` with both sides None
     would hand every unlinked employee's timesheet to anybody signed in.
+
+    **It also records the read**, and that is not a side effect smuggled into a
+    predicate — it is the point. This is the app's one door for "may this
+    account see this person's time", so making it the place that writes down
+    *that they did* means a view added next month is covered by having gone
+    through the door at all. The alternative is a call in each view, which is
+    the shape every other rule in this codebase has already been burned by.
+
+    Two narrowings, both in ``apps/audit/access.py``: only a safe method (a POST
+    already writes an entry carrying its actor, so recording the read as well
+    would double every write and say nothing new), and only somebody *else's*
+    (an employee reading their own timesheet is not processing anybody else's
+    data, and logging it would bury the entries that matter).
     """
     if employee is None:
         return False
     if employee.user_id is not None and employee.user_id == request.user.id:
         return True
-    return is_manager(request.user)
+    if not is_manager(request.user):
+        return False
+    from apps.audit.access import record_view
+
+    record_view(request, employee=employee)
+    return True

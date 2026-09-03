@@ -2420,3 +2420,70 @@ input[data-time-input].is-unreadable {
 }
 .week-field input[data-time-input] { max-width: 100%; }
 .roster-card input[data-time-input] { max-width: 100%; text-align: center; }
+
+/* ===== THE AUDIT TRAIL =====
+
+   A list nobody reads for pleasure and everybody reads under pressure — an
+   auditor asking a question, an employee who thinks a figure is wrong. Three
+   decisions hold it together.
+
+   **The diff is the widest column and gets the room.** "08:00 → 09:00" folded
+   over three lines is the one thing on this page that must stay scannable, so
+   the four columns left of it are held to what their content actually needs.
+
+   **Old and new are both drawn, and the old one is not greyed out.** The
+   temptation is to make the previous value quiet because it is no longer true.
+   It is exactly backwards: the current value is on the record itself, and the
+   only reason to open this page at all is the other half.
+
+   **A sign-in row is not coloured differently from a change.** Two vocabularies
+   on one table is a table somebody has to learn before reading, and the action
+   column already says which is which in words. */
+.audit-filters { align-items: flex-end; gap: var(--space-5); }
+.audit-filters .field { flex: 0 1 12rem; }
+.audit-filters > .button { margin-left: auto; }
+
+.audit-table { font-size: var(--text-sm); }
+.audit-table th, .audit-table td { vertical-align: top; }
+.audit-table .col-audit-when { width: 9rem; }
+.audit-table .col-audit-who { width: 10rem; }
+.audit-table .col-audit-what { width: 9rem; }
+.audit-table .col-audit-record { width: 14rem; }
+/* No width: what is left, which is most of it. A `min-width: 0` because this is
+   the column that can hold something wide, and the default `auto` would push the
+   table — and with it the topbar and the sidebar — sideways. */
+.audit-table .col-audit-detail { min-width: 0; }
+
+.audit-when { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.audit-action { font-weight: 600; }
+.audit-record { display: flex; flex-direction: column; gap: var(--space-2); }
+.audit-subject-person { font-weight: 600; }
+.audit-subject-date { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
+/* The model name. `--font-mono` is right here and almost nowhere else on a page
+   of figures: `timesheets.DayRecord` is machine text, copied into a search box
+   rather than read, and a character mistaken for another one is a wasted hour. */
+.audit-record .hint { font-family: var(--font-mono); font-size: var(--text-xs); }
+
+.audit-note { margin: 0 0 var(--space-3); }
+.audit-changes { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; }
+.audit-change { display: flex; gap: var(--space-4); align-items: baseline; }
+.audit-change dt { flex: 0 0 11rem; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-light); }
+.audit-change dd { margin: 0; display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; min-width: 0; }
+.audit-old { color: var(--text-light); text-decoration: line-through; }
+.audit-arrow { color: var(--text-light); }
+.audit-new { font-weight: 600; color: var(--text-dark); }
+
+/* Paging. Links and not a script, so it works before anything has loaded — the
+   same choice the month picker makes, and for the same reason. */
+.pager { display: flex; align-items: center; gap: var(--space-5); margin-top: var(--space-6); }
+.pager-state { color: var(--text-light); font-size: var(--text-sm); }
+
+/* ===== EXPORT ===== */
+.export-form { margin-bottom: var(--space-7); }
+.export-form .form-actions { margin-top: var(--space-6); }
+
+/* The three links beside the month picker: this month as a file, and the trail
+   behind it. Pushed to the right so they sit at the far end of the toolbar,
+   away from the control that changes what is being looked at — they are about
+   taking the page away with you rather than about changing it. */
+.month-tools { display: flex; gap: var(--space-5); align-items: center; margin-left: auto; }

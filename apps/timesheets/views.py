@@ -13,15 +13,18 @@ hours are entered as a column of comings and goings while the database goes on
 storing pairs.
 """
 
+import csv
 import datetime as dt
+import io
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
@@ -33,6 +36,7 @@ from apps.employees.models import Employee
 from apps.employees.permissions import is_manager, manager_required, own_or_manager
 from apps.organisation.models import OrgSettings
 from apps.roster.models import Shift
+from apps.audit.access import record_export, record_view
 from apps.timesheets import bookings, clocking, limits
 from apps.timesheets.balance import hours_balance
 from apps.timesheets.fields import SignedMinutesField
@@ -764,7 +768,17 @@ def mine(request):
 
 @manager_required
 def employee_month(request, pk):
+    """Somebody else's month.
+
+    ``@manager_required`` rather than ``own_or_manager`` — the route is the
+    manager's prefix — which means the read is recorded here rather than by the
+    door. `apps/audit/access.py` says why the log exists at all; the short
+    version is that "the manager looked at my hours" is the one piece of
+    processing this app does that the people recorded in it could not otherwise
+    see.
+    """
     employee = get_object_or_404(Employee, pk=pk)
+    record_view(request, employee=employee)
     return render(request, "timesheets/month.html", _month_context(request, employee))
 
 
@@ -778,6 +792,11 @@ def team(request):
     """
     monday = _monday_from(request)
     settings = OrgSettings.current()
+    # Everybody at once, so there is no single person to name — the note says
+    # which page it was and the week it was showing. An entry per employee would
+    # be eleven rows for one glance at a list, which is the read log burying
+    # itself.
+    record_view(request, note=f"team {monday:%Y-%m-%d}")
     weeks = [
         build_week(employee, monday, settings)
         for employee in Employee.objects.filter(is_active=True)
@@ -1607,6 +1626,7 @@ def month_end_page(request):
     """
     first = _month_from(request)
     settings = OrgSettings.current()
+    record_view(request, note=f"month-end {first:%Y-%m}")
     people = [
         _month_summary(employee, first, settings)
         for employee in Employee.objects.filter(is_active=True)
@@ -1653,9 +1673,12 @@ def lock_month(request):
         return redirect(f"{reverse('timesheets:month-end')}?month={first:%Y-%m}")
 
     if unlocking:
-        removed = DayLock.objects.filter(
-            employee__in=chosen, date__gte=first, date__lte=last,
-        ).delete()[0]
+        # Per person rather than one query for all of them, so the audit trail
+        # gets one entry per employee — "Ben reopened September for Anna" is the
+        # sentence somebody needs, and a single entry covering eleven people is
+        # not it. Eleven queries against a local SQLite file for an act somebody
+        # performs a few times a year.
+        removed = sum(DayLock.unlock(employee, days) for employee in chosen)
         messages.success(request, ngettext(
             "%(count)s day was unlocked.", "%(count)s days were unlocked.", removed,
         ) % {"count": removed})
@@ -1701,7 +1724,7 @@ def lock_day(request, pk, date):
         raise Http404 from error
 
     if request.POST.get("unlock"):
-        DayLock.objects.filter(employee=employee, date=the_date).delete()
+        DayLock.unlock(employee, [the_date])
         messages.success(request, _("%(date)s was unlocked and can be changed again.") % {
             "date": the_date.strftime("%d.%m.%Y"),
         })
@@ -1728,3 +1751,182 @@ def _hours_label(minutes, user):
     from apps.timesheets.hours import hhmm
 
     return hhmm(minutes)
+
+
+# --------------------------------------------------------------------------
+# Handing the records over
+# --------------------------------------------------------------------------
+#
+# `apps/timesheets/export.py` argues the reversal of the "no in-app export"
+# standing decision at length. These are the doors onto it, and there are two
+# shapes because there are two askers: an employee wanting their own copy — one
+# button on their own month — and a manager answering an inspector, who needs
+# several people and a range that is not a month.
+
+def _export_range(request):
+    """``(first, last)`` from ``?from=``/``?to=``, defaulting to ``?month=``.
+
+    Falls back rather than refusing, because the month page's two buttons carry
+    only the month they are showing — and a link that 400s because it did not
+    spell the range out twice is a link somebody reports as broken.
+    """
+    try:
+        first = dt.date.fromisoformat(request.GET.get("from", ""))
+        last = dt.date.fromisoformat(request.GET.get("to", ""))
+    except ValueError:
+        month = _month_from(request)
+        return month, month_end(month)
+    if last < first:
+        first, last = last, first
+    return first, last
+
+
+def _export_response(request, employee, kind):
+    """One employee, one range, one file. Refuses anything else with a 404.
+
+    The permission check is ``own_or_manager`` — the same door every other view
+    of somebody's time goes through, so an export cannot become the one route
+    that answers to anybody. It is also what records the read.
+    """
+    from apps.timesheets import export
+
+    if not own_or_manager(request, employee):
+        raise Http404
+
+    first, last = _export_range(request)
+    rows = export.rows_for(employee, first, last)
+    span = f"{first:%d.%m.%Y}–{last:%d.%m.%Y}"
+
+    # **Recorded before the file is built, not after.** An export that fell over
+    # half way through has still put the data in front of somebody, and a trail
+    # that only records the successful ones is one that cannot answer the
+    # question it exists for.
+    record_export(request, employee=employee, note=f"{kind.upper()} {span}")
+
+    if kind == "csv":
+        body = export.BOM + export.to_csv(employee, first, last, rows)
+        response = HttpResponse(body.encode("utf-8"), content_type="text/csv; charset=utf-8")
+        name = export.csv_filename(employee, first, last)
+    else:
+        who = request.user.get_full_name() or request.user.get_username()
+        body = export.to_pdf(employee, first, last, rows, requested_by=who)
+        response = HttpResponse(body, content_type="application/pdf")
+        name = export.pdf_filename(employee, first, last)
+
+    # `attachment`, not `inline`, for both. A CSV opened in a browser tab is a
+    # wall of semicolons, and a PDF the reader has to remember to save is one
+    # that is gone when the tab closes — and the whole point of this is that
+    # somebody ends up holding a file.
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
+    return response
+
+
+@login_required
+def export_mine(request, kind):
+    employee = Employee.for_user(request.user)
+    if employee is None:
+        raise Http404
+    return _export_response(request, employee, kind)
+
+
+@login_required
+def export_employee(request, pk, kind):
+    return _export_response(request, get_object_or_404(Employee, pk=pk), kind)
+
+
+@manager_required
+def export_page(request):
+    """The manager's export: anybody, any range, either format.
+
+    Its own page rather than more buttons on the month, because the question it
+    answers is not "give me my September" — it is an inspector at a desk asking
+    for four named people and a year, which is not a shape the month page has
+    anywhere to put.
+
+    **Everybody at once is offered for the CSV and not for the PDF**, and the
+    page says so. A spreadsheet of eleven people is one table with a name column;
+    a PDF of eleven people is eleven documents, and stapling them together makes
+    a thing nobody can hand to one of them.
+    """
+    people = Employee.objects.filter(is_active=True).order_by("last_name", "first_name")
+    today = dt.date.today()
+    first, last = _export_range(request)
+    if not request.GET:
+        first, last = month_start(today), month_end(month_start(today))
+    chosen = request.GET.get("employee") or ""
+    return render(request, "timesheets/export.html", {
+        "people": people,
+        "chosen": int(chosen) if chosen.isdigit() else None,
+        "default_from": first,
+        "default_to": last,
+        "today": today,
+    })
+
+
+@manager_required
+def export_run(request):
+    """Where the form's two buttons both land, and the reason there is no script.
+
+    The alternative points each button at its own route with ``formaction`` and
+    needs JavaScript to substitute the chosen employee's id into the path — for a
+    page whose whole job is to produce a file for somebody who has turned up
+    asking for one, which is the worst moment for a control that needs a script
+    to have loaded. Reading the three fields here costs one small view and the
+    page works with nothing running.
+
+    A PDF for everybody is refused **with a sentence and the form still filled
+    in**, rather than by a button that was disabled without saying why.
+    """
+    kind = "pdf" if request.GET.get("format") == "pdf" else "csv"
+    who = request.GET.get("employee") or ""
+
+    if not who:
+        if kind == "pdf":
+            messages.error(request, _(
+                "A printable sheet is one person at a time — it is the copy somebody "
+                "is handed, and eleven of them stapled together cannot be handed to "
+                "any one of them. Choose a person, or take the spreadsheet."
+            ))
+            return redirect(f"{reverse('timesheets:export-page')}?{request.GET.urlencode()}")
+        return export_everybody(request)
+
+    employee = get_object_or_404(Employee, pk=who) if who.isdigit() else None
+    if employee is None:
+        raise Http404
+    return _export_response(request, employee, kind)
+
+
+@manager_required
+def export_everybody(request):
+    """Every active employee's rows in one CSV, with a name column in front.
+
+    One file rather than a zip of eleven: the auditor's next action is to sort it
+    by person, and a zip makes that eleven files to open first. The name column
+    is prepended rather than added at the end because it is the column the sort
+    happens on, and a spreadsheet is read left to right.
+    """
+    from apps.timesheets import export
+
+    first, last = _export_range(request)
+    people = list(Employee.objects.filter(is_active=True).order_by("last_name", "first_name"))
+    span = f"{first:%d.%m.%Y}–{last:%d.%m.%Y}"
+    record_export(request, note=_("everybody") + f" · CSV {span} ({len(people)})")
+
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=export.DELIMITER, lineterminator="\n")
+    writer.writerow([_("Period"), span])
+    writer.writerow([_("Exported"), timezone.localtime().strftime("%d.%m.%Y %H:%M")])
+    writer.writerow([])
+    writer.writerow([str(_("Employee"))] + [str(header) for _key, header in export.COLUMNS])
+    for employee in people:
+        for row in export.rows_for(employee, first, last):
+            writer.writerow([employee.full_name] + [row[key] for key, _header in export.COLUMNS])
+
+    response = HttpResponse(
+        (export.BOM + out.getvalue()).encode("utf-8"),
+        content_type="text/csv; charset=utf-8",
+    )
+    response["Content-Disposition"] = (
+        f'attachment; filename="timesheets_{first:%Y-%m-%d}_{last:%Y-%m-%d}.csv"'
+    )
+    return response

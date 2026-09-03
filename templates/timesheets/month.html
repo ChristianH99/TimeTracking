@@ -47,6 +47,20 @@ app, so they sit at the top of it in the toolbar below.{% endcomment %}
       </form>
     {% endif %}
 
+    {% comment %}**Your copy of this month, and the trail behind it.** Three
+    plain links rather than a menu: they carry only the month being shown, which
+    is all a person asking for their own copy ever wants — the manager's export
+    page is where a range and several people are chosen.
+
+    The right to a copy is not a nicety. DSGVO Art. 15(3) already gave it and the
+    June 2026 ArbZG draft says it again in as many words; `apps/timesheets/export.py`
+    is why "no in-app export" stopped being the right standing decision.{% endcomment %}
+    <div class="month-tools">
+      <a class="link-button" href="{% if is_own %}{% url 'timesheets:export' 'pdf' %}{% else %}{% url 'timesheets:employee-export' employee.pk 'pdf' %}{% endif %}?month={{ month|date:'Y-m' }}">{% translate "PDF" %}</a>
+      <a class="link-button" href="{% if is_own %}{% url 'timesheets:export' 'csv' %}{% else %}{% url 'timesheets:employee-export' employee.pk 'csv' %}{% endif %}?month={{ month|date:'Y-m' }}">{% translate "CSV" %}</a>
+      <a class="link-button" href="{% if is_own %}{% url 'audit:mine' %}{% else %}{% url 'audit:employee' employee.pk %}{% endif %}">{% translate "History" %}</a>
+    </div>
+
     {% comment %}What a save says for itself, and where a refusal lands when it
     was not a pop-up that caused it. A live region, because with the Save button
     gone nothing else on the page announces that anything was written.{% endcomment %}

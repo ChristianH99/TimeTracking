@@ -172,6 +172,20 @@ class BankHoliday(models.Model):
             if day not in kept
         ]
         cls.objects.bulk_create(rows)
+        # One entry for the year, not thirteen for the days. `BankHoliday` is in
+        # the audit registry's `BY_HAND` set for the same reason `DayLock` is:
+        # what somebody did was regenerate a year, and a public holiday moving
+        # changes what every absence in that year credited — so it needs to be
+        # in the trail, and it needs to be readable as one act.
+        from apps.audit.models import AuditAction
+        from apps.audit.recording import record
+
+        record(
+            AuditAction.CHANGED,
+            subject="absences.BankHoliday",
+            subject_date=first,
+            note=f"{year} ({land}): +{len(rows)} / -{removed}",
+        )
         return len(rows), removed
 
 

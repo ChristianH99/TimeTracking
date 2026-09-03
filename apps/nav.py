@@ -37,6 +37,11 @@ ITEMS = {
         ("absences", name)
         for name in ("mine", "book", "request-cancel")
     },
+    # Your own history, and your own copy of it. Both belong under "My time"
+    # because they are about your own hours — `audit:employee` is the same page
+    # about somebody else's and is registered under the team below, which is the
+    # whole reason those are two routes onto one view.
+    "mine.history": {("audit", "mine"), ("timesheets", "export")},
 
     # The manager's pages. Note that `timesheets:employee-day` is here and
     # `timesheets:day` is above, while both resolve to one view: the same
@@ -50,7 +55,14 @@ ITEMS = {
     "team.timesheets": {
         ("timesheets", name)
         for name in ("team", "employee", "employee-save-day", "employee-set-status",
-                     "employee-day", "employee-confirm-day", "employee-clock")
+                     "employee-day", "employee-confirm-day", "employee-clock",
+                     "employee-export")
+    } | {("audit", "employee")},
+    # Handing the records over: an inspector's question is several people and a
+    # range, which is not a shape the month page has anywhere to put.
+    "team.export": {
+        ("timesheets", name)
+        for name in ("export-page", "export-run", "export-everybody")
     },
     # Closing a month, beside closing a year. Both are periodic acts a manager
     # performs over everybody at once, and neither belongs inside the page for
@@ -90,6 +102,10 @@ ITEMS = {
                      "user-delete", "user-active")
     },
     "settings.sso": {("accounts", name) for name in ("sso", "sso-discover", "sso-check")},
+    # The whole trail, staff-only. Under Settings rather than under Team because
+    # it is a page about the *software* — who signed in, what the rules were
+    # changed to — and only half about the people.
+    "settings.audit": {("audit", "log")},
 }
 
 # Parent entry -> the entries nested under it. A parent is a link too, but never
@@ -101,11 +117,11 @@ ITEMS = {
 # open by itself when one of the pages inside it is the current one — a menu
 # that hides the page you are looking at is a menu that looks broken.
 PARENTS = {
-    "mine": ("mine.timesheet", "mine.absences"),
+    "mine": ("mine.timesheet", "mine.absences", "mine.history"),
     "team": ("team.roster", "team.timesheets", "team.month-end", "team.requests",
              "team.employees",
-             "team.year-end"),
-    "settings": ("settings.rules", "settings.users", "settings.sso"),
+             "team.year-end", "team.export"),
+    "settings": ("settings.rules", "settings.users", "settings.sso", "settings.audit"),
 }
 
 

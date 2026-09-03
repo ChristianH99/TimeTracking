@@ -792,3 +792,123 @@ JAVASCRIPT = {
     # and "differs" have, and for the same reason.
     "Working time limit": "Arbeitszeitgrenze",
 }
+
+
+# The audit trail and the export — added when the app grew the thing every
+# auditor asks for first (docs/AUDIT.md).
+#
+# **"Änderungsprotokoll", not "Audit-Trail".** The English term is what the
+# standards use and it is not what the people reading this page use: a
+# Wirtschaftsprüfer asking after one asks for the *Protokoll*, and a
+# kindergarten's deputy head has never heard of the other. The words for the
+# statuses are the ones a German payroll or works council conversation already
+# uses — "Erfasst am", "Bestätigt von", "Zeitraum".
+AUDIT = {
+    # -- the actions, as the model spells them ---------------------------
+    #
+    # Past participles, because the column reads as a sentence about something
+    # that has already happened — "Ben hat geändert" and not "Ben Änderung".
+    # "locked" is not here: it already exists in the catalogue for the padlock on
+    # a timesheet row, and one word with two German spellings in two places on
+    # the same page is the bug a single table exists to prevent.
+    "created": "angelegt",
+    "changed": "geändert",
+    "deleted": "gelöscht",
+    "unlocked": "entsperrt",
+    "looked at": "eingesehen",
+    "exported": "exportiert",
+    "signed in": "angemeldet",
+    "sign-in refused": "Anmeldung abgelehnt",
+    "signed out": "abgemeldet",
+
+    # -- field labels the trail prints ------------------------------------
+    #
+    # These are `verbose_name`s on `DayRecord` and they exist *because* the
+    # audit trail prints them: "source" as a column heading on a page an auditor
+    # reads means nothing to them, and a label is cheaper than a lookup table in
+    # the audit app that would go stale the first time a field was renamed.
+    "how it was entered": "Art der Erfassung",
+    "confirmed at": "Bestätigt am",
+    "hours first recorded at": "Stunden erstmals erfasst am",
+
+    # -- the model's own field names -------------------------------------
+    "when": "Zeitpunkt",
+    "what happened": "Vorgang",
+    "who": "Wer",
+    "about": "Betrifft",
+    "record": "Datensatz",
+    "audit entry": "Protokolleintrag",
+    "audit entries": "Protokolleinträge",
+
+    # -- the page --------------------------------------------------------
+    "Audit trail": "Änderungsprotokoll",
+    "My history": "Meine Historie",
+    "every change": "jede Änderung",
+    "Every change ever made to your records, and who made it. Nothing here can be edited or removed — not by a manager, not by whoever runs the software. If a figure on your timesheet is not what you entered, this page says who changed it and what it was before.":
+        "Jede Änderung, die je an Ihren Aufzeichnungen vorgenommen wurde, und von wem. Nichts davon lässt sich bearbeiten oder löschen — weder durch die Leitung noch durch die Systemverwaltung. Wenn eine Zahl auf Ihrem Stundenzettel nicht die ist, die Sie eingetragen haben, steht hier, wer sie geändert hat und was vorher dort stand.",
+    "Every change ever made to this person’s records, and who made it. Nothing here can be edited or removed. Opening this page is itself recorded.":
+        "Jede Änderung, die je an den Aufzeichnungen dieser Person vorgenommen wurde, und von wem. Nichts davon lässt sich bearbeiten oder löschen. Der Aufruf dieser Seite wird selbst protokolliert.",
+    "Everything the app has recorded about itself: changes to the records, sign-ins and refusals, exports, and who looked at whose hours. Nothing here can be edited or removed — that is what it is for. §146 AO and the GoBD require a change to be traceable rather than forbidden, and this is where the trace is.":
+        "Alles, was die Anwendung über sich selbst festhält: Änderungen an den Aufzeichnungen, Anmeldungen und abgelehnte Anmeldungen, Exporte und wer wessen Stunden eingesehen hat. Nichts davon lässt sich bearbeiten oder löschen — genau dafür ist es da. §146 AO und die GoBD verlangen, dass eine Änderung nachvollziehbar ist, nicht dass sie unterbleibt; hier ist der Nachweis.",
+    "Person": "Person",
+    "Anybody": "Alle",
+    "What happened": "Vorgang",
+    "Anything": "Alles",
+    "Record": "Datensatz",
+    "Details": "Einzelheiten",
+    "Nothing has been recorded for that.": "Dazu wurde nichts protokolliert.",
+    "Pages": "Seiten",
+    "Newer": "Neuere",
+    "Older": "Ältere",
+    "Page %(current)s of %(total)s": "Seite %(current)s von %(total)s",
+    # The same sentence on the printed sheet. A second msgid rather than a shared
+    # one because the placeholders differ, and `msgfmt` checks that a translation
+    # names exactly the placeholders its msgid does — sharing would be a file
+    # that refuses to compile.
+    "Page %(page)s of %(total)s": "Seite %(page)s von %(total)s",
+    "History": "Historie",
+
+    # -- the export page --------------------------------------------------
+    "Export": "Export",
+    "hand the records over": "Aufzeichnungen herausgeben",
+    "A copy of the working time records, for whoever has asked for one. The spreadsheet is what a tax or social-insurance auditor wants — it can be sorted and filtered, which a printout cannot. The PDF is what a person wants: an employee’s own copy, or the sheet handed across a desk. Every export is recorded in the audit trail, including who asked for it.":
+        "Eine Kopie der Arbeitszeitaufzeichnungen für alle, die danach fragen. Die Tabelle ist das, was eine Betriebsprüfung oder die Rentenversicherung braucht — sie lässt sich sortieren und filtern, ein Ausdruck nicht. Das PDF ist das, was ein Mensch braucht: die eigene Kopie einer Mitarbeiterin oder der Bogen, den man über den Tisch reicht. Jeder Export wird im Änderungsprotokoll festgehalten, samt der Person, die ihn angefordert hat.",
+    "Everybody (spreadsheet only)": "Alle (nur Tabelle)",
+    "Spreadsheet (CSV)": "Tabelle (CSV)",
+    "Printable (PDF)": "Zum Ausdrucken (PDF)",
+    "A printable sheet is one person at a time. The spreadsheet can hold everybody at once.":
+        "Ein Ausdruck umfasst immer eine Person. Die Tabelle kann alle auf einmal enthalten.",
+    "Both files are built from exactly the figures the timesheet shows, so a printed sheet cannot disagree with the screen it came from. Durations are written hh:mm; the spreadsheet repeats every total as decimal hours in a column of its own, so nobody has to convert.":
+        "Beide Dateien entstehen aus genau den Zahlen, die der Stundenzettel anzeigt — ein Ausdruck kann dem Bildschirm, von dem er stammt, also nicht widersprechen. Dauern stehen als hh:mm; die Tabelle wiederholt jede Summe zusätzlich als Dezimalstunden in einer eigenen Spalte, damit niemand umrechnen muss.",
+    "A printable sheet is one person at a time — it is the copy somebody is handed, and eleven of them stapled together cannot be handed to any one of them. Choose a person, or take the spreadsheet.":
+        "Ein Ausdruck umfasst immer eine Person — er ist die Kopie, die jemandem ausgehändigt wird, und elf zusammengeheftete lassen sich niemandem aushändigen. Bitte eine Person auswählen oder die Tabelle nehmen.",
+    "PDF": "PDF",
+    "CSV": "CSV",
+    "everybody": "alle",
+
+    # -- the columns in the exported file ---------------------------------
+    #
+    # These are read by a payroll clerk or an auditor, so they are the words
+    # those two use rather than the words the screen uses where the two differ.
+    "Break from": "Pause aus",
+    "Why corrected": "Grund der Korrektur",
+    "Credited": "Gutgeschrieben",
+    "Actual (hours)": "Ist (Stunden)",
+    "Working time note": "Hinweis zur Arbeitszeit",
+    "Recorded on": "Erfasst am",
+    "Days to record": "Tage bis zur Erfassung",
+    "Confirmed on": "Bestätigt am",
+    "Confirmed by": "Bestätigt von",
+    "by hand": "von Hand",
+    "rules": "Regeln",
+    "yes": "ja",
+    "Period": "Zeitraum",
+    "Exported": "Exportiert",
+    "Total": "Summe",
+    "Every duration is hh:mm. “Actual” includes hours credited for an approved absence, which are paid as though worked (§3 EFZG, §11 BUrlG); time off in lieu credits nothing, and that shortfall is the overtime being taken back. Breaks are deducted under §4 ArbZG.":
+        "Alle Dauern stehen als hh:mm. „Ist“ enthält Stunden, die für eine genehmigte Abwesenheit gutgeschrieben wurden und wie gearbeitete Zeit vergütet werden (§3 EFZG, §11 BUrlG); der Freizeitausgleich wird nicht gutgeschrieben — genau dieses Minus ist der Abbau der Überstunden. Pausen werden nach §4 ArbZG abgezogen.",
+    "by": "von",
+    "Working time record": "Arbeitszeitnachweis",
+}
+
+PAGES.update(AUDIT)

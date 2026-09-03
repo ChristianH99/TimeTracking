@@ -389,12 +389,12 @@ A time tracking system is employee monitoring and is squarely inside this.
 | Article | Requirement | App |
 |---|---|---|
 | **Art. 5(1)(c)** | Data minimisation | Good. No uploads, no e-mail addresses (removed), no reason field on sickness, no location, no device data. |
-| **Art. 5(1)(e)** | Storage limitation | **Absent.** Nothing is ever deleted or anonymised. Working time records may be kept 2 years (ArbZG/MiLoG); payroll-relevant records fall under §28f SGB IV and §147 AO, which push to 6 years and beyond. Somebody has to decide the number and the app has to enforce it. |
+| **Art. 5(1)(e)** | Storage limitation | **Absent, and now the largest gap in the code.** Nothing is ever deleted or anonymised, and the audit trail has added a table that grows forever and refuses deletion at the model on purpose. Working time records may be kept 2 years (ArbZG/MiLoG); payroll-relevant records fall under §28f SGB IV and §147 AO, which push to 6 years and beyond. Somebody has to decide the number and the app has to enforce it. |
 | **Art. 6(1)(c) / §26 BDSG** | Lawful basis | Legal obligation (ArbZG, MiLoG) plus performance of the employment contract. Note that ECJ C-34/21 cast doubt on §26 BDSG(1) as a standalone basis; the ArbZG duty is the safer footing. |
 | **Art. 9** | Health data | Sickness *dates* are attendance data and are fine. **Diagnoses, certificates and disability status are not**, and the app must stay out of them — see EFZG and SGB IX above. |
-| **Art. 15** | Right of access | Partly. An employee can see their own timesheet and balance in the app; there is no export. |
+| **Art. 15** | Right of access | Yes. An employee sees their own timesheet and balance, can take a copy as a spreadsheet or a printable sheet without asking anybody, and can read every change ever made to their own records — including who made it. |
 | **Art. 30** | Record of processing activities | The employer's job, not the app's, but it needs writing. |
-| **Art. 32** | Security of processing | Sessions, CSP, encrypted OIDC secret, SSO, per-view authorisation. **No audit log.** |
+| **Art. 32** | Security of processing | Sessions, CSP, encrypted OIDC secret, SSO, per-view authorisation, and an append-only audit log (`apps/audit/`) covering both the records and the sign-ins. |
 | **Art. 35** | Data protection impact assessment | Systematic monitoring of employees is on most supervisory authorities' DPIA blacklist. **Assume one is required** before this goes live. |
 
 ---

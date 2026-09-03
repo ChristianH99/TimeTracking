@@ -76,6 +76,10 @@ still missing, and the top of it is an audit trail.
 - `mozilla-django-oidc` for the Synology SSO handshake
 - WhiteNoise (manifest storage), gunicorn
 - No JS framework — vanilla JS, one file per page under `static/js/`
+- `reportlab` for the printed timesheet. Pure Python with its own fonts, so the
+  container needs no system libraries — which is why it is this and not
+  WeasyPrint, whose Pango/Cairo stack would roughly double the image and add a
+  class of "works here, not there" failure to a deployment nobody watches.
 - **No dependency ships the German public holidays.** `apps/absences/bankholidays.py`
   computes them. See "Standing decisions".
 
@@ -432,6 +436,112 @@ Each of these is here because breaking it produces a page that still renders.
   question "what were you actually asked to work?" would have no answer. Keeping
   them apart is what lets the timesheet print *"you were rostered 08:00–14:00 and
   you have entered 08:00–15:30"*, which is the sentence the whole app exists for.
+- **Everything that is evidence is audited, and the audit table cannot be
+  touched.** `apps/audit/`. One append-only entry per create, change and delete,
+  carrying **the value before as well as after** — which is the whole point: the
+  current value is on the record itself, and the only reason to open the trail is
+  the other half. `AuditEntry.save` refuses an update and `delete` raises, at the
+  model rather than by permission, because a log a forgotten line can edit is not
+  a log. The GoBD does not forbid changing a record; it forbids changing one *so
+  that the original content is no longer ascertainable*.
+- **One table, not four.** "Who changed this record", "who signed in", "who
+  looked at whose hours" and "who exported what" read as four features and are
+  one question asked about different objects. Four tables would be four retention
+  stories, four pages, and four chances for one of them to be forgotten when the
+  retention policy finally lands. `action` is what tells them apart.
+- **Captured by signals against a registry, never by calls in the views.** The
+  exposure is never a check somebody removed, it is a check somebody forgot on a
+  path added last Tuesday — the same argument `assert_unlocked` makes one level
+  out, and the reason a management command, a data migration and the admin are
+  all covered without ever having called an audit function.
+  `apps/audit/registry.py` names every model in the project in one of three sets
+  and `apps/audit/tests.py` fails on a model in none of them.
+- **`bulk_create` fires no `post_save`, and a queryset `delete` fires every
+  `post_delete`.** Left alone that asymmetry would have recorded each bookings
+  edit as the day being *emptied* and never as it being filled in again, which is
+  worse than recording nothing because it reads as somebody having cleared the
+  day. So `set_bookings` and `from_shifts` save their segments one at a time —
+  one to four rows, and the batching bought a single round trip against a local
+  file — and `DayLock`/`BankHoliday` write **one** entry per act instead, because
+  the unit somebody locks is a month and thirty-one rows about consecutive dates
+  would bury the one sentence that matters.
+- **The actor is a thread-local set by middleware, directly below
+  `AuthenticationMiddleware`.** A signal handler gets a model instance and no
+  request, and a trail without a "who" is half a trail. Above that middleware
+  every entry in the app would read `system`. It is cleared in a `finally`, so a
+  view that raises cannot leave the worker carrying the last actor into the next
+  request — naming the wrong person is worse than naming nobody. **A write with
+  no request records as `system` rather than blank**, because "we do not know
+  who" and "nobody was signed in" are different statements and a seeder is
+  genuinely the second.
+- **The actor's and the employee's names are frozen as text beside the foreign
+  keys.** Both are `SET_NULL`, because deleting an account must not take a
+  timesheet with it — which means the day it happens, every entry pointing at
+  that account would say *nobody did this*. The key is for filtering; the text is
+  the record, and when they disagree the text is right.
+- **A field whose name looks like a secret records that it changed and never the
+  values.** `REDACTED_HINTS`. The one table nothing can delete must not
+  accumulate every OIDC client secret the installation has ever had.
+- **A save that changes nothing writes nothing.** Load-bearing rather than tidy:
+  the roster posts the whole week on every drag, so without it one card moved
+  would write fifty rows each saying that nothing about those fifty shifts is
+  different — and a log of nothing is a log nobody opens.
+- **The read log covers somebody else's records, on safe methods only, and does
+  not collapse.** Recorded inside `own_or_manager`, which is the app's one door
+  for "may this account see this person's time" — so the place that decides is
+  the place that records, and a view added next month is covered by having gone
+  through the door. A POST already writes an entry carrying its actor; reading
+  your own timesheet is not processing anybody else's data. The tempting
+  optimisation is one row per manager per employee per day, and it destroys the
+  answer to the question the log exists for, which is not "did my manager look at
+  my hours" but *how often*.
+- **A sign-in failure is recorded by username and by nothing else.** Django's
+  `user_login_failed` hands over the credentials, password included. No IP
+  address either, and that is a decision: this app deliberately holds no location
+  data about its staff, an address is personal data, and "who was refused" is
+  answerable without one for eleven people in one building.
+- **An employee can read their own trail.** `audit:mine`, in the sidebar under
+  "My time". An audit trail only the employer can read is one that protects only
+  the employer, and the person most likely to notice a figure they did not type
+  is the person whose figure it is.
+- **Failing to write an entry never fails the thing being audited.** It sounds
+  like the wrong way round for a compliance feature and it is not: a bug in
+  `apps/audit/recording.py` would otherwise make the timesheet unusable, and an
+  employer who cannot record hours at all is in deeper trouble under §16 ArbZG
+  than one whose trail has a hole. The writer logs and swallows; the hole is
+  visible in the log file and in the gap between the entries either side.
+- **`hours_entered_at` is stamped once and never updated.** When a day *first*
+  gained hours, which `created_at` cannot answer — the month lets a note be
+  written against any date, so a row created in March for a comment can gain
+  January's hours in April. A day corrected in June was still recorded on the 3rd,
+  and the correction is a separate fact the trail already holds; overwriting this
+  would turn the one field that answers "was it timely" into a second
+  `updated_at`. Stamped with a queryset `update`, which fires no signal and so
+  writes no audit entry — the one place in the app that reaches past the model on
+  an audited table, because a timestamp the system stamps is part of the record
+  being made rather than somebody changing it.
+- **The export is two formats because they answer two questions.** The CSV is for
+  a machine — an auditor sorts and filters it, and a PDF cannot be sorted. The PDF
+  is for a person: the employee's copy, and the sheet handed across a desk. Both
+  are built from `build_month`, so a printed sheet cannot disagree with the screen
+  it came from — that is the document somebody takes to a lawyer. `rows_for` is
+  the data and is what the tests hold to the figures; `to_csv` and `to_pdf` are
+  rendering.
+- **The CSV is `;`-delimited with a byte order mark**, which is the less standard
+  CSV and the one that opens correctly. A German Windows splits on `;` and reads a
+  file without a BOM as the legacy code page, turning every umlaut in every name
+  into mojibake — so a comma and no BOM is the more correct file and the one that
+  arrives looking broken. Durations stay `hh:mm` for the reason they are `hh:mm`
+  everywhere, with decimal hours offered as a **column of its own** rather than
+  instead: reconciling 7:30 against 7.5 is exactly what the auditor is doing.
+- **The export page has no JavaScript and two submit buttons that differ only in
+  the value they send.** The obvious version points each button at its own route
+  with `formaction` and needs a script to put the chosen employee's id into the
+  path — on the one page somebody opens with an inspector standing at the desk.
+  One small dispatching view instead, and the page works before anything has
+  loaded. A PDF for everybody is refused **with a sentence and the form still
+  filled in**, not by a disabled button: a control that refuses without saying why
+  is worse than one that explains.
 - **§3 and §5 ArbZG are flagged and never refused, and that direction is the
   whole design.** `apps/timesheets/limits.py`. The tempting implementation
   refuses to save an eleven-hour day, and it is wrong in the way that costs the
@@ -926,6 +1036,12 @@ Each of these is here because breaking it produces a page that still renders.
   and the exposure a forgotten one would create is covered from the other side,
   by tests that walk the URLconf for the `employees`, `roster` and `organisation`
   namespaces and refuse to let any route answer an account without the right.
+- **Nothing deletes an audit entry, and that is a decision with a cost.**
+  `AuditEntry.delete` raises. It makes the retention policy harder rather than
+  easier — there is now one more table that grows forever — and that is the right
+  way round: whatever eventually reaches it has to be one deliberate, documented
+  path rather than a view doing it by accident. `docs/AUDIT.md` carries the
+  numbers a retention policy has to choose between.
 - **This app stores no files, deliberately.** There is no `MEDIA_ROOT` and no
   upload path. A timesheet is rows; a sick note is a piece of paper that belongs
   in a personnel file under somebody else's retention policy, not in a
@@ -982,6 +1098,20 @@ targets**, so a page added next month is covered the day it lands:
   asserts seven hours in March and nine in October — plus the invariant that on
   an ordinary day the zone-aware answer equals the plain subtraction, without
   which every existing night-shift test would be quietly wrong.
+- `apps/audit/tests.py` holds the trail. Two cases matter more than the rest:
+  `TestNothingCanTouchIt` — an entry cannot be updated or deleted, including by
+  assigning an existing pk, which is an overwrite wearing an insert's clothes —
+  and `test_every_model_has_been_decided_about`, which walks every model in the
+  project against the registry and fails on one that is in none of the three
+  sets. The `bulk_create` blind spot is pinned by its own case, because it is the
+  one that would have failed silently and in the most misleading direction.
+- `apps/timesheets/test_export.py` holds the figures rather than the layout. The
+  Actual column is read *out of* `build_month` rather than written down, so the
+  test cannot pass by both being wrong the same way; the PDF is checked for being
+  a PDF, since asserting on reportlab's bytes is testing reportlab and a golden
+  image fails on a font update. `test_the_running_column_carries_into_a_partial_range`
+  is the one that catches the tempting implementation: a range starting on the
+  15th built from the 15th restarts the running total at nought.
 - `apps/timesheets/test_limits.py` holds §3 and §5: both boundaries in both
   directions (eight hours exactly is not over eight, ten exactly is not over
   ten), the night shift whose end is on the following date, the two-stretch night
@@ -1126,9 +1256,14 @@ recognises them as decided rather than missed.
   time is an hour or two out all summer in a way that looks almost right.
   `test_zones.py` asserts four real zones resolve, so dropping it is a red
   build rather than a silent hour.
-- **No in-app export.** The database is one SQLite file under `/data`, which
-  Hyper Backup already covers, and a payroll export is a format question nobody
-  has asked yet. It is the obvious next feature and deliberately not guessed at.
+- ~~**No in-app export.**~~ **Reversed**, and the reason is written out in
+  `apps/timesheets/export.py`. The old argument — the database is one SQLite file
+  Hyper Backup already covers, and a payroll format is a question nobody has
+  asked — is still true in both halves. What changed is that five separate duties
+  turn out to be one feature and four of them have nothing to do with payroll:
+  GoBD Datenzugriff Z3, §9 BVV machine-evaluability for a DRV auditor, an FKS
+  inspector at a desk, DSGVO Art. 15(3), and the employee's right to obtain a
+  copy in the June 2026 ArbZG draft.
 - **The break rules default to the statute exactly**: 30 minutes over six hours
   and 45 over nine (§4 ArbZG). **This reverses an earlier decision** that made
   the second tier eight hours, on the argument that a default about a legal

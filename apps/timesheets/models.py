@@ -129,7 +129,53 @@ class DayLock(models.Model):
             [cls(employee=employee, date=date, locked_by=by) for date in fresh],
             ignore_conflicts=True,
         )
+        if fresh:
+            _audit_lock(employee, fresh, locked=True)
         return len(fresh)
+
+    @classmethod
+    def unlock(cls, employee, dates):
+        """Delete the locks on ``dates``. Returns how many there were.
+
+        A classmethod beside ``lock`` rather than a ``filter().delete()`` at
+        each of the two call sites, and the reason is the audit trail: a
+        ``bulk_create`` fires no signal and a queryset ``delete`` fires one per
+        row, so left alone the two halves of this would have been recorded in
+        two different shapes — nothing at all for a lock, thirty-one rows for an
+        unlock. One entry each, from here, and both say the same kind of thing.
+        """
+        dates = list(dates)
+        removed = cls.objects.filter(employee=employee, date__in=dates).delete()[0]
+        if removed:
+            _audit_lock(employee, dates, locked=False)
+        return removed
+
+
+def _audit_lock(employee, dates, locked):
+    """One entry for a locking, however many days it covered.
+
+    ``DayLock`` is in ``apps/audit/registry.py``'s ``BY_HAND`` set for exactly
+    this: the unit somebody locks is a *month*, and thirty-one rows saying
+    "created" about consecutive dates would bury the one sentence anybody needs
+    to read — who closed which month for whom, and when. The note names the span
+    rather than listing the dates, because a span is what was decided.
+    """
+    from apps.audit.models import AuditAction
+    from apps.audit.recording import record
+
+    ordered = sorted(dates)
+    first, last = ordered[0], ordered[-1]
+    span = (
+        first.strftime("%d.%m.%Y") if first == last
+        else f"{first:%d.%m.%Y} – {last:%d.%m.%Y}"
+    )
+    record(
+        AuditAction.LOCKED if locked else AuditAction.UNLOCKED,
+        employee=employee,
+        subject="timesheets.DayLock",
+        subject_date=first,
+        note=f"{span} ({len(ordered)})",
+    )
 
 
 class LockedDay(ValidationError):
@@ -248,13 +294,18 @@ class DayRecord(models.Model):
         help_text=_("Required whenever there is a correction."),
     )
 
+    # The verbose name is not decoration: it is what the audit trail prints as
+    # the label of a changed field, and "source" on a page an auditor reads is a
+    # column heading that means nothing to them.
     source = models.CharField(
-        max_length=10, choices=EntrySource.choices, default=EntrySource.MANUAL,
-        editable=False,
+        _("how it was entered"), max_length=10, choices=EntrySource.choices,
+        default=EntrySource.MANUAL, editable=False,
     )
     note = models.CharField(_("note"), max_length=200, blank=True)
 
-    confirmed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    confirmed_at = models.DateTimeField(
+        _("confirmed at"), null=True, blank=True, editable=False,
+    )
     confirmed_by = models.ForeignKey(
         django_settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="+", editable=False,
@@ -262,6 +313,31 @@ class DayRecord(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # **When hours were first put on this day**, which is not when the row was
+    # created and not when it was last touched.
+    #
+    # Every recording duty in German law has a deadline attached and none of
+    # them can be shown to have been met without this. §17 MiLoG: within seven
+    # calendar days, for a minijobber or anybody in a §2a SchwarzArbG industry.
+    # The June 2026 ArbZG draft: *am Tag der Arbeitsleistung*. The GoBD's
+    # *Zeitgerechtheit*: without undue delay, and a record made much later is
+    # suspect. A timesheet that cannot say when it was written can only assert
+    # that it was written on time.
+    #
+    # `created_at` cannot answer it. The month lets a note be written against
+    # any date, so a row can be created in March for a comment and gain
+    # January's hours in April — with `created_at` saying March and nothing at
+    # all saying April.
+    #
+    # **First, and never updated afterwards.** A day corrected in June was still
+    # *recorded* on the 3rd, and the correction is a separate fact that the
+    # audit trail already holds. Overwriting this would turn the one field that
+    # answers "was it timely" into one that answers "when was it last edited",
+    # which `updated_at` already does.
+    hours_entered_at = models.DateTimeField(
+        _("hours first recorded at"), null=True, blank=True, editable=False,
+    )
 
     class Meta:
         ordering = ["date"]
@@ -291,7 +367,14 @@ class DayRecord(models.Model):
         """
         if not force:
             assert_unlocked(self.employee, self.date)
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+        # A correction is hours too — time somebody was at work that was never
+        # clocked — so a day whose only entry is a correction has still been
+        # recorded, and the deadline it was recorded against still applies. A
+        # comment is not hours and deliberately does not stamp.
+        if self.correction_minutes:
+            self.stamp_entry()
+        return result
 
     def delete(self, *args, force=False, **kwargs):
         """The same. Clearing a day is a change to it — the largest one."""
@@ -314,6 +397,46 @@ class DayRecord(models.Model):
                     "for is the one entry on a timesheet that cannot be defended."
                 ),
             })
+
+    # -- when it was written ---------------------------------------------
+
+    def stamp_entry(self, when=None):
+        """Record that this day has hours, the first time it does. Idempotent.
+
+        Written with a **queryset ``update``**, which fires no signals and
+        therefore writes no audit entry — deliberately, and it is the one place
+        in the app that reaches past the model on an audited table. A timestamp
+        the system stamps the moment a day first gains hours is not somebody
+        changing a record; it is part of the record being made, and an audit
+        entry saying "hours_entered_at changed from nothing to now" beside the
+        entry for the hours themselves would be the same fact written twice.
+
+        Filtered on ``isnull`` rather than checked in Python, so two people
+        confirming the same day in the same second cannot both win — the second
+        ``UPDATE`` matches nothing.
+        """
+        if self.pk is None:
+            return
+        when = when or timezone.now()
+        updated = (
+            type(self).objects
+            .filter(pk=self.pk, hours_entered_at__isnull=True)
+            .update(hours_entered_at=when)
+        )
+        if updated:
+            self.hours_entered_at = when
+
+    @property
+    def days_to_record(self):
+        """Calendar days between the day worked and the day it was written down.
+
+        ``None`` when nothing has been recorded yet — which is not nought. Nought
+        is "written on the day", which is what the ArbZG draft asks for and is a
+        statement worth being able to make.
+        """
+        if self.hours_entered_at is None:
+            return None
+        return (timezone.localtime(self.hours_entered_at).date() - self.date).days
 
     # -- what it adds up to ----------------------------------------------
 
@@ -516,10 +639,13 @@ class DayRecord(models.Model):
             return None
         record, _created = cls.objects.get_or_create(employee=employee, date=date)
         record.segments.all().delete()
-        WorkSegment.objects.bulk_create([
-            WorkSegment(day=record, position=index, start=shift.start, end=shift.end)
-            for index, shift in enumerate(sorted(shifts, key=lambda s: s.start))
-        ])
+        # One at a time, for the reason `set_bookings` gives: `bulk_create`
+        # fires no `post_save`, so the audit trail would show every confirmed
+        # day as an emptying and never as a filling in.
+        for index, shift in enumerate(sorted(shifts, key=lambda s: s.start)):
+            WorkSegment.objects.create(
+                day=record, position=index, start=shift.start, end=shift.end,
+            )
         # The cached relation is stale after the bulk_create above, and
         # apply_break_rules reads it — without this the break is computed from
         # the segments the record had *before*, which for a new one is none at
@@ -597,12 +723,18 @@ class DayRecord(models.Model):
         relation is stale after the write, and anything that reads it — the
         break rules, above all — would compute from the segments that were here
         before.
+
+        **Saved one at a time rather than ``bulk_create``d**, and the reason is
+        not performance. ``bulk_create`` fires no ``post_save`` at all, while a
+        queryset ``delete`` fires every ``post_delete`` — so the audit trail
+        would have recorded each edit as the day being emptied and never as it
+        being filled in again, which is worse than recording nothing. This is
+        one to four rows and the batching bought a single round trip against a
+        local SQLite file. See ``apps/audit/signals.py``.
         """
         self.segments.all().delete()
-        WorkSegment.objects.bulk_create([
-            WorkSegment(day=self, position=index, start=start, end=end)
-            for index, (start, end) in enumerate(pairs)
-        ])
+        for index, (start, end) in enumerate(pairs):
+            WorkSegment.objects.create(day=self, position=index, start=start, end=end)
         self.refresh_from_db()
 
 
@@ -641,6 +773,20 @@ class WorkSegment(models.Model):
         if self.end is None:
             return f"{self.start:%H:%M}–…"
         return f"{self.start:%H:%M}–{self.end:%H:%M}"
+
+    def save(self, *args, **kwargs):
+        """Saves, then stamps the day as having been recorded.
+
+        Here rather than in the views because there are four ways a stretch
+        comes to exist — the pop-up, "confirm as rostered", Start, and the old
+        day form — and the timeliness of a record is not something three of them
+        may answer and the fourth forget. ``stamp_entry`` is idempotent and only
+        the *first* one counts, so being called from the hot path costs one
+        ``UPDATE`` that matches nothing.
+        """
+        result = super().save(*args, **kwargs)
+        self.day.stamp_entry()
+        return result
 
     def clean(self):
         if self.start and self.end and self.start == self.end:

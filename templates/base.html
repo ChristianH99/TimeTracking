@@ -50,6 +50,13 @@
              href="{% url 'timesheets:mine' %}">{% translate "Timesheet" %}</a>
           <a class="shell-nav-subitem{% if 'mine.absences' in nav_current %} active{% endif %}"
              href="{% url 'absences:mine' %}">{% translate "Time off" %}</a>
+          {% comment %}Every change ever made to your own records, and who made
+          it. Under "My time" rather than in Settings because it is *your*
+          history: an audit trail only the employer can read is one that protects
+          only the employer, and the person most likely to notice a figure they
+          did not type is the person whose figure it is.{% endcomment %}
+          <a class="shell-nav-subitem{% if 'mine.history' in nav_current %} active{% endif %}"
+             href="{% url 'audit:mine' %}">{% translate "My history" %}</a>
         </div>
 
         {% comment %}Manager-only, and hiding it is presentation rather than
@@ -73,6 +80,12 @@
                href="{% url 'employees:list' %}">{% translate "Employees" %}</a>
             <a class="shell-nav-subitem{% if 'team.year-end' in nav_current %} active{% endif %}"
                href="{% url 'absences:year-end' %}">{% translate "Year end" %}</a>
+            {% comment %}Handing the records over — to an inspector, an auditor,
+            or an employee asking for their copy. Last in the group, because it
+            is the entry somebody opens a few times a year and the five above it
+            are weekly.{% endcomment %}
+            <a class="shell-nav-subitem{% if 'team.export' in nav_current %} active{% endif %}"
+               href="{% url 'timesheets:export-page' %}">{% translate "Export" %}</a>
           </div>
         {% endif %}
       </nav>
@@ -107,6 +120,14 @@
                    href="{% url 'organisation:settings' %}">{% translate "Working time" %}</a>
                 <a class="shell-nav-subitem{% if 'settings.users' in nav_current %} active{% endif %}"
                    href="{% url 'accounts:user-list' %}">{% translate "People" %}</a>
+                {% comment %}The whole trail: what changed and what it was
+                before, who signed in, who was refused, who looked at whose
+                hours, and what left the app as a file. Here rather than under
+                Team because it is a page about the *software* as much as about
+                the people — and because it is the page an auditor is
+                shown.{% endcomment %}
+                <a class="shell-nav-subitem{% if 'settings.audit' in nav_current %} active{% endif %}"
+                   href="{% url 'audit:log' %}">{% translate "Audit trail" %}</a>
               {% endif %}
               {% comment %}Superuser only, and below People on purpose: "may add
               an account" and "may repoint the whole app at a different identity

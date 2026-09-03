@@ -34,6 +34,11 @@ urlpatterns = [
     # month is worth, and a reload is both simpler and certainly right.
     path("timesheet/status/<str:date>/", views.set_status_mine, name="set-status"),
     path("timesheet/confirm-week/", views.confirm_week, name="confirm-week"),
+    # A copy of your own records. `apps/timesheets/export.py` says why this
+    # exists at all after "no in-app export" was a standing decision: the June
+    # 2026 ArbZG draft gives an employee the right to obtain one, and DSGVO
+    # Art. 15(3) already did.
+    path("timesheet/export/<str:kind>/", views.export_mine, name="export"),
     path("timesheet/<int:pk>/clock/", views.clock, name="clock"),
     path("timesheet/<int:pk>/<str:date>/", views.day, name="day"),
     path("timesheet/<int:pk>/<str:date>/confirm/", views.confirm_day, name="confirm-day"),
@@ -43,9 +48,16 @@ urlpatterns = [
     # Closing a month. The parallel of absences' year-end page: a periodic act
     # over everybody at once, with the figures needed to decide on the page.
     path("team/month-end/", views.month_end_page, name="month-end"),
+    # The manager's export: anybody, any range, either format — which is the
+    # shape an FKS inspector's question has and the month page has nowhere to
+    # put. `everybody` is CSV only, deliberately; see the view.
+    path("team/export/", views.export_page, name="export-page"),
+    path("team/export/run/", views.export_run, name="export-run"),
+    path("team/export/everybody/", views.export_everybody, name="export-everybody"),
     path("team/month-end/lock/", views.lock_month, name="lock-month"),
     path("team/<int:pk>/lock/<str:date>/", views.lock_day, name="lock-day"),
     path("team/<int:pk>/", views.employee_month, name="employee"),
+    path("team/<int:pk>/export/<str:kind>/", views.export_employee, name="employee-export"),
     path("team/<int:pk>/save/<str:date>/", views.save_day, name="employee-save-day"),
     path("team/<int:pk>/status/<str:date>/", views.set_status, name="employee-set-status"),
     path("team/<int:pk>/clock/", views.clock, name="employee-clock"),

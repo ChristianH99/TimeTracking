@@ -461,6 +461,11 @@ def requests(request):
     the figure that matters: approving two of somebody's three pending requests
     is a thing that happens, and the days are only committed as each is decided.
     """
+    # Everybody's pending time off is everybody's data, so opening the page is a
+    # read of it. No single employee to name — see `apps/audit/access.py`.
+    from apps.audit.access import record_view
+
+    record_view(request, note="requests")
     waiting = (
         Absence.objects.filter(status__in=UNDECIDED)
         .select_related("employee", "special_type")
