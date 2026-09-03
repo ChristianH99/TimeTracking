@@ -191,6 +191,62 @@ class OrgSettings(models.Model):
         help_text=_("Used only when filling a week from the contracts, as the first draft."),
     )
 
+    # -- how long each kind of record is kept ----------------------------
+    #
+    # **Both directions.** "Delete when the period is up" is DSGVO Art. 5(1)(e)
+    # and is what people mean by a retention policy; "keep until the period is
+    # up" is the AO and the ArbZG, and an app with only the first destroys
+    # evidence its employer is required to hold. Keeping everything forever —
+    # which is what this app did — is the wrong answer to both at once.
+    #
+    # Five figures and not one, because the periods genuinely differ and a single
+    # number would have to be the longest of them, which is exactly the
+    # over-retention the DSGVO objects to. **Each is a ceiling with a statutory
+    # floor under it**: `apps/audit/retention.py` holds the floors, refuses to
+    # sweep inside one, and raises a figure set below one rather than obeying it.
+    # The defaults are generous, because over-retention is a conversation with a
+    # data protection officer and under-retention is one with the Zoll.
+    keep_working_time_years = models.PositiveSmallIntegerField(
+        _("keep working time for (years)"), default=10,
+        validators=[MinValueValidator(2), MaxValueValidator(30)],
+        help_text=_(
+            "Days, bookings and closed months. Two years is the statutory minimum "
+            "(§16 ArbZG, §17 MiLoG); the wage account they support is six, and "
+            "social insurance longer still."
+        ),
+    )
+    keep_absences_years = models.PositiveSmallIntegerField(
+        _("keep time off and sickness for (years)"), default=10,
+        validators=[MinValueValidator(3), MaxValueValidator(30)],
+        help_text=_("Leave, sickness and what was carried over."),
+    )
+    keep_roster_years = models.PositiveSmallIntegerField(
+        _("keep the roster for (years)"), default=2,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "What people were asked to work. No statute requires keeping a plan, "
+            "and it stops being useful once the timesheet beside it has gone."
+        ),
+    )
+    keep_audit_years = models.PositiveSmallIntegerField(
+        _("keep the audit trail for (years)"), default=10,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "It cannot be kept for less than the records it explains — a trail "
+            "that expires first leaves them unaccounted for. A shorter figure is "
+            "raised to the longest of the three above."
+        ),
+    )
+    keep_security_log_years = models.PositiveSmallIntegerField(
+        _("keep sign-ins for (years)"), default=1,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "Who signed in, who was refused. Art. 32 DSGVO wants the log to "
+            "exist and no statute says how long — the one period here where "
+            "longer is harder to defend rather than easier."
+        ),
+    )
+
     class Meta:
         verbose_name = _("working time settings")
         verbose_name_plural = _("working time settings")

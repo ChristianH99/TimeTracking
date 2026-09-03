@@ -17,7 +17,8 @@ from django.views.decorators.http import require_POST
 from apps.absences.models import BankHoliday, CompanyClosure
 from apps.accounts.permissions import staff_required
 from apps.organisation.forms import (
-    BreakRuleFormSet, OrgSettingsForm, SpecialLeaveTypeForm, ThresholdFormSet,
+    BreakRuleFormSet, OrgSettingsForm, RetentionForm, SpecialLeaveTypeForm,
+    ThresholdFormSet,
 )
 from apps.organisation.models import (
     DEFAULT_BREAK_RULES, AssignmentMode, BreakRule, OrgSettings, SpecialLeaveType,
@@ -315,3 +316,38 @@ def closure_delete(request, pk):
         "“%(name)s” was deleted and the days it took off everybody were given back."
     ) % {"name": name})
     return redirect("organisation:closures")
+
+
+@staff_required
+def retention_view(request):
+    """How long each kind of record is kept, and what is out of period today.
+
+    A report and a form on one page, because the two questions are asked in one
+    breath: somebody opens this either because a data protection request has
+    arrived — "what do you still hold about me" — or because an auditor asked
+    what the policy is. Both want the numbers and the consequence side by side.
+
+    **Nothing is deleted from here.** The page says what is due and names the
+    command; the button that removes ten years of somebody's timesheet is not one
+    to have on a settings page next to a save. `apps/audit/retention.py` and
+    `manage.py apply_retention` are the whole of that path, and it is a dry run
+    unless the word is typed.
+    """
+    from apps.audit import retention
+
+    current = OrgSettings.current()
+    if request.method == "POST":
+        form = RetentionForm(request.POST, instance=current)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("The retention periods were saved."))
+            return redirect("organisation:retention")
+    else:
+        form = RetentionForm(instance=current)
+
+    rows = retention.survey(current)
+    return render(request, "organisation/retention.html", {
+        "form": form,
+        "rows": rows,
+        "total_due": sum(row["due"] for row in rows),
+    })

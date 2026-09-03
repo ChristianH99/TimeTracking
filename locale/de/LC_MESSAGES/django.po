@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 09:43+0200\n"
+"POT-Creation-Date: 2026-09-03 18:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -197,7 +197,7 @@ msgid "date"
 msgstr "Datum"
 
 #: .\apps\absences\models.py:118 .\apps\absences\models.py:210
-#: .\apps\organisation\models.py:554
+#: .\apps\organisation\models.py:610
 msgid "name"
 msgstr "Name"
 
@@ -684,7 +684,7 @@ msgstr "die Anfrage schlug fehl"
 msgid "The account “%(name)s” was created."
 msgstr "Das Konto „%(name)s“ wurde angelegt."
 
-#: .\apps\accounts\users.py:106 .\apps\organisation\views.py:171
+#: .\apps\accounts\users.py:106 .\apps\organisation\views.py:172
 #, python-format
 msgid "“%(name)s” was saved."
 msgstr "„%(name)s“ wurde gespeichert."
@@ -713,7 +713,7 @@ msgstr "„%(name)s“ ist nicht mehr mit dem Identitätsanbieter verknüpft und
 msgid "You cannot delete your own account."
 msgstr "Sie können Ihr eigenes Konto nicht löschen."
 
-#: .\apps\accounts\users.py:247 .\apps\organisation\views.py:208
+#: .\apps\accounts\users.py:247 .\apps\organisation\views.py:209
 #, python-format
 msgid "“%(name)s” was deleted."
 msgstr "„%(name)s“ wurde gelöscht."
@@ -769,33 +769,87 @@ msgstr "Anmeldung abgelehnt"
 msgid "signed out"
 msgstr "abgemeldet"
 
-#: .\apps\audit\models.py:115
+#: .\apps\audit\models.py:89
+msgid "removed, period expired"
+msgstr "gelöscht, Frist abgelaufen"
+
+#: .\apps\audit\models.py:159
 msgid "when"
 msgstr "Zeitpunkt"
 
-#: .\apps\audit\models.py:117
+#: .\apps\audit\models.py:161
 msgid "what happened"
 msgstr "Vorgang"
 
-#: .\apps\audit\models.py:127
+#: .\apps\audit\models.py:171
 msgid "who"
 msgstr "Wer"
 
-#: .\apps\audit\models.py:139
+#: .\apps\audit\models.py:183
 msgid "about"
 msgstr "Betrifft"
 
-#: .\apps\audit\models.py:142
+#: .\apps\audit\models.py:186
 msgid "record"
 msgstr "Datensatz"
 
-#: .\apps\audit\models.py:161
+#: .\apps\audit\models.py:205
 msgid "audit entry"
 msgstr "Protokolleintrag"
 
-#: .\apps\audit\models.py:162
+#: .\apps\audit\models.py:206
 msgid "audit entries"
 msgstr "Protokolleinträge"
+
+#: .\apps\audit\retention.py:186 .\templates\base.html:131
+#: .\templates\organisation\settings.html:3
+#: .\templates\organisation\settings.html:4
+msgid "Working time"
+msgstr "Arbeitszeit"
+
+#: .\apps\audit\retention.py:190
+msgid "Days, bookings and closed months. §16(2) ArbZG and §17 MiLoG both require two years; the wage account they support is six (§41 EStG, §147(3) AO) and social insurance runs to the end of the year after the next audit, which is a date nobody can work out in advance."
+msgstr "Tage, Buchungen und gesperrte Monate. §16 Abs. 2 ArbZG und §17 MiLoG verlangen beide zwei Jahre; das Lohnkonto, das sie stützen, sechs (§41 EStG, §147 Abs. 3 AO), und die Sozialversicherung bis zum Ende des Jahres nach der nächsten Prüfung — ein Datum, das sich im Voraus nicht berechnen lässt."
+
+#: .\apps\audit\retention.py:199
+msgid "Time off and sickness"
+msgstr "Abwesenheit und Krankheit"
+
+#: .\apps\audit\retention.py:203
+msgid "Leave, sickness and what was carried over. Three years is the ordinary limitation period for a claim (§195 BGB); leave that was never expired for want of a reminder can outlive it, which is why the setting starts well above the floor."
+msgstr "Urlaub, Krankheit und der Übertrag. Drei Jahre ist die regelmäßige Verjährungsfrist (§195 BGB); Urlaub, der mangels Hinweis nie verfallen ist, kann sie überdauern — deshalb liegt die Voreinstellung deutlich über dem Minimum."
+
+#: .\apps\audit\retention.py:212
+msgid "The roster"
+msgstr "Dienstplan"
+
+#: .\apps\audit\retention.py:216
+msgid "What people were asked to work. No statute requires keeping a plan; it is kept because “you were rostered 08:00–14:00 and entered 08:00–15:30” is the sentence this app exists to be able to say — and that stops mattering once the timesheet beside it has gone."
+msgstr "Wozu die Mitarbeitenden eingeteilt waren. Kein Gesetz verlangt, einen Plan aufzubewahren; er wird behalten, weil „Sie waren 08:00–14:00 eingeteilt und haben 08:00–15:30 eingetragen“ der Satz ist, für den es diese Anwendung gibt — und das zählt nicht mehr, sobald der Stundenzettel daneben weg ist."
+
+#: .\apps\audit\retention.py:225
+msgid "The audit trail"
+msgstr "Änderungsprotokoll"
+
+#: .\apps\audit\retention.py:229
+msgid "Every change to a record, who made it, and who looked at whose hours. It cannot be set shorter than the records it explains: a trail that dies first leaves them unexplained, which is worse than having kept neither."
+msgstr "Jede Änderung an einem Datensatz, von wem sie stammt, und wer wessen Stunden eingesehen hat. Es lässt sich nicht kürzer einstellen als die Daten, die es erklärt: ein Protokoll, das zuerst verfällt, lässt sie unerklärt zurück — schlimmer, als beides nicht aufbewahrt zu haben."
+
+#: .\apps\audit\retention.py:238
+msgid "Sign-ins"
+msgstr "Anmeldungen"
+
+#: .\apps\audit\retention.py:242
+msgid "Who signed in, who was refused, who signed out. Art. 32 DSGVO wants the log to exist and no statute says how long — so this is the one period where longer is harder to defend rather than easier, and it is the only class that is short by default."
+msgstr "Wer sich angemeldet hat, wer abgewiesen wurde, wer sich abgemeldet hat. Art. 32 DSGVO will, dass es dieses Protokoll gibt, und kein Gesetz sagt, wie lange — hier ist länger also schwerer zu rechtfertigen statt leichter, und es ist die einzige Kategorie, die standardmäßig kurz ist."
+
+#: .\apps\audit\retention.py:379 .\apps\audit\retention.py:502
+msgid "People who have left"
+msgstr "Ausgeschiedene Personen"
+
+#: .\apps\audit\retention.py:381
+msgid "Somebody who has left is erased once nothing about them is left — no day, no time off, no roster entry and no audit entry. Their name is written into the audit trail and that cannot be edited, so the only way to remove it is to let the trail expire first. The longest period above is what decides when."
+msgstr "Wer ausgeschieden ist, wird gelöscht, sobald nichts mehr über die Person vorhanden ist — kein Tag, keine Abwesenheit, kein Dienstplaneintrag und kein Protokolleintrag. Der Name steht im Änderungsprotokoll, und das lässt sich nicht bearbeiten; ihn zu entfernen geht nur, indem das Protokoll zuerst verfällt. Die längste Frist oben entscheidet, wann."
 
 #: .\apps\employees\forms.py:61
 msgid "the same as the workplace"
@@ -983,8 +1037,8 @@ msgstr "Verträge"
 msgid "leave type"
 msgstr "Urlaubsart"
 
-#: .\apps\employees\models.py:690 .\apps\organisation\models.py:560
-#: .\apps\organisation\models.py:671 .\apps\timesheets\models.py:345
+#: .\apps\employees\models.py:690 .\apps\organisation\models.py:616
+#: .\apps\organisation\models.py:727 .\apps\timesheets\models.py:345
 #: .\templates\employees\employee_leave.html:94
 msgid "days"
 msgstr "Tage"
@@ -1052,7 +1106,7 @@ msgstr "Der gesetzliche Anteil kann nicht größer sein als der Gesamtanspruch. 
 msgid "There is no such day in that month. It will be read as the last day of it."
 msgstr "Diesen Tag gibt es in dem Monat nicht. Er wird als der letzte Tag des Monats gelesen."
 
-#: .\apps\organisation\forms.py:99 .\apps\organisation\models.py:505
+#: .\apps\organisation\forms.py:99 .\apps\organisation\models.py:561
 msgid "working time over"
 msgstr "Arbeitszeit über"
 
@@ -1060,7 +1114,7 @@ msgstr "Arbeitszeit über"
 msgid "In hours. 6 means “more than six hours of work”."
 msgstr "In Stunden. 6 bedeutet „mehr als sechs Stunden Arbeit“."
 
-#: .\apps\organisation\forms.py:102 .\apps\organisation\models.py:509
+#: .\apps\organisation\forms.py:102 .\apps\organisation\models.py:565
 #: .\apps\timesheets\models.py:261
 msgid "break"
 msgstr "Pause"
@@ -1076,6 +1130,11 @@ msgstr "Eine aus einer Tabelle berechnete Urlaubsart braucht mindestens eine Zei
 #: .\apps\organisation\forms.py:192
 msgid "There is already a row for this many days."
 msgstr "Für diese Anzahl Tage gibt es bereits eine Zeile."
+
+#: .\apps\organisation\forms.py:240
+#, python-format
+msgid "The audit trail cannot be kept for less than the records it explains — %(floor)s years here. A trail that expires first leaves a timesheet nobody can account for, and the gap looks like an answer."
+msgstr "Das Änderungsprotokoll lässt sich nicht kürzer aufbewahren als die Daten, die es erklärt — hier %(floor)s Jahre. Ein Protokoll, das zuerst verfällt, lässt einen Stundenzettel zurück, den niemand belegen kann, und die Lücke sieht aus wie eine Antwort."
 
 #: .\apps\organisation\models.py:37
 msgid "Baden-Württemberg"
@@ -1229,113 +1288,157 @@ msgstr "Die Uhr, nach der der Betrieb geht. Wer anderswo arbeitet, kann im Vertr
 msgid "Used only when filling a week from the contracts, as the first draft."
 msgstr "Wird nur beim Erzeugen einer Woche aus den Verträgen als erster Entwurf verwendet."
 
-#: .\apps\organisation\models.py:195 .\apps\organisation\models.py:196
+#: .\apps\organisation\models.py:210
+msgid "keep working time for (years)"
+msgstr "Arbeitszeiten aufbewahren (Jahre)"
+
+#: .\apps\organisation\models.py:213
+msgid "Days, bookings and closed months. Two years is the statutory minimum (§16 ArbZG, §17 MiLoG); the wage account they support is six, and social insurance longer still."
+msgstr "Tage, Buchungen und gesperrte Monate. Zwei Jahre sind das gesetzliche Minimum (§16 ArbZG, §17 MiLoG); das Lohnkonto, das sie stützen, sechs — die Sozialversicherung noch länger."
+
+#: .\apps\organisation\models.py:219
+msgid "keep time off and sickness for (years)"
+msgstr "Abwesenheiten aufbewahren (Jahre)"
+
+#: .\apps\organisation\models.py:221
+msgid "Leave, sickness and what was carried over."
+msgstr "Urlaub, Krankheit und der Übertrag."
+
+#: .\apps\organisation\models.py:224
+msgid "keep the roster for (years)"
+msgstr "Dienstplan aufbewahren (Jahre)"
+
+#: .\apps\organisation\models.py:227
+msgid "What people were asked to work. No statute requires keeping a plan, and it stops being useful once the timesheet beside it has gone."
+msgstr "Wozu die Mitarbeitenden eingeteilt waren. Kein Gesetz verlangt, einen Plan aufzubewahren, und er nützt nichts mehr, sobald der Stundenzettel daneben weg ist."
+
+#: .\apps\organisation\models.py:232
+msgid "keep the audit trail for (years)"
+msgstr "Änderungsprotokoll aufbewahren (Jahre)"
+
+#: .\apps\organisation\models.py:235
+msgid "It cannot be kept for less than the records it explains — a trail that expires first leaves them unaccounted for. A shorter figure is raised to the longest of the three above."
+msgstr "Es lässt sich nicht kürzer aufbewahren als die Daten, die es erklärt — ein Protokoll, das zuerst verfällt, lässt sie unbelegt zurück. Ein kürzerer Wert wird auf die längste der drei Fristen oben angehoben."
+
+#: .\apps\organisation\models.py:241
+msgid "keep sign-ins for (years)"
+msgstr "Anmeldungen aufbewahren (Jahre)"
+
+#: .\apps\organisation\models.py:244
+msgid "Who signed in, who was refused. Art. 32 DSGVO wants the log to exist and no statute says how long — the one period here where longer is harder to defend rather than easier."
+msgstr "Wer sich angemeldet hat und wer abgewiesen wurde. Art. 32 DSGVO will, dass es dieses Protokoll gibt, und kein Gesetz sagt, wie lange — die einzige Frist hier, bei der länger schwerer zu rechtfertigen ist statt leichter."
+
+#: .\apps\organisation\models.py:251 .\apps\organisation\models.py:252
 msgid "working time settings"
 msgstr "Arbeitszeit-Einstellungen"
 
-#: .\apps\organisation\models.py:199
+#: .\apps\organisation\models.py:255
 msgid "Working time settings"
 msgstr "Arbeitszeit-Einstellungen"
 
-#: .\apps\organisation\models.py:506
+#: .\apps\organisation\models.py:562
 msgid "In minutes. 360 is six hours."
 msgstr "In Minuten. 360 sind sechs Stunden."
 
-#: .\apps\organisation\models.py:509 .\apps\timesheets\models.py:261
+#: .\apps\organisation\models.py:565 .\apps\timesheets\models.py:261
 msgid "In minutes."
 msgstr "In Minuten."
 
-#: .\apps\organisation\models.py:514
+#: .\apps\organisation\models.py:570
 msgid "break rule"
 msgstr "Pausenregel"
 
-#: .\apps\organisation\models.py:515
+#: .\apps\organisation\models.py:571
 msgid "break rules"
 msgstr "Pausenregeln"
 
-#: .\apps\organisation\models.py:535
+#: .\apps\organisation\models.py:591
 msgid "the same for everybody who has it"
 msgstr "für alle gleich, die ihn haben"
 
-#: .\apps\organisation\models.py:536
+#: .\apps\organisation\models.py:592
 msgid "scaled by working days, like the annual leave"
 msgstr "anteilig nach Arbeitstagen, wie der Jahresurlaub"
 
-#: .\apps\organisation\models.py:537
+#: .\apps\organisation\models.py:593
 msgid "from a table of working days per week"
 msgstr "aus einer Tabelle nach Arbeitstagen pro Woche"
 
-#: .\apps\organisation\models.py:556
+#: .\apps\organisation\models.py:612
 msgid "how it is worked out"
 msgstr "wie er berechnet wird"
 
-#: .\apps\organisation\models.py:562
+#: .\apps\organisation\models.py:618
 msgid "For “the same for everybody”, the number itself. For “scaled”, what a full-time employee would get."
 msgstr "Bei „für alle gleich“ die Zahl selbst. Bei „anteilig“ das, was eine Vollzeitkraft bekäme."
 
-#: .\apps\organisation\models.py:565
+#: .\apps\organisation\models.py:621
 msgid "offered"
 msgstr "wird angeboten"
 
-#: .\apps\organisation\models.py:566
+#: .\apps\organisation\models.py:622
 msgid "Switching this off keeps the leave already taken and stops it being granted to anybody new."
 msgstr "Abschalten behält den bereits genommenen Urlaub und verhindert, dass die Art neu vergeben wird."
 
-#: .\apps\organisation\models.py:571
+#: .\apps\organisation\models.py:627
 msgid "special leave type"
 msgstr "Sonderurlaubsart"
 
-#: .\apps\organisation\models.py:572
+#: .\apps\organisation\models.py:628
 msgid "special leave types"
 msgstr "Sonderurlaubsarten"
 
-#: .\apps\organisation\models.py:584
+#: .\apps\organisation\models.py:640
 msgid "A leave type worked out from a table needs at least one row in it."
 msgstr "Eine aus einer Tabelle berechnete Urlaubsart braucht mindestens eine Zeile."
 
-#: .\apps\organisation\models.py:667
+#: .\apps\organisation\models.py:723
 msgid "working days per week, at least"
 msgstr "Arbeitstage pro Woche, mindestens"
 
-#: .\apps\organisation\models.py:677
+#: .\apps\organisation\models.py:733
 msgid "threshold"
 msgstr "Staffel"
 
-#: .\apps\organisation\models.py:678
+#: .\apps\organisation\models.py:734
 msgid "thresholds"
 msgstr "Staffeln"
 
-#: .\apps\organisation\views.py:48
+#: .\apps\organisation\views.py:49
 msgid "The working time rules were saved."
 msgstr "Die Arbeitszeitregeln wurden gespeichert."
 
-#: .\apps\organisation\views.py:119
+#: .\apps\organisation\views.py:120
 msgid "There are already break rules; nothing was changed."
 msgstr "Es gibt bereits Pausenregeln; es wurde nichts geändert."
 
-#: .\apps\organisation\views.py:125
+#: .\apps\organisation\views.py:126
 msgid "The usual break rules were added."
 msgstr "Die üblichen Pausenregeln wurden hinzugefügt."
 
-#: .\apps\organisation\views.py:201
+#: .\apps\organisation\views.py:202
 #, python-format
 msgid "“%(name)s” cannot be deleted: leave has been taken against it and the record of it would lose its name. Switch it off instead — nobody new gets it and the days already taken keep their meaning."
 msgstr "„%(name)s“ kann nicht gelöscht werden: es wurde bereits Urlaub darauf genommen, und dessen Nachweis verlöre seinen Namen. Schalten Sie die Art stattdessen ab — niemand bekommt sie neu, und die bereits genommenen Tage behalten ihre Bedeutung."
 
-#: .\apps\organisation\views.py:237
+#: .\apps\organisation\views.py:238
 #, python-format
 msgid "%(added)s public holidays for %(year)s in %(land)s. %(removed)s previously generated ones were replaced; anything added by hand was left alone."
 msgstr "%(added)s Feiertage für %(year)s in %(land)s. %(removed)s zuvor berechnete wurden ersetzt; von Hand hinzugefügte blieben unangetastet."
 
-#: .\apps\organisation\views.py:295
+#: .\apps\organisation\views.py:296
 #, python-format
 msgid "“%(name)s” was saved and applied to everybody currently employed."
 msgstr "„%(name)s“ wurde gespeichert und für alle derzeit Beschäftigten eingetragen."
 
-#: .\apps\organisation\views.py:315
+#: .\apps\organisation\views.py:316
 #, python-format
 msgid "“%(name)s” was deleted and the days it took off everybody were given back."
 msgstr "„%(name)s“ wurde gelöscht; die dadurch abgezogenen Tage wurden allen zurückgegeben."
+
+#: .\apps\organisation\views.py:343
+msgid "The retention periods were saved."
+msgstr "Die Aufbewahrungsfristen wurden gespeichert."
 
 #: .\apps\roster\forms.py:28 .\apps\timesheets\forms.py:29
 #: .\templates\absences\mine.html:250 .\templates\absences\mine.html:429
@@ -1605,28 +1708,28 @@ msgstr "Mitarbeiter/in"
 msgid "Period"
 msgstr "Zeitraum"
 
-#: .\apps\timesheets\export.py:304 .\apps\timesheets\export.py:482
+#: .\apps\timesheets\export.py:304 .\apps\timesheets\export.py:487
 #: .\apps\timesheets\views.py:1918
 msgid "Exported"
 msgstr "Exportiert"
 
-#: .\apps\timesheets\export.py:313 .\apps\timesheets\export.py:428
+#: .\apps\timesheets\export.py:313 .\apps\timesheets\export.py:433
 msgid "Total"
 msgstr "Summe"
 
-#: .\apps\timesheets\export.py:400
+#: .\apps\timesheets\export.py:405
 msgid "Working time record"
 msgstr "Arbeitszeitnachweis"
 
-#: .\apps\timesheets\export.py:477
+#: .\apps\timesheets\export.py:482
 msgid "Every duration is hh:mm. “Actual” includes hours credited for an approved absence, which are paid as though worked (§3 EFZG, §11 BUrlG); time off in lieu credits nothing, and that shortfall is the overtime being taken back. Breaks are deducted under §4 ArbZG."
 msgstr "Alle Dauern stehen als hh:mm. „Ist“ enthält Stunden, die für eine genehmigte Abwesenheit gutgeschrieben wurden und wie gearbeitete Zeit vergütet werden (§3 EFZG, §11 BUrlG); der Freizeitausgleich wird nicht gutgeschrieben — genau dieses Minus ist der Abbau der Überstunden. Pausen werden nach §4 ArbZG abgezogen."
 
-#: .\apps\timesheets\export.py:482
+#: .\apps\timesheets\export.py:487
 msgid "by"
 msgstr "von"
 
-#: .\apps\timesheets\export.py:483
+#: .\apps\timesheets\export.py:488
 #, python-format
 msgid "Page %(page)s of %(total)s"
 msgstr "Seite %(page)s von %(total)s"
@@ -1988,7 +2091,7 @@ msgstr "Abwesenheit"
 #: .\templates\accounts\sso_settings.html:3
 #: .\templates\accounts\user_form.html:3 .\templates\accounts\user_list.html:3
 #: .\templates\accounts\user_password.html:3 .\templates\audit\log.html:3
-#: .\templates\base.html:6 .\templates\base.html:33 .\templates\base.html:212
+#: .\templates\base.html:6 .\templates\base.html:33 .\templates\base.html:219
 #: .\templates\employees\contract_change.html:3
 #: .\templates\employees\employee_form.html:3
 #: .\templates\employees\employee_list.html:3
@@ -1997,6 +2100,7 @@ msgstr "Abwesenheit"
 #: .\templates\organisation\holidays.html:3
 #: .\templates\organisation\leave_type_form.html:3
 #: .\templates\organisation\leave_types.html:3
+#: .\templates\organisation\retention.html:3
 #: .\templates\organisation\settings.html:3 .\templates\roster\plan.html:3
 #: .\templates\timesheets\day.html:3 .\templates\timesheets\export.html:3
 #: .\templates\timesheets\home.html:3 .\templates\timesheets\month.html:3
@@ -2254,8 +2358,8 @@ msgstr "Zur Genehmigung senden"
 #: .\templates\absences\mine.html:460 .\templates\absences\mine.html:522
 #: .\templates\accounts\sso_settings.html:225
 #: .\templates\accounts\user_form.html:101
-#: .\templates\accounts\user_password.html:30 .\templates\base.html:285
-#: .\templates\base.html:302 .\templates\employees\contract_change.html:69
+#: .\templates\accounts\user_password.html:30 .\templates\base.html:292
+#: .\templates\base.html:309 .\templates\employees\contract_change.html:69
 #: .\templates\timesheets\month.html:572 .\templates\timesheets\month.html:615
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -2525,6 +2629,7 @@ msgstr "Grund der Verlängerung"
 #: .\templates\organisation\closure_form.html:7
 #: .\templates\organisation\leave_type_form.html:7
 #: .\templates\organisation\leave_type_form.html:76
+#: .\templates\organisation\retention.html:104
 #: .\templates\organisation\settings.html:7 .\templates\roster\plan.html:8
 #: .\templates\timesheets\day.html:8 .\templates\timesheets\month.html:571
 #: .\templates\timesheets\month.html:614
@@ -2630,7 +2735,7 @@ msgstr "Benutzername"
 msgid "Show password (hold)"
 msgstr "Passwort anzeigen (gedrückt halten)"
 
-#: .\templates\accounts\sso_settings.html:3 .\templates\base.html:150
+#: .\templates\accounts\sso_settings.html:3 .\templates\base.html:157
 msgid "Sign-in"
 msgstr "Anmeldung"
 
@@ -2914,7 +3019,7 @@ msgstr "Volle Rechte, einschließlich des Wegs zurück, wenn etwas nicht stimmt.
 msgid "If a provider group is configured as the administrator group, the provider decides this at every sign-in and anything set here is replaced."
 msgstr "Ist eine Anbietergruppe als Administratorgruppe konfiguriert, entscheidet der Anbieter dies bei jeder Anmeldung und überschreibt, was hier gesetzt ist."
 
-#: .\templates\accounts\user_form.html:100 .\templates\base.html:300
+#: .\templates\accounts\user_form.html:100 .\templates\base.html:307
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
@@ -3242,36 +3347,36 @@ msgstr "Export"
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: .\templates\base.html:131 .\templates\organisation\settings.html:3
-#: .\templates\organisation\settings.html:4
-msgid "Working time"
-msgstr "Arbeitszeit"
+#: .\templates\base.html:149 .\templates\organisation\retention.html:3
+#: .\templates\organisation\retention.html:4
+msgid "Retention"
+msgstr "Aufbewahrung"
 
-#: .\templates\base.html:153
+#: .\templates\base.html:160
 msgid "Administration"
 msgstr "Verwaltung"
 
-#: .\templates\base.html:176
+#: .\templates\base.html:183
 msgid "Sign out"
 msgstr "Abmelden"
 
-#: .\templates\base.html:191
+#: .\templates\base.html:198
 msgid "Toggle navigation"
 msgstr "Navigation ein-/ausblenden"
 
-#: .\templates\base.html:229 .\templates\base.html:230
+#: .\templates\base.html:236 .\templates\base.html:237
 msgid "Help for this page"
 msgstr "Hilfe zu dieser Seite"
 
-#: .\templates\base.html:297
+#: .\templates\base.html:304
 msgid "Unsaved changes"
 msgstr "Ungespeicherte Änderungen"
 
-#: .\templates\base.html:298
+#: .\templates\base.html:305
 msgid "You have unsaved changes on this page. Do you want to save them before leaving?"
 msgstr "Auf dieser Seite gibt es ungespeicherte Änderungen. Möchten Sie sie vor dem Verlassen speichern?"
 
-#: .\templates\base.html:301
+#: .\templates\base.html:308
 msgid "Discard"
 msgstr "Verwerfen"
 
@@ -3761,6 +3866,81 @@ msgstr "Wurde bereits Urlaub darauf genommen, verweigert die App den Vorgang, we
 #: .\templates\organisation\leave_types.html:65
 msgid "No special leave types yet."
 msgstr "Noch keine Sonderurlaubsarten."
+
+#: .\templates\organisation\retention.html:5
+msgid "how long each record is kept"
+msgstr "wie lange was aufbewahrt wird"
+
+#: .\templates\organisation\retention.html:19
+msgid "A retention policy has two halves and this page is both. Records must be deleted once their period is up — that is storage limitation under Art. 5(1)(e) DSGVO. They must also be kept until it is up: §16 ArbZG, §17 MiLoG, §147 AO and §28f SGB IV each set a minimum, and deleting inside one destroys evidence the employer is required to produce. Keeping everything forever is the wrong answer to both at once."
+msgstr "Eine Aufbewahrungsregel hat zwei Hälften, und diese Seite ist beide. Daten müssen gelöscht werden, sobald ihre Frist abgelaufen ist — das ist die Speicherbegrenzung nach Art. 5 Abs. 1 lit. e DSGVO. Sie müssen aber auch bis dahin aufbewahrt werden: §16 ArbZG, §17 MiLoG, §147 AO und §28f SGB IV setzen jeweils ein Minimum, und wer innerhalb einer Frist löscht, vernichtet Nachweise, die der Arbeitgeber vorlegen muss. Alles für immer zu behalten ist die falsche Antwort auf beides zugleich."
+
+#: .\templates\organisation\retention.html:26
+msgid "Records"
+msgstr "Daten"
+
+#: .\templates\organisation\retention.html:27
+msgid "Kept for"
+msgstr "Aufbewahrt"
+
+#: .\templates\organisation\retention.html:28
+msgid "Deleted before"
+msgstr "Gelöscht vor"
+
+#: .\templates\organisation\retention.html:29
+msgid "Oldest held"
+msgstr "Ältester Bestand"
+
+#: .\templates\organisation\retention.html:30
+msgid "Out of period"
+msgstr "Frist abgelaufen"
+
+#: .\templates\organisation\retention.html:31
+msgid "Why that minimum"
+msgstr "Warum dieses Minimum"
+
+#: .\templates\organisation\retention.html:40
+#, python-format
+msgid "%(counter)s year"
+msgid_plural "%(counter)s years"
+msgstr[0] "%(counter)s Jahr"
+msgstr[1] "%(counter)s Jahre"
+
+#: .\templates\organisation\retention.html:47
+#, python-format
+msgid "Set to %(wanted)s and raised to the statutory minimum of %(floor)s."
+msgstr "Auf %(wanted)s gesetzt und auf das gesetzliche Minimum von %(floor)s angehoben."
+
+#: .\templates\organisation\retention.html:53
+msgid "when nothing is left"
+msgstr "wenn nichts mehr da ist"
+
+#: .\templates\organisation\retention.html:81
+#, python-format
+msgid "<strong>%(counter)s record</strong> is out of its period. Nothing on this page deletes it."
+msgid_plural "<strong>%(counter)s records</strong> are out of their period. Nothing on this page deletes them."
+msgstr[0] "<strong>%(counter)s Datensatz</strong> hat seine Frist überschritten. Diese Seite löscht ihn nicht."
+msgstr[1] "<strong>%(counter)s Datensätze</strong> haben ihre Frist überschritten. Diese Seite löscht sie nicht."
+
+#: .\templates\organisation\retention.html:83
+msgid "Nothing is out of its period. Nothing on this page deletes anything in any case."
+msgstr "Nichts hat seine Frist überschritten. Diese Seite löscht ohnehin nichts."
+
+#: .\templates\organisation\retention.html:85
+msgid "Deleting is one command, and it says what it would do unless it is told twice:"
+msgstr "Gelöscht wird mit einem Befehl, und der sagt nur, was er täte, solange er nicht zweimal darum gebeten wird:"
+
+#: .\templates\organisation\retention.html:86
+msgid "reports;"
+msgstr "meldet;"
+
+#: .\templates\organisation\retention.html:87
+msgid "removes, and writes one audit entry for each kind of record that went."
+msgstr "löscht und schreibt je einen Protokolleintrag für jede Datenart, die entfernt wurde."
+
+#: .\templates\organisation\retention.html:92
+msgid "The periods"
+msgstr "Die Fristen"
 
 #: .\templates\organisation\settings.html:12
 msgid "The rules everything else in the app computes against. Changing one of these moves every employee’s figures at once, which is why this page is separate from the roster and why managing the roster does not open it."

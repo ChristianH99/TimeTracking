@@ -197,3 +197,50 @@ ThresholdFormSet = inlineformset_factory(
     SpecialLeaveType, SpecialLeaveThreshold, form=SpecialLeaveThresholdForm,
     formset=_ThresholdFormSet, extra=0, can_delete=True,
 )
+
+
+class RetentionForm(forms.ModelForm):
+    """How long each kind of record is kept.
+
+    Its own form and its own page rather than five more boxes on the working time
+    settings, because it answers a different question to a different person: the
+    rules page is what the app *computes* with and is read by whoever runs the
+    rota, and this is what the app *keeps* and is read by whoever answers a data
+    protection request.
+
+    **The audit trail's minimum is derived and the form refuses below it**, rather
+    than accepting the number and quietly raising it. `apps/audit/retention.py`
+    clamps as well — a row written by a migration or by hand must not be able to
+    shorten a period by being loaded — but a settings page that takes a figure and
+    then ignores it is the control that does nothing, which is the thing people
+    press, see no effect from, and report as broken.
+    """
+
+    class Meta:
+        model = OrgSettings
+        fields = [
+            "keep_working_time_years", "keep_absences_years", "keep_roster_years",
+            "keep_audit_years", "keep_security_log_years",
+        ]
+
+    def clean(self):
+        data = super().clean()
+        wanted = data.get("keep_audit_years")
+        records = [
+            data.get("keep_working_time_years"),
+            data.get("keep_absences_years"),
+            data.get("keep_roster_years"),
+        ]
+        if wanted is None or any(value is None for value in records):
+            return data
+        floor = max(records)
+        if wanted < floor:
+            self.add_error("keep_audit_years", forms.ValidationError(
+                _(
+                    "The audit trail cannot be kept for less than the records it "
+                    "explains — %(floor)s years here. A trail that expires first "
+                    "leaves a timesheet nobody can account for, and the gap looks "
+                    "like an answer."
+                ) % {"floor": floor},
+            ))
+        return data

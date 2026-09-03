@@ -2487,3 +2487,17 @@ input[data-time-input].is-unreadable {
    away from the control that changes what is being looked at — they are about
    taking the page away with you rather than about changing it. */
 .month-tools { display: flex; gap: var(--space-5); align-items: center; margin-left: auto; }
+
+/* ===== RETENTION =====
+   Six rows and a paragraph of statute in the last column. The reason column is
+   the widest on purpose: a period without the reason beside it is a number
+   somebody rounds down on the way to being tidy, and every one of these has a
+   fine on the other end of it. */
+.retention-table { font-size: var(--text-sm); }
+.retention-table th, .retention-table td { vertical-align: top; }
+.retention-why { color: var(--text-light); min-width: 0; }
+.retention-due { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; color: var(--breach); }
+/* A figure the app raised to the statutory floor. `--breach` because that is
+   what it is: the setting on the page would have been unlawful, and the app is
+   saying so rather than obeying it. */
+.retention-raised { color: var(--breach); font-weight: 700; cursor: help; padding-left: var(--space-2); }

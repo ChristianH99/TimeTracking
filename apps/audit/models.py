@@ -81,7 +81,22 @@ class AuditAction(models.TextChoices):
     SIGNED_IN = "signed-in", _("signed in")
     SIGN_IN_REFUSED = "sign-in-refused", _("sign-in refused")
     SIGNED_OUT = "signed-out", _("signed out")
+    # The retention sweep, which is the one thing that removes anything from
+    # this table. Its own action rather than a `deleted`, because it is not
+    # somebody deleting a record — it is a period having run out, and the two
+    # want to be told apart at a glance by whoever is asked why a year is
+    # missing. `apps/audit/retention.py`.
+    PURGED = "purged", _("removed, period expired")
 
+
+# The sign-in half of the table, named once. `AuditEntry.is_security_event` reads
+# it and so does the retention policy, which keeps this half for a year where the
+# record half is kept for ten — so the set has two readers with opposite reasons
+# for caring, and a tenth action added next year has to land on one side of the
+# line in exactly one place.
+SECURITY_ACTIONS = frozenset({
+    "signed-in", "sign-in-refused", "signed-out",
+})
 
 # Written on a row whose actor was not a person: a management command, a data
 # migration, a fixture. **Not left blank**, because blank reads as "we do not
@@ -104,6 +119,33 @@ class AuditImmutable(Exception):
     """
 
 
+class AuditQuerySet(models.QuerySet):
+    """Refuses ``delete()``, and offers ``purge()`` as the one way past it.
+
+    **``Model.delete`` alone was not enough**, and that gap was worth closing:
+    a queryset ``delete()`` never calls it, so ``AuditEntry.objects.filter(…)
+    .delete()`` would have emptied the table with the guard three lines away
+    looking like it was doing something. The manager is the other half of the
+    lock.
+
+    ``purge`` is the door, and it is named so that using it has to be a
+    decision: there is exactly one caller, the retention sweep, and a second one
+    would be obvious in a grep. The alternative — a ``force=True`` keyword —
+    reads as a nuisance to be worked around rather than as a policy.
+    """
+
+    def delete(self):
+        raise AuditImmutable(
+            "The audit trail cannot be deleted. Records leave it when their "
+            "retention period expires and by no other route — see "
+            "apps/audit/retention.py."
+        )
+
+    def purge(self):
+        """Remove entries whose retention period has run out. The one exception."""
+        return super().delete()
+
+
 class AuditEntry(models.Model):
     """One thing that happened, and what it looked like before.
 
@@ -111,6 +153,8 @@ class AuditEntry(models.Model):
     and explicitly by the handful of acts whose natural unit is bigger than a
     row — locking a month, regenerating a year of public holidays.
     """
+
+    objects = AuditQuerySet.as_manager()
 
     at = models.DateTimeField(_("when"), auto_now_add=True, db_index=True)
     action = models.CharField(
@@ -185,10 +229,17 @@ class AuditEntry(models.Model):
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        """Never one at a time.
+
+        The retention sweep works in whole classes and goes through
+        ``AuditQuerySet.purge``; there is no case for removing a single entry,
+        and the one that looks like a case — "this one is wrong" — is the case
+        this table exists to refuse.
+        """
         raise AuditImmutable(
-            "An audit entry cannot be deleted. A retention policy that reaches "
-            "this table is a decision to make deliberately and in one place — "
-            "see docs/AUDIT.md — and not something a view does by accident."
+            "An audit entry cannot be deleted. Entries leave this table when "
+            "their retention period expires, in whole classes, through "
+            "AuditQuerySet.purge — see apps/audit/retention.py."
         )
 
     # -- reading it back ---------------------------------------------------
@@ -202,11 +253,7 @@ class AuditEntry(models.Model):
         added next year has to land on one side of the line, and here is where
         that is decided once.
         """
-        return self.action in {
-            AuditAction.SIGNED_IN,
-            AuditAction.SIGN_IN_REFUSED,
-            AuditAction.SIGNED_OUT,
-        }
+        return self.action in SECURITY_ACTIONS
 
     @property
     def change_list(self):

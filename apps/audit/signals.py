@@ -35,6 +35,9 @@ exactly one place on an audited model, ``DayRecord.stamp_entry``, deliberately:
 a timestamp the system stamps on first entry is not somebody changing a record.
 """
 
+import contextlib
+import threading
+
 from django.db.models.signals import post_delete, post_save, pre_save
 
 from apps.audit import recording
@@ -42,9 +45,40 @@ from apps.audit.models import AuditAction
 from apps.audit.registry import BY_SIGNAL, label_of
 
 _SNAPSHOT = "_audit_snapshot"
+_state = threading.local()
+
+
+@contextlib.contextmanager
+def suppressed():
+    """Write no entries for what happens inside. **One caller, on purpose.**
+
+    The retention sweep, and nothing else. Deleting a decade of days would
+    otherwise write a `post_delete` entry for every one of them — a sweep that
+    grows the table it is shrinking, and fills it with rows describing records
+    that no longer exist. It writes one entry per class instead, which is the
+    sentence somebody actually needs: "everything before 01.01.2016 went, and
+    here is how much of it".
+
+    A thread-local for the reason the actor is one: gunicorn serves a request on
+    one thread for its whole life, so this is request-local in practice. Restored
+    rather than cleared on the way out, so a nested use cannot un-suppress the
+    block it is inside.
+
+    **This is the only way to write to an audited model without a trail**, and
+    that is why it lives here in plain sight rather than as a keyword on
+    ``record``. A second caller should have to explain itself.
+    """
+    previous = getattr(_state, "off", False)
+    _state.off = True
+    try:
+        yield
+    finally:
+        _state.off = previous
 
 
 def _is_audited(instance):
+    if getattr(_state, "off", False):
+        return False
     return label_of(instance) in BY_SIGNAL
 
 

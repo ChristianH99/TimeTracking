@@ -912,3 +912,90 @@ AUDIT = {
 }
 
 PAGES.update(AUDIT)
+
+
+# The retention policy — how long each kind of record is kept, and why that is
+# the minimum. `apps/audit/retention.py`.
+#
+# **The paragraph explaining each floor is the important string on that page**,
+# not the label above it. A period with no reason beside it is a number somebody
+# rounds down on the way to being tidy, and every one of these has a fine on the
+# other end. So the statutes keep their German citation form — "§16 ArbZG",
+# "Art. 5 Abs. 1 lit. e DSGVO" — because that is how somebody looks one up.
+RETENTION = {
+    "removed, period expired": "gelöscht, Frist abgelaufen",
+
+    # -- the classes, as the policy names them ----------------------------
+    "Time off and sickness": "Abwesenheit und Krankheit",
+    "The roster": "Dienstplan",
+    "The audit trail": "Änderungsprotokoll",
+    "Sign-ins": "Anmeldungen",
+    "People who have left": "Ausgeschiedene Personen",
+
+    "Days, bookings and closed months. §16(2) ArbZG and §17 MiLoG both require two years; the wage account they support is six (§41 EStG, §147(3) AO) and social insurance runs to the end of the year after the next audit, which is a date nobody can work out in advance.":
+        "Tage, Buchungen und gesperrte Monate. §16 Abs. 2 ArbZG und §17 MiLoG verlangen beide zwei Jahre; das Lohnkonto, das sie stützen, sechs (§41 EStG, §147 Abs. 3 AO), und die Sozialversicherung bis zum Ende des Jahres nach der nächsten Prüfung — ein Datum, das sich im Voraus nicht berechnen lässt.",
+    "Leave, sickness and what was carried over. Three years is the ordinary limitation period for a claim (§195 BGB); leave that was never expired for want of a reminder can outlive it, which is why the setting starts well above the floor.":
+        "Urlaub, Krankheit und der Übertrag. Drei Jahre ist die regelmäßige Verjährungsfrist (§195 BGB); Urlaub, der mangels Hinweis nie verfallen ist, kann sie überdauern — deshalb liegt die Voreinstellung deutlich über dem Minimum.",
+    "What people were asked to work. No statute requires keeping a plan; it is kept because “you were rostered 08:00–14:00 and entered 08:00–15:30” is the sentence this app exists to be able to say — and that stops mattering once the timesheet beside it has gone.":
+        "Wozu die Mitarbeitenden eingeteilt waren. Kein Gesetz verlangt, einen Plan aufzubewahren; er wird behalten, weil „Sie waren 08:00–14:00 eingeteilt und haben 08:00–15:30 eingetragen“ der Satz ist, für den es diese Anwendung gibt — und das zählt nicht mehr, sobald der Stundenzettel daneben weg ist.",
+    "Every change to a record, who made it, and who looked at whose hours. It cannot be set shorter than the records it explains: a trail that dies first leaves them unexplained, which is worse than having kept neither.":
+        "Jede Änderung an einem Datensatz, von wem sie stammt, und wer wessen Stunden eingesehen hat. Es lässt sich nicht kürzer einstellen als die Daten, die es erklärt: ein Protokoll, das zuerst verfällt, lässt sie unerklärt zurück — schlimmer, als beides nicht aufbewahrt zu haben.",
+    "Who signed in, who was refused, who signed out. Art. 32 DSGVO wants the log to exist and no statute says how long — so this is the one period where longer is harder to defend rather than easier, and it is the only class that is short by default.":
+        "Wer sich angemeldet hat, wer abgewiesen wurde, wer sich abgemeldet hat. Art. 32 DSGVO will, dass es dieses Protokoll gibt, und kein Gesetz sagt, wie lange — hier ist länger also schwerer zu rechtfertigen statt leichter, und es ist die einzige Kategorie, die standardmäßig kurz ist.",
+    "Somebody who has left is erased once nothing about them is left — no day, no time off, no roster entry and no audit entry. Their name is written into the audit trail and that cannot be edited, so the only way to remove it is to let the trail expire first. The longest period above is what decides when.":
+        "Wer ausgeschieden ist, wird gelöscht, sobald nichts mehr über die Person vorhanden ist — kein Tag, keine Abwesenheit, kein Dienstplaneintrag und kein Protokolleintrag. Der Name steht im Änderungsprotokoll, und das lässt sich nicht bearbeiten; ihn zu entfernen geht nur, indem das Protokoll zuerst verfällt. Die längste Frist oben entscheidet, wann.",
+
+    # -- the settings -----------------------------------------------------
+    "keep working time for (years)": "Arbeitszeiten aufbewahren (Jahre)",
+    "keep time off and sickness for (years)": "Abwesenheiten aufbewahren (Jahre)",
+    "keep the roster for (years)": "Dienstplan aufbewahren (Jahre)",
+    "keep the audit trail for (years)": "Änderungsprotokoll aufbewahren (Jahre)",
+    "keep sign-ins for (years)": "Anmeldungen aufbewahren (Jahre)",
+    "Days, bookings and closed months. Two years is the statutory minimum (§16 ArbZG, §17 MiLoG); the wage account they support is six, and social insurance longer still.":
+        "Tage, Buchungen und gesperrte Monate. Zwei Jahre sind das gesetzliche Minimum (§16 ArbZG, §17 MiLoG); das Lohnkonto, das sie stützen, sechs — die Sozialversicherung noch länger.",
+    "Leave, sickness and what was carried over.": "Urlaub, Krankheit und der Übertrag.",
+    "What people were asked to work. No statute requires keeping a plan, and it stops being useful once the timesheet beside it has gone.":
+        "Wozu die Mitarbeitenden eingeteilt waren. Kein Gesetz verlangt, einen Plan aufzubewahren, und er nützt nichts mehr, sobald der Stundenzettel daneben weg ist.",
+    "It cannot be kept for less than the records it explains — a trail that expires first leaves them unaccounted for. A shorter figure is raised to the longest of the three above.":
+        "Es lässt sich nicht kürzer aufbewahren als die Daten, die es erklärt — ein Protokoll, das zuerst verfällt, lässt sie unbelegt zurück. Ein kürzerer Wert wird auf die längste der drei Fristen oben angehoben.",
+    "Who signed in, who was refused. Art. 32 DSGVO wants the log to exist and no statute says how long — the one period here where longer is harder to defend rather than easier.":
+        "Wer sich angemeldet hat und wer abgewiesen wurde. Art. 32 DSGVO will, dass es dieses Protokoll gibt, und kein Gesetz sagt, wie lange — die einzige Frist hier, bei der länger schwerer zu rechtfertigen ist statt leichter.",
+    "The audit trail cannot be kept for less than the records it explains — %(floor)s years here. A trail that expires first leaves a timesheet nobody can account for, and the gap looks like an answer.":
+        "Das Änderungsprotokoll lässt sich nicht kürzer aufbewahren als die Daten, die es erklärt — hier %(floor)s Jahre. Ein Protokoll, das zuerst verfällt, lässt einen Stundenzettel zurück, den niemand belegen kann, und die Lücke sieht aus wie eine Antwort.",
+    "The retention periods were saved.": "Die Aufbewahrungsfristen wurden gespeichert.",
+
+    # -- the page ---------------------------------------------------------
+    "Retention": "Aufbewahrung",
+    "how long each record is kept": "wie lange was aufbewahrt wird",
+    "A retention policy has two halves and this page is both. Records must be deleted once their period is up — that is storage limitation under Art. 5(1)(e) DSGVO. They must also be kept until it is up: §16 ArbZG, §17 MiLoG, §147 AO and §28f SGB IV each set a minimum, and deleting inside one destroys evidence the employer is required to produce. Keeping everything forever is the wrong answer to both at once.":
+        "Eine Aufbewahrungsregel hat zwei Hälften, und diese Seite ist beide. Daten müssen gelöscht werden, sobald ihre Frist abgelaufen ist — das ist die Speicherbegrenzung nach Art. 5 Abs. 1 lit. e DSGVO. Sie müssen aber auch bis dahin aufbewahrt werden: §16 ArbZG, §17 MiLoG, §147 AO und §28f SGB IV setzen jeweils ein Minimum, und wer innerhalb einer Frist löscht, vernichtet Nachweise, die der Arbeitgeber vorlegen muss. Alles für immer zu behalten ist die falsche Antwort auf beides zugleich.",
+    "Records": "Daten",
+    "Kept for": "Aufbewahrt",
+    "Deleted before": "Gelöscht vor",
+    "Oldest held": "Ältester Bestand",
+    "Out of period": "Frist abgelaufen",
+    "Why that minimum": "Warum dieses Minimum",
+    "Set to %(wanted)s and raised to the statutory minimum of %(floor)s.":
+        "Auf %(wanted)s gesetzt und auf das gesetzliche Minimum von %(floor)s angehoben.",
+    "when nothing is left": "wenn nichts mehr da ist",
+    "Nothing is out of its period. Nothing on this page deletes anything in any case.":
+        "Nichts hat seine Frist überschritten. Diese Seite löscht ohnehin nichts.",
+    "Deleting is one command, and it says what it would do unless it is told twice:":
+        "Gelöscht wird mit einem Befehl, und der sagt nur, was er täte, solange er nicht zweimal darum gebeten wird:",
+    "reports;": "meldet;",
+    "removes, and writes one audit entry for each kind of record that went.":
+        "löscht und schreibt je einen Protokolleintrag für jede Datenart, die entfernt wurde.",
+    "The periods": "Die Fristen",
+}
+
+PAGES.update(RETENTION)
+
+RETENTION_PLURALS = {
+    "%(counter)s year": ("%(counter)s Jahr", "%(counter)s Jahre"),
+    "<strong>%(counter)s record</strong> is out of its period. Nothing on this page deletes it.": (
+        "<strong>%(counter)s Datensatz</strong> hat seine Frist überschritten. Diese Seite löscht ihn nicht.",
+        "<strong>%(counter)s Datensätze</strong> haben ihre Frist überschritten. Diese Seite löscht sie nicht.",
+    ),
+}
+
+PLURALS.update(RETENTION_PLURALS)

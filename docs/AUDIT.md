@@ -52,7 +52,7 @@ spot.
 | | |
 |---|---|
 | **Requires** | Start, end and **duration** of each day, recorded **within seven calendar days** of the day worked, kept **two years**, held **in Germany**, **in German**, produced on demand. §21 MiLoG: fines to €30,000. |
-| **Does** | Records exactly those three figures per day and keeps them indefinitely. German is the default language of the interface and of the data. The database is one SQLite file on the employer's own NAS, which is trivially "in Germany". |
+| **Does** | Records exactly those three figures per day and keeps them for a period the employer sets, never below the statutory two years. German is the default language of the interface and of the data. The database is one SQLite file on the employer's own NAS, which is trivially "in Germany". |
 | **Does** | Produce the records for a named person, or for everybody, over any range, as a spreadsheet or as a printable sheet — `apps/timesheets/export.py`. An inspector asking for "these four people for last year" is answered with four files or one. |
 | **Does** | Record *when* each day's hours were first entered, and how many days after the fact. `DayRecord.hours_entered_at` and `days_to_record`, both in the export. |
 | **Does not** | Know which employees are minijobbers, so it cannot flag the seven-day deadline for the people it actually binds. The figure is recorded for everybody; the judgement is not made. |
@@ -96,7 +96,10 @@ Bürokratieentlastungsgesetz IV shortened it from ten with effect from 1 January
 2025; and for social-insurance records *until the end of the calendar year
 following the last audit* — a date nobody can compute in advance. An app that
 wants to be right here keeps to the longest applicable period and then deletes,
-because the DSGVO makes the maximum as binding as the minimum.
+because the DSGVO makes the maximum as binding as the minimum. That is what the
+Retention page and `apps/audit/retention.py` now do — five classes rather than one
+number, because a single figure would have to be the longest of them and that is
+over-retention by construction.
 
 ### 1.4 The Arbeitsschutzbehörde (Gewerbeaufsicht)
 
@@ -126,7 +129,7 @@ performance control on the list requiring a **Datenschutz-Folgenabschätzung**.
 | **Does** | Data minimisation, unusually well and deliberately: no uploads at all, no diagnosis field, no location, no device data, no performance scoring — and the audit trail keeps that discipline, recording a failed sign-in by username with no IP address attached. Authorisation is per-view and tested by a suite that walks the whole URLconf. The OIDC secret is encrypted at rest and is redacted in the trail. |
 | **Does** | Produce a copy of one person's data on request (Art. 15(3)), as a spreadsheet or a printable sheet — and the employee can take their own without asking anybody. |
 | **Does** | Log who *read* whose timesheet, which matters here more than usual because "the manager looked at my hours" is exactly the processing a works council asks about. **The employee can read that log themselves**, which is the half that makes it worth anything to the person being recorded. |
-| **Does not** | Delete anything, ever — and there is now one more table that grows forever. A deletion concept is the outstanding item. |
+| **Does** | Delete what is out of period, in five classes with a statutory floor under each — `apps/audit/retention.py`, the Retention page and `manage.py apply_retention`. A person is erased last, once nothing about them is left, which is how erasure reaches a name frozen into a table that cannot be edited. |
 
 The DPIA and the Art. 30 record are the employer's documents, not the app's, but
 neither can be written without the app describing itself. That description is the
@@ -226,7 +229,7 @@ The closest thing to a pass/fail sheet that exists.
 | **Zeitgerechte Erfassung** (Rz. 45–53) | Recorded without delay; a record made much later is suspect | **Recorded, not yet judged.** Hours on a future day are refused, and `DayRecord.hours_entered_at` now stamps the moment a day first gains hours — `days_to_record` is the figure §17 MiLoG and the draft ArbZG are measured against, and both exports carry it. What is still missing is knowing *whose* deadline is seven days, which needs the minijob flag. |
 | **Ordnung** (Rz. 54–59) | Systematically arranged, findable | **Good.** Per person, per date, indexed, with the month as the unit somebody reads. |
 | **Unveränderbarkeit** (Rz. 107–112) | A record once made may not be changed so that the original content is no longer ascertainable. Changes are permitted; **silently overwriting is not.** Log who, when, from what, to what | **Done.** `apps/audit/` writes an append-only entry for every create, change and delete on every model in the registry, carrying the previous value beside the new one. The table refuses to be updated or deleted at the model, not by permission — a log a forgotten line can edit is not a log. |
-| **Aufbewahrung** (Rz. 115–125) | For the statutory period, readable and available throughout | **Partly.** Nothing is ever deleted, which meets the minimum by accident rather than by policy and breaches the DSGVO maximum for the same reason. |
+| **Aufbewahrung** (Rz. 115–125) | For the statutory period, readable and available throughout | **Done.** Five classes, each with a statutory floor under a configurable ceiling, and the period counted from the end of the calendar year the record arose in (§147(4) AO). `apps/audit/retention.py`; the Retention page says what is held, how far back, and what is out of period today. |
 | **Maschinelle Auswertbarkeit** (Rz. 126–128) | The data must stay sortable and filterable by the auditor, not merely printable | **Done.** A `;`-delimited CSV with a BOM — the two concessions that make a German spreadsheet open it correctly rather than as one column of mojibake — carrying every figure the timesheet holds, plus a decimal-hours column so nobody has to convert. |
 | **Datenzugriff Z1 / Z2 / Z3** (Rz. 158–179) | Direct read access / evaluations run for the auditor / **data handed over on a medium** | **Z1** with a read-only account. **Z2** by hand. **Z3 done** — one CSV per person or one for everybody, over any range. |
 | **Internes Kontrollsystem** (Rz. 100–102) | Access rules, separation of duties, controls that the process was followed, and evidence they ran | **Done, or as near as code gets.** Roles are separated and tested from both sides, the lock is enforced at every door *and* at the model, and both confirm routes refuse a running day — and every one of those acts now leaves an entry naming who performed it. Confirming, locking, deciding a request and exporting are each their own action in the trail. |
@@ -246,7 +249,7 @@ will not.
 |---|---|
 | Beginn, Ende **und Dauer** recorded **electronically** | Already done. |
 | **On the day the work is performed** (*am Tag der Arbeitsleistung*) | **New.** Record *when* an entry was made, and surface a day recorded late. This is the MiLoG seven-day rule arriving for everybody. |
-| Kept **two years** | A retention policy that also stops there where nothing longer applies. |
+| Kept **two years** | Done, and it is the floor rather than the answer: two years is what the app refuses to go below, and the default is ten because the Lohnkonto's six and the AO's eight sit on top of it. |
 | Employees may **request information and a copy** of their records | **New, and it reverses this project's "no export" standing decision.** A right to a copy is not a feature request. |
 | Vertrauensarbeitszeit permitted, but the employer must have measures that **detect** breaches of maximum hours and rest periods | **Half done.** The per-day §3 and §5 flags are in; the 24-week average of §3(1) is not, and it is the half that decides whether a ten-hour day was lawful. |
 | Employer may **delegate** recording to employees, stays responsible, must spot-check | Already the model. A "days nobody has answered for" view for managers would be the spot-check. |
@@ -315,15 +318,32 @@ more than one auditor's column, which is what makes them worth doing first.
    your own timesheet is not processing anybody else's data). **No collapsing to
    one row per day**, because the question the log exists for is not "did my
    manager look at my hours" but "how often".
-6. **A retention policy, enforced in both directions.** Pick the number per class
-   of record — 2 years ArbZG/MiLoG, 6 years for what supports the Lohnkonto,
-   longer where the employer says so — resist deletion before it, erase after it.
-   The app still neither keeps nor deletes deliberately, which is the wrong answer
-   to the AO and the DSGVO at the same time. **This is now the largest remaining
-   gap in the code**, and the audit trail has made it larger rather than smaller:
-   there is now one more table that grows forever and one more thing a deletion
-   concept has to have an answer for. `AuditEntry.delete` raises on purpose, so
-   whatever reaches it will have to be a deliberate, single, documented path.
+6. ~~**A retention policy, enforced in both directions.**~~ **Done.**
+   `apps/audit/retention.py`, the settings on the Retention page, and
+   `manage.py apply_retention`. **Five classes, not one number** — working time,
+   absences, the roster, the audit trail and the sign-in log — because the
+   periods genuinely differ and a single figure would have to be the longest of
+   them, which is precisely the over-retention Art. 5(1)(e) is about.
+
+   Each class has a **statutory floor under a configurable ceiling**: the form
+   refuses a figure below the floor and the module clamps it as well, so a row
+   written by a migration cannot shorten a period by being loaded. The audit
+   trail's floor is *derived* — the longest of the record classes — because a
+   trail that expires before what it explains leaves a timesheet nobody can
+   account for, and the gap reads like an answer.
+
+   Three things the obvious implementation gets wrong, and all three are pinned:
+   **the period runs from the end of the calendar year** (§147(4) AO), so a
+   March record with a two-year period lives until 31 December two years later
+   and the naive subtraction deletes eleven months early; **the sweep does not
+   audit itself** row by row, or it grows the table it is shrinking with entries
+   about records that no longer exist; and **a person is erased last**, because
+   their name is frozen into an append-only table and the only lawful way to
+   remove it is to let the entries expire first.
+
+   `AuditEntry.delete` still raises, and so does `AuditQuerySet.delete` — a
+   queryset delete never calls the model's, so the guard as it first stood was
+   decorative for bulk. `purge()` is the single documented door, with one caller.
 7. **The 24-week average of §3 ArbZG.** The per-day flags landed with
    `apps/timesheets/limits.py`; the averaging window that decides whether a run of
    ten-hour days was lawful did not, and it is the half an Arbeitsschutz inspector
@@ -386,7 +406,16 @@ say what was decided and why.
 - **When a day's hours were first recorded is stored**, distinctly from when the
   row was last touched, which is the only way the seven-day and same-day
   deadlines can be shown to have been met rather than asserted.
+- **Every class of record has a period, a statutory floor and a date it stops
+  being held**, and the Retention page says what is held, how far back, and what
+  is out of period *today* — so "we keep two years" can be checked rather than
+  asserted, which is the question an auditor and an employee ask from opposite
+  directions.
+- **A person is erased once nothing about them is left**, which is the only order
+  that reaches a name frozen into an append-only table: records, then trail, then
+  person.
 
 Each of those is a question an auditor asks and a sentence that answers it.
-Section 4 is what is left, and the top of it is now a retention policy rather
-than a trail.
+Section 4 is what is left, and the top of it is now the 24-week average of §3
+ArbZG and the Verfahrensdokumentation — neither of which is a table, which is a
+better place to be than it was.

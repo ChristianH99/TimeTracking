@@ -97,8 +97,9 @@ records kept for **at least two years**.
 
 | | |
 |---|---|
-| **Does** | Records every day in full — start, end, break, total — which is more than §16(2) asks for and is what §3 ArbSchG now requires anyway (below). Records are immutable in the sense that nothing deletes them: an employee leaving is switched off, and deleting their *account* is `SET_NULL` and never touches the timesheet. |
-| **Does not** | Have any retention policy at all — neither a minimum that resists deletion nor a maximum that enforces erasure. See §9 (data protection) for why the maximum matters as much as the minimum. |
+| **Does** | Records every day in full — start, end, break, total — which is more than §16(2) asks for and is what §3 ArbSchG now requires anyway (below). An employee leaving is switched off, and deleting their *account* is `SET_NULL` and never touches the timesheet. |
+| **Does** | Keep them for a period the employer sets and **refuse to go below two years**, in the form and again in `apps/audit/retention.py` — so the half of a retention policy that resists deletion exists as well as the half that performs it. |
+| **Does** | Delete them once the period is up, counted from the end of the calendar year (§147(4) AO). The default is ten years, which clears the Lohnkonto's six and the AO's eight. |
 
 ### §16(1) — the notice
 
@@ -135,7 +136,7 @@ and it is worth being precise because the position is unusual.
 |---|---|
 | **Does** | Records start, end and break for every day, per person, and keeps them. The employee is the one who enters or confirms, and the record says who confirmed and when — which is the "objective and accessible" part. Delegating the entry to the employee is expressly permitted; the *duty* stays with the employer. |
 | **Does not** | Enforce recording **on the day**. Somebody can confirm a fortnight late, and the start page nudges rather than insists. If the amendment passes in its draft form this becomes a real gap. |
-| **Does not** | Make records tamper-evident. A manager can edit a confirmed day and the only trace is that the confirmation is withdrawn — there is no audit trail of *what it was before*. For a document that is evidence in a wage dispute, that is thin. **See §11 below; this is the second-largest gap.** |
+| **Does** | Make records tamper-evident. `apps/audit/` writes an append-only entry for every change, carrying the value before it as well as after, and the employee can read their own. A manager editing a confirmed day is a dated, attributed row rather than a silently different figure. |
 
 ---
 
@@ -389,7 +390,7 @@ A time tracking system is employee monitoring and is squarely inside this.
 | Article | Requirement | App |
 |---|---|---|
 | **Art. 5(1)(c)** | Data minimisation | Good. No uploads, no e-mail addresses (removed), no reason field on sickness, no location, no device data. |
-| **Art. 5(1)(e)** | Storage limitation | **Absent, and now the largest gap in the code.** Nothing is ever deleted or anonymised, and the audit trail has added a table that grows forever and refuses deletion at the model on purpose. Working time records may be kept 2 years (ArbZG/MiLoG); payroll-relevant records fall under §28f SGB IV and §147 AO, which push to 6 years and beyond. Somebody has to decide the number and the app has to enforce it. |
+| **Art. 5(1)(e)** | Storage limitation | **Done.** Five classes, each with a statutory floor under a period the employer sets, swept by `manage.py apply_retention` — a dry run unless told twice. The periods count from the end of the calendar year (§147(4) AO), and a person is erased last, once nothing about them is left: their name is frozen into the audit trail and that cannot be edited, so the only lawful order is records, then trail, then person. |
 | **Art. 6(1)(c) / §26 BDSG** | Lawful basis | Legal obligation (ArbZG, MiLoG) plus performance of the employment contract. Note that ECJ C-34/21 cast doubt on §26 BDSG(1) as a standalone basis; the ArbZG duty is the safer footing. |
 | **Art. 9** | Health data | Sickness *dates* are attendance data and are fine. **Diagnoses, certificates and disability status are not**, and the app must stay out of them — see EFZG and SGB IX above. |
 | **Art. 15** | Right of access | Yes. An employee sees their own timesheet and balance, can take a copy as a spreadsheet or a printable sheet without asking anybody, and can read every change ever made to their own records — including who made it. |
@@ -449,9 +450,13 @@ a history of what was decided and not only as a to-do.
 
 1. **Betriebsrat and DPIA** — process, not code, and both block go-live. Still
    the first two things, and neither has moved.
-2. **A retention policy.** Pick the number, then make the app enforce it in both
-   directions. Right now it neither keeps nor deletes deliberately. This is now
-   the largest gap in the code.
+2. ~~**A retention policy.**~~ **Done.** `apps/audit/retention.py` and the
+   Retention page: five classes, each a configurable period over a statutory
+   floor, counted from the end of the calendar year (§147(4) AO) and swept by
+   `manage.py apply_retention` — a dry run unless the word is typed. Both
+   directions: the form refuses a period below the floor, and the sweep cannot
+   reach inside one. **The numbers still want a decision** from whoever runs the
+   business; the defaults are deliberately generous rather than minimal.
 3. **An audit trail on `DayRecord` and `WorkSegment`** — who changed what, from
    what, when. It is the difference between a record and a claim. It has grown
    more important, not less: `ContractPeriod` and `LeaveCarryOver` both now

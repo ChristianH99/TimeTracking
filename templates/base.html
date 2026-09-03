@@ -128,6 +128,12 @@
                 shown.{% endcomment %}
                 <a class="shell-nav-subitem{% if 'settings.audit' in nav_current %} active{% endif %}"
                    href="{% url 'audit:log' %}">{% translate "Audit trail" %}</a>
+                {% comment %}How long everything is kept, and what is out of
+                period today. Beside the trail rather than with the working time
+                rules: those are what the app computes with, and these two are
+                what it keeps and what it can prove.{% endcomment %}
+                <a class="shell-nav-subitem{% if 'settings.retention' in nav_current %} active{% endif %}"
+                   href="{% url 'organisation:retention' %}">{% translate "Retention" %}</a>
               {% endif %}
               {% comment %}Superuser only, and below People on purpose: "may add
               an account" and "may repoint the whole app at a different identity

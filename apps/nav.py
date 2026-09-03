@@ -106,6 +106,10 @@ ITEMS = {
     # it is a page about the *software* — who signed in, what the rules were
     # changed to — and only half about the people.
     "settings.audit": {("audit", "log")},
+    # How long everything is kept. Beside the audit trail rather than with the
+    # working time rules: those are what the app computes with, and these two are
+    # what it keeps and what it can prove.
+    "settings.retention": {("organisation", "retention")},
 }
 
 # Parent entry -> the entries nested under it. A parent is a link too, but never
@@ -121,7 +125,8 @@ PARENTS = {
     "team": ("team.roster", "team.timesheets", "team.month-end", "team.requests",
              "team.employees",
              "team.year-end", "team.export"),
-    "settings": ("settings.rules", "settings.users", "settings.sso", "settings.audit"),
+    "settings": ("settings.rules", "settings.users", "settings.sso", "settings.audit",
+                 "settings.retention"),
 }
 
 

@@ -124,6 +124,9 @@ uv run pytest                                     # ~610 tests, ~220 s
 uv run python manage.py close_leave_year 2025 --notice 2025-11-15
 uv run python manage.py close_leave_year 2025 --expire
 
+uv run python manage.py apply_retention           # says what is out of period
+uv run python manage.py apply_retention --apply   # deletes it
+
 uv run python manage.py makemessages -l de --no-obsolete --no-wrap
 uv run python manage.py makemessages -d djangojs -l de --no-obsolete --no-wrap
 uv run python tools/unwrap_references.py
@@ -520,6 +523,54 @@ Each of these is here because breaking it produces a page that still renders.
   writes no audit entry — the one place in the app that reaches past the model on
   an audited table, because a timestamp the system stamps is part of the record
   being made rather than somebody changing it.
+- **A retention policy has two halves and everybody builds one.** "Delete once
+  the period is up" is DSGVO Art. 5(1)(e); "keep until it is up" is the AO and
+  the ArbZG, and an app with only the first destroys evidence its employer is
+  required to produce. This app had neither — it kept everything forever, which
+  is the wrong answer to both at once and looks like the right answer to one.
+  `apps/audit/retention.py`.
+- **Five classes, not one number.** A single figure would have to be the longest
+  of them, which is over-retention by construction. Working time (2 years,
+  §16 ArbZG / §17 MiLoG), absences (3, §195 BGB), the roster (0 — a plan is not
+  a statutory record), the audit trail, and the sign-in log. The last two are one
+  table and two policies, which is what `AuditEntry.is_security_event` was for: a
+  sign-in log kept ten years is what a data protection officer objects to first,
+  and it is the only class with no tax-law argument on the other side.
+- **Each class is a configurable ceiling over a statutory floor**, and the floor
+  is enforced twice. The form *refuses* a figure below it — a settings page that
+  takes a number and then ignores it is the control that does nothing — and
+  `years_for` clamps as well, because a row written by a data migration must not
+  be able to shorten a statutory period just by being loaded.
+- **The audit trail's floor is derived, not written down.** It is the longest of
+  the record classes, because a trail that expires before what it explains leaves
+  a timesheet nobody can account for and the gap reads like an answer. Computed,
+  so it moves by itself when one of the others is lengthened. `RECORD_CLASSES`
+  names the three deliberately rather than saying "everything but the trail",
+  which would have let the one-year sign-in log drag the floor down with it.
+- **The period runs from the end of the calendar year, not from the record's own
+  date.** §147(4) AO. A record from 15 March 2024 with a two-year period is kept
+  through 31 December 2026 — the version that subtracts two years from today
+  deletes it in March, eleven months early, in the direction that loses evidence
+  rather than the one that loses an argument. `cutoff_for` is the only place that
+  rule is written and `TestTheCalendarYearRule` is why.
+- **The sweep does not audit itself row by row.** `signals.suppressed()`, one
+  caller. A `post_delete` entry per row is a sweep that *grows* the table it is
+  shrinking, filling it with rows describing records that no longer exist — and
+  on a first run over ten years that is hundreds of thousands of them. One entry
+  per class instead, which is also the sentence somebody needs: everything before
+  this date went, and here is how much of it.
+- **A person is erased last.** Their name is frozen into `AuditEntry.employee_label`
+  — it has to be, or a deleted account makes every entry say *nobody did this* —
+  and that table cannot be edited. So the only lawful order is records, then
+  trail, then person: an `Employee` row goes when nothing about them is left, and
+  the longest period is what decides when. A `ContractPeriod` is not a class of
+  its own, because it is not an independent record with a statute behind it; it
+  *is* the person, and it cascades.
+- **Nothing is deleted from the Retention page.** It saves periods and reports
+  what is out of one; the sweep is `manage.py apply_retention`, and it is a dry
+  run unless `--apply` is typed. A button that removes ten years of somebody's
+  timesheet does not belong beside a Save, and a default that deleted would make
+  an accidental import the worst bug in the app.
 - **The export is two formats because they answer two questions.** The CSV is for
   a machine — an auditor sorts and filters it, and a PDF cannot be sorted. The PDF
   is for a person: the employee's copy, and the sheet handed across a desk. Both
@@ -1036,12 +1087,13 @@ Each of these is here because breaking it produces a page that still renders.
   and the exposure a forgotten one would create is covered from the other side,
   by tests that walk the URLconf for the `employees`, `roster` and `organisation`
   namespaces and refuse to let any route answer an account without the right.
-- **Nothing deletes an audit entry, and that is a decision with a cost.**
-  `AuditEntry.delete` raises. It makes the retention policy harder rather than
-  easier — there is now one more table that grows forever — and that is the right
-  way round: whatever eventually reaches it has to be one deliberate, documented
-  path rather than a view doing it by accident. `docs/AUDIT.md` carries the
-  numbers a retention policy has to choose between.
+- **One door removes anything from the audit trail, and it is
+  `AuditQuerySet.purge`.** `AuditEntry.delete` raises and so does the queryset's
+  own `delete` — that second half was the gap, because a queryset delete never
+  calls the model's, so `AuditEntry.objects.all().delete()` would have emptied
+  the table with the guard three lines away looking like it was doing something.
+  `purge` is named so that using it has to be a decision: there is exactly one
+  caller, the retention sweep, and a second would be obvious in a grep.
 - **This app stores no files, deliberately.** There is no `MEDIA_ROOT` and no
   upload path. A timesheet is rows; a sick note is a piece of paper that belongs
   in a personnel file under somebody else's retention policy, not in a
@@ -1105,6 +1157,14 @@ targets**, so a page added next month is covered the day it lands:
   project against the registry and fails on one that is in none of the three
   sets. The `bulk_create` blind spot is pinned by its own case, because it is the
   one that would have failed silently and in the most misleading direction.
+- `apps/audit/test_retention.py` holds the retention policy, and four of its
+  classes carry the weight. `TestTheCalendarYearRule` pins §147(4) AO with a case
+  that shows the naive subtraction deleting a record eleven months early;
+  `TestTheFloorCannotBeCrossed` is the half nobody builds, where the setting that
+  destroys evidence looks like tidying up; `TestTheSweepDoesNotAuditItself` is the
+  bug that would have made the first real run unusable; and
+  `TestAPersonIsErasedLast` is the DSGVO answer to a problem this codebase made
+  for itself by freezing a name into a table that cannot be edited.
 - `apps/timesheets/test_export.py` holds the figures rather than the layout. The
   Actual column is read *out of* `build_month` rather than written down, so the
   test cannot pass by both being wrong the same way; the PDF is checked for being

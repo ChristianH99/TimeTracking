@@ -274,8 +274,13 @@ lists what works is not much use:
   before it goes in front of staff, especially the explanatory paragraphs on the
   leave and break pages — those are the strings that stop somebody opening a
   ticket about a number they think is wrong.
-- **No audit trail on an edited timesheet, no export, and no retention policy.**
-  `docs/AUDIT.md` ranks them in that order and says which auditor each one is
-  for; the audit trail is the only item that appears in every column of that
-  file. All three want a decision from whoever runs the business rather than a
-  guess from the code.
+- **No 24-week average and no Verfahrensdokumentation.** `docs/AUDIT.md` ranks
+  what is left and says which auditor each one is for. The audit trail, the
+  export and the retention policy have since been built; the averaging window
+  that decides whether a run of ten-hour days was lawful, and the GoBD's
+  four-part procedure document, have not.
+- **The retention periods want a decision, not a default.** The app ships ten
+  years for working time and one for the sign-in log, refuses anything below the
+  statutory floor, and deletes nothing until `manage.py apply_retention --apply`
+  is run. Whoever runs the business should set the numbers on the Retention page
+  and put the command in a scheduled task; until they do, nothing expires.
