@@ -15,7 +15,7 @@ from apps.employees.forms import (
 )
 from apps.employees.models import ContractPeriod, Employee, SpecialLeaveGrant
 from apps.employees.permissions import manager_required
-from apps.organisation.models import OrgSettings
+from apps.organisation.models import OrgSettings, SpecialLeaveType
 from apps.timesheets.balance import hours_balance
 
 
@@ -108,11 +108,29 @@ def employee_form(request, pk=None):
         "formset": formset,
         "employee": instance if instance.pk else None,
         "preview": leave_preview(instance, settings) if instance.pk else None,
+        # The running balance the summary beside the hours prints. It was the
+        # one key the panel asked for and this context did not supply, and the
+        # page did not render a blank — `hhmm_signed` was handed the empty
+        # string a missing variable resolves to and the whole contract page
+        # answered with a 500. A template that names a figure has to be given
+        # it here; `hours.py` refuses the empty string rather than formatting
+        # it, which is the half of the fix that keeps the next one visible.
+        "running": hours_balance(instance, settings=settings) if instance.pk else None,
         "contract_periods": (
             list(instance.contract_periods.all()) if instance.pk else []
         ),
         "settings": settings,
         "linkable": _linkable_accounts(instance),
+        # **What each type is, said where it is granted.** The days column beside
+        # the type is an override, and the only way to know whether one is called
+        # for is to know what the rule does *not* work out — the Regenerationstage
+        # note is three such things, and none of them is discoverable from a
+        # select of names. It is on the settings page too, which is where the
+        # rule is edited; this is where it is used.
+        "leave_type_notes": [
+            leave_type for leave_type in SpecialLeaveType.objects.filter(is_active=True)
+            if leave_type.note
+        ],
         # The two numbers the browser needs to preview an entitlement while the
         # seven hour boxes are being typed. The *rule* crosses over, not an
         # answer — an answer would be stale the moment somebody edits a box,

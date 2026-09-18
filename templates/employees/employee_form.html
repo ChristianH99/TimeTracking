@@ -187,9 +187,17 @@
     {{ formset.management_form }}
     <table class="data-table compact" data-rows="grants">
       <thead>
+        {% comment %}**A figure typed over the rule has to say why.** The days
+        column is an override — leave it empty and the type's own rule answers —
+        and the two are the same number with entirely different meanings: "one
+        Regenerationstag instead of two" is either a mistake or the fact that
+        they took the other one at their last job, and a year later a bare 1.0
+        cannot say which. The same argument the timesheet's correction makes,
+        and enforced the same way: in the form and again in `clean`.{% endcomment %}
         <tr>
           <th scope="col">{% translate "Type" %}</th>
           <th scope="col">{% translate "Days instead of the rule" %}</th>
+          <th scope="col">{% translate "Why" %}</th>
           <th scope="col"></th>
         </tr>
       </thead>
@@ -202,6 +210,10 @@
             </td>
             <td>{{ grant_form.days_override }}
               {% for error in grant_form.days_override.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </td>
+            <td>{{ grant_form.override_reason }}
+              {% for error in grant_form.override_reason.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+              {% for error in grant_form.non_field_errors %}<span class="field-error">{{ error }}</span>{% endfor %}
             </td>
             <td>
               <label class="row-delete">
@@ -220,6 +232,7 @@
         {{ formset.empty_form.id }}
         <td>{{ formset.empty_form.leave_type }}</td>
         <td>{{ formset.empty_form.days_override }}</td>
+        <td>{{ formset.empty_form.override_reason }}</td>
         <td>
           <label class="row-delete">{{ formset.empty_form.DELETE }}<span class="sr-only">{% translate "Remove" %}</span></label>
           <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
@@ -230,6 +243,18 @@
     <button type="button" class="button button--secondary button--small" data-rows-add="grants">
       + {% translate "Grant a special leave type" %}
     </button>
+
+    {% comment %}What each type is, under the table it is granted in. The "days
+    instead of the rule" column is only answerable by somebody who knows what the
+    rule does *not* work out — the Regenerationstage note is three such things,
+    and not one of them is discoverable from a select of names.{% endcomment %}
+    {% if leave_type_notes %}
+      <ul class="type-notes">
+        {% for leave_type in leave_type_notes %}
+          <li><strong>{{ leave_type.name }}</strong> {{ leave_type.note }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
 
     <div class="form-actions">
       <button type="submit" class="button">{% translate "Save the contract" %}</button>

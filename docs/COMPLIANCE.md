@@ -347,6 +347,65 @@ who knows the rule. The lawful, boring alternative is to fold the five days into
 
 ---
 
+## 8c. TVöD SuE — Regenerationstage
+
+The one collective-agreement entitlement this app ships the numbers for, because
+a kindergarten on the TVöD has it and getting the steps wrong by hand is easy.
+
+**The rule.** Nr. 1a of Anlage D.12 to the TVöD-V (§ 3.2a Abs. 1 and 2 TVöD-B):
+everybody in the S-groups of the Sozial- und Erziehungsdienst gets **two
+Regenerationstage a calendar year** on a five-day week. Fewer working days a week
+reduces it in proportion, with a rounding of the agreement's own — at least half
+a day rounds *up* to a whole one and anything under a half is dropped:
+
+| working days a week | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| Regenerationstage | 0 | 1 | 1 | 2 | 2 | 2 |
+
+They are **Arbeitsbefreiung unter Fortzahlung des Entgelts and not Urlaub** — the
+protocol declaration says so outright — so the BUrlG rules above do not reach
+them, and neither does the employer's leave-planning duty.
+
+**What the app does.** The "Add Regenerationstage" button on the special leave
+page creates an ordinary `SpecialLeaveType` in the threshold mode with the two
+rows `2 → 1` and `4 → 2`, which is that table exactly. Nothing in the code knows
+the type afterwards: it is granted per person like any other, taken like any
+other, and a house on a different agreement edits it. It is a **preset, not a
+special case** — the threshold mode is what makes it right, because the obvious
+choice of pro rata gives 1.2 days for a three-day week and then rounds it by the
+*house's* `leave_rounding`, which is a different rule that agrees with this one
+only by accident.
+
+**What the app does not do**, and this is the honest half:
+
+* **The four-month reduction.** The entitlement drops to a single day for
+  somebody who had fewer than four calendar months of pay entitlement in the
+  year. `days_in_year` weights across the year in proportion instead, which for
+  a three-month employment gives about half a day rather than one. Wrong in the
+  direction that costs the employee.
+* **The deadline.** The days must be taken by 31 December, and may be carried to
+  30 September of the following year only where the employer's own reasons
+  stopped them being taken. `LeaveCarryOver` models this for annual leave and
+  not for special types at all, so unused Regenerationstage neither lapse nor
+  carry — they simply stop existing when the year's entitlement is recomputed.
+* **Days taken at another employer.** Somebody who joins in July having already
+  used one of their two is entitled to one here. Nothing in this app can know
+  that.
+
+All three are why `SpecialLeaveGrant.days_override` exists and why it now
+**requires a reason**: a figure typed over the rule with nothing beside it is
+one nobody can account for a year later, and "one day already taken at a
+previous employer" is exactly the sentence an auditor or a works council will
+ask for. The type's `note` carries all three to the manager at the moment they
+are granting it, rather than leaving them to be discovered from a payroll query.
+
+Fixing the first two properly means a fourth assignment mode with a
+months-of-entitlement step, and expiry for special types beside
+`apps/absences/carryover.py`. Neither is built, and both are in the list at the
+end of this file.
+
+---
+
 ## 8a. Summer time, and the hour that does not exist
 
 Not named in any statute, and it decides what somebody is paid twice a year.
@@ -513,3 +572,15 @@ and what they will ask for on the day.
     affects one shift a year in businesses that roster that night at all, and
     fixing it means storing an instant rather than a clock reading — which is a
     trade the rest of the app has deliberately not made.
+14. **The two halves of Regenerationstage the app does not compute** (§8c above).
+    The four-month reduction is a *step* — under four calendar months of pay
+    entitlement in the year gives exactly one day — and this app weights the year
+    in proportion instead, which gives a three-month employment about half a day.
+    Wrong in the direction that costs the employee, and it wants a fourth
+    assignment mode rather than a patch to the pro-rata one. The 31 December
+    deadline and its Nachholung to 30 September is the other: `LeaveCarryOver`
+    models expiry for annual leave and not for special types at all, so unused
+    Regenerationstage neither lapse nor carry — they stop existing when the
+    year's entitlement is next worked out. Both are covered today by typing the
+    figure over the rule, which now requires a reason and is therefore at least
+    *visible*; neither is covered by the app knowing the rule.

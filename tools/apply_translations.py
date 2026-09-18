@@ -50,6 +50,7 @@ sys.path.insert(0, str(BASE_DIR))
 from tools.translations_de import SINGULAR  # noqa: E402
 from tools.translations_de_pages import JAVASCRIPT, PAGES, PLURALS  # noqa: E402
 from tools.translations_de_year import JAVASCRIPT_YEAR, YEAR_END  # noqa: E402
+from tools.translations_de_team import TEAM, TEAM_PLURALS  # noqa: E402
 
 CATALOG = BASE_DIR / "locale" / "de" / "LC_MESSAGES" / "django.po"
 JS_CATALOG = BASE_DIR / "locale" / "de" / "LC_MESSAGES" / "djangojs.po"
@@ -64,7 +65,8 @@ def _merge():
     """
     tables = {"translations_de.SINGULAR": SINGULAR,
               "translations_de_pages.PAGES": PAGES,
-              "translations_de_year.YEAR_END": YEAR_END}
+              "translations_de_year.YEAR_END": YEAR_END,
+              "translations_de_team.TEAM": TEAM}
     merged = {}
     seen = {}
     for name, table in tables.items():
@@ -119,7 +121,7 @@ def main():
     exactly the messages somebody sees most often, because they are the ones a
     typo produces.
     """
-    failures = _apply(CATALOG, _merge(), PLURALS)
+    failures = _apply(CATALOG, _merge(), {**PLURALS, **TEAM_PLURALS})
     if JS_CATALOG.exists():
         failures += _apply(JS_CATALOG, {**JAVASCRIPT, **JAVASCRIPT_YEAR}, {})
     return 1 if failures else 0

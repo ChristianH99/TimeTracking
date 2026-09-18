@@ -451,17 +451,14 @@ PAGES = {
     "Everything from the last fortnight is confirmed.":
         "Alles aus den letzten zwei Wochen ist bestätigt.",
 
-    # -- the team week -----------------------------------------------------
-    "Team timesheets": "Stundenzettel des Teams",
-    "Worked, everybody": "Gearbeitet, alle",
-    "Contracted, everybody": "Vertraglich, alle",
-    "Days nobody has answered for": "Tage, für die niemand geantwortet hat",
-    "Rostered, but nobody has said what was worked":
-        "Eingeteilt, aber niemand hat gesagt, was gearbeitet wurde",
+    # -- the team page -----------------------------------------------------
+    #
+    # It was a grid of seven day-cells a person and is two figures a person now;
+    # the strings the old grid needed — "rostered, nothing entered", "different
+    # from the roster", the four column totals — went with it, because a table
+    # entry matching nothing in the catalogue is one somebody later restores a
+    # page around. What the page says now is in `translations_de_team.TEAM`.
     "Nobody is employed yet.": "Es ist noch niemand beschäftigt.",
-    "entered, not confirmed": "eingetragen, nicht bestätigt",
-    "rostered, nothing entered": "eingeteilt, nichts eingetragen",
-    "different from the roster": "abweichend vom Dienstplan",
 
     # -- my timesheet ------------------------------------------------------
     "My timesheet": "Mein Stundenzettel",

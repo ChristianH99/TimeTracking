@@ -73,6 +73,11 @@
                href="{% url 'timesheets:team' %}">{% translate "Timesheets" %}</a>
             <a class="shell-nav-subitem{% if 'team.month-end' in nav_current %} active{% endif %}"
                href="{% url 'timesheets:month-end' %}">{% translate "Month end" %}</a>
+            {% comment %}Who is off, everybody at once — beside Requests rather
+            than inside it, because one is a wall somebody reads to plan the
+            fortnight and the other is a pile somebody clears.{% endcomment %}
+            <a class="shell-nav-subitem{% if 'team.absences' in nav_current %} active{% endif %}"
+               href="{% url 'absences:calendar' %}">{% translate "Absence calendar" %}</a>
             <a class="shell-nav-subitem{% if 'team.requests' in nav_current %} active{% endif %}"
                href="{% url 'absences:requests' %}">{% translate "Requests" %}{% if pending_request_count %}
                  <span class="nav-badge">{{ pending_request_count }}</span>{% endif %}</a>

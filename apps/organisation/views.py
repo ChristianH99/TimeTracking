@@ -21,7 +21,9 @@ from apps.organisation.forms import (
     ThresholdFormSet,
 )
 from apps.organisation.models import (
-    DEFAULT_BREAK_RULES, AssignmentMode, BreakRule, OrgSettings, SpecialLeaveType,
+    DEFAULT_BREAK_RULES, REGENERATION_NAME, REGENERATION_NOTE,
+    REGENERATION_THRESHOLDS, AssignmentMode, BreakRule, OrgSettings,
+    SpecialLeaveThreshold, SpecialLeaveType,
 )
 
 
@@ -148,7 +150,80 @@ def leave_types(request):
         })
     return render(request, "organisation/leave_types.html", {
         "rows": rows, "settings": settings,
+        # No button once it is there. An offer that can only be refused is worse
+        # than no offer, and this is the one type the page knows the name of.
+        "regeneration_name": REGENERATION_NAME,
+        "has_regeneration": any(
+            row["type"].name.lower() == REGENERATION_NAME.lower() for row in rows
+        ),
     })
+
+
+@staff_required
+@require_POST
+def install_regeneration_days(request):
+    """Create the Regenerationstage type with the TVöD table already in it.
+
+    **A preset, not a special case.** What this writes is an ordinary
+    ``SpecialLeaveType`` in the threshold mode with two rows — exactly what
+    somebody could type by hand — and the moment it exists the app knows nothing
+    special about it: it is edited, granted, switched off and taken like any
+    other type. What the button buys is that a kindergarten does not have to
+    derive `2 → 1, 4 → 2` from a collective agreement with a form open, and does
+    not silently get it wrong by reaching for the pro-rata mode, which is the
+    obvious choice and produces different numbers.
+
+    Guarded on the name rather than trusted to the button being hidden, and the
+    refusal is a message rather than a second type: two rows called
+    Regenerationstage is a grant list where nobody can tell which one is theirs,
+    and it is the state a double-submitted POST would otherwise leave behind.
+
+    ``apps/organisation/models.py`` holds the rule and the two things it does not
+    model; the note this writes onto the type is what carries those to the
+    manager doing the granting.
+    """
+    from decimal import Decimal
+
+    if SpecialLeaveType.objects.filter(name__iexact=REGENERATION_NAME).exists():
+        messages.info(request, _(
+            "“%(name)s” already exists, so nothing was changed. Edit it if the "
+            "days are not what your agreement says."
+        ) % {"name": REGENERATION_NAME})
+        return redirect("organisation:leave-types")
+
+    leave_type = SpecialLeaveType.objects.create(
+        name=REGENERATION_NAME,
+        mode=AssignmentMode.THRESHOLD,
+        # Never read in the threshold mode — the table answers instead — and
+        # written here as the full-week figure all the same, so that a house
+        # switching the type to another mode later starts from the right number
+        # rather than from the field's default of one day.
+        days=Decimal("2.0"),
+        note=REGENERATION_NOTE,
+    )
+    for min_days, days in REGENERATION_THRESHOLDS:
+        SpecialLeaveThreshold.objects.create(
+            leave_type=leave_type, min_days_per_week=min_days, days=Decimal(days),
+        )
+
+    settings = OrgSettings.current()
+    if settings.full_time_days_per_week != 5:
+        # The table is written against the five-day week the agreement assumes.
+        # Said rather than silently adjusted: what a house on a different full
+        # week is entitled to is a question about their agreement, not one this
+        # app may answer by scaling somebody's statutory days.
+        messages.warning(request, _(
+            "“%(name)s” was added with the table the agreement gives for a "
+            "five-day week. A full week here is %(days)s days, so check the "
+            "steps against what your own agreement says before granting it."
+        ) % {"name": REGENERATION_NAME, "days": settings.full_time_days_per_week})
+    else:
+        messages.success(request, _(
+            "“%(name)s” was added: two days for a four- or five-day week, one for "
+            "two or three days, none for one. Grant it to the people it applies "
+            "to on their contract."
+        ) % {"name": REGENERATION_NAME})
+    return redirect("organisation:leave-types")
 
 
 @staff_required

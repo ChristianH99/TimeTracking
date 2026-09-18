@@ -20,6 +20,10 @@ urlpatterns = [
     path("book/", views.book, name="book"),
     path("request/<int:pk>/withdraw/", views.request_cancel, name="request-cancel"),
 
+    # Who is off, everybody at once. Under the manager's prefix rather than
+    # beside `mine`, because it is a page about *coverage* — the question is
+    # never "what has Anna got booked" but always "is anybody in on Thursday".
+    path("calendar/", views.team_calendar, name="calendar"),
     path("requests/", views.requests, name="requests"),
     path("requests/<int:pk>/decide/", views.decide, name="decide"),
 

@@ -141,8 +141,11 @@ both, and `config/tests.py` checks they have not been written over each other �
 which is not hypothetical, it happened.
 
 **The German catalogue is generated from a table, not hand-edited.**
-`tools/translations_de.py` and `tools/translations_de_pages.py` hold
-`msgid -> msgstr`; `tools/apply_translations.py` writes the `.po`. It exists
+`tools/translations_de.py`, `tools/translations_de_pages.py`,
+`tools/translations_de_year.py` and `tools/translations_de_team.py` hold
+`msgid -> msgstr`; `tools/apply_translations.py` merges the four and writes the
+`.po`, refusing a msgid that appears in more than one — which would otherwise be
+a translation that changes when somebody reorders two imports. It exists
 because of two failures that hand-editing a `.po` on Windows reliably produces:
 gettext emits a wrapped `#:` reference line that makes
 `msgfmt` refuse the whole file and write **no `.mo` at all** — so the app carries
@@ -430,6 +433,101 @@ Each of these is here because breaking it produces a page that still renders.
   lets a note be written against any date, so `_day_row` reports `None` rather
   than nought for such a row. "They worked none of it" and "nobody has answered
   yet" are different statements and the page has always drawn them differently.
+- **The manager's timesheet has a second axis, and it is built out of the
+  month picker's parts.** A month is read *down* for one person and then across
+  the team, so `templates/_employee_picker.html` is the same disclosure with the
+  same arrows holding a list of names — and every link in it carries the month,
+  because a picker that dropped back to today would make reading September
+  across eleven people eleven navigations instead of ten. Not a `<select>`, for
+  the reason the month grid is not one: a select whose selected option is
+  missing shows the first entry instead and says nothing, which here would be
+  one person's name over another person's hours. At the ends of the list the
+  arrow is drawn dead rather than wrapping — an arrow that lands somewhere its
+  direction did not promise is a control that lies — and a leaver stays in
+  *their own* list and is in nobody else's.
+- **The day a contract changed gets a line of its own in the month, above the
+  day it changed on.** The `Soll` column is read straight down and the one thing
+  it cannot say for itself is why it steps: a row of 4:00 under a run of 8:00 is
+  indistinguishable from a mistake, and the answer is on a page nobody opening a
+  timesheet has a reason to visit. It names *both* figures, because a change is
+  two numbers and the row below carries one of them. Decided in `_day_row` — it
+  is a fact about a date — so the week window gets it for nothing; the earliest
+  period is excluded because everybody has one and it is their contract rather
+  than a change to it. It is the one row in that table with no `data-day`, which
+  is what makes the script that rewrites rows after a save walk straight past
+  it.
+- **The team page is an overview and deliberately not a week.** It was a grid of
+  seven day-cells a person — the timesheet in miniature, eleven times over — and
+  it was too small to read the detail out of and too detailed to read the summary
+  out of. What is on it now is the pair of figures that are genuinely about
+  everybody at once and cannot be had by looking at a week: what is left of each
+  person's leave, which is a year, and where their hours stand, which is
+  everything since they started. Both come from the same `Balance` and
+  `hours_balance` the employee sees on their own pages.
+- **Who is off is a month with a row per person; a year with a grid per person
+  is the other question.** `absences:calendar`. The employee's own Time off page
+  is twelve blocks because it asks "what does my year look like"; this asks about
+  a *date* — is anybody in on Thursday — so the days go across the top and the
+  count of who is away goes under each column. `_coverage_cell` is deliberately
+  not `_day_cell`: that one carries a label, a span and the four states a
+  *booking control* needs, and three hundred squares that are not controls must
+  not each carry one. What is not undecided is drawn as settled and what is
+  undecided is dotted, in the same colours the year grid and the status pill
+  use — a manager reading for cover has to tell what is agreed from what is a
+  request, and a page that painted them alike would be showing cover that does
+  not exist. The tick boxes are a filter and nothing else: nothing is saved, and
+  the page always arrives with everybody showing.
+- **Requests are a person at a time, and the tile is the unit.** A manager does
+  not decide requests, they decide about people: Anna's three are one
+  conversation and one balance, and in the flat list they used to sit wherever
+  their start dates put them with other people's cards between. Opening a tile
+  gives the whole of that person's case — **their calendar with the waiting days
+  lit on it**, cut to the months the requests fall in and the one either side —
+  and the cards under it. The calendar is the half a list cannot do: "14.–18.
+  September, five working days" has to be converted in somebody's head before
+  they can answer the question they actually have, which is whether that week is
+  already thin. `?person=` is read out of the *waiting* list rather than looked
+  up by key, so naming somebody with nothing outstanding falls back to the tiles
+  instead of rendering an empty case; and a decision lands back on that person
+  while anything of theirs is left, and on the pile once it is not.
+- **The People page says which username is which.** `Employee.username` is the
+  directory name a token is matched against and `user.get_username()` is the
+  account that signed in; for almost everybody they are the same string, so the
+  page printed it twice five columns apart with nothing to say why. It reads as
+  a mistake, and on the one row where they genuinely differ it was the thing
+  nobody would notice. The sign-in name has a column of its own in `--font-mono`
+  — it is machine text, copied and compared character by character, which is
+  what that face is for and what the timesheet's *durations* are not — and the
+  account column says "linked" where they agree and prints the account's name in
+  `--amber` where they do not.
+- **Regenerationstage are a preset, not a special case.** The button writes an
+  ordinary `SpecialLeaveType` in the threshold mode with two rows, `2 → 1` and
+  `4 → 2`, and nothing in the code knows the type afterwards. Those rows are the
+  TVöD SuE table (Anlage D.12 Nr. 1a): two days a calendar year on a five-day
+  week, reduced for fewer days with the agreement's *own* rounding — half a day
+  up, less than half dropped. The threshold mode is what makes that right; pro
+  rata gives 1.2 for a three-day week and then rounds it by the house's
+  `leave_rounding`, which is a different rule that agrees only by accident.
+  **Three things it does not model** — the four-month reduction, the 31 December
+  deadline, and days taken at a previous employer — and they are in the type's
+  `note`, which the contract page prints under the grants table. That is where
+  somebody decides whether to type over the figure.
+- **A figure typed over a leave rule has to say why.** `days_override` is
+  refused without `override_reason`, in the form and again in
+  `SpecialLeaveGrant.clean` — the same rule `correction_reason` makes and for
+  the same reason: a number the rules produced and a number somebody typed are
+  the same number and mean entirely different things to whoever explains the
+  entitlement a year later. An override of *nought* is the one somebody gets
+  wrong, because it is falsy and is also the most consequential override there
+  is.
+- **`hhmm` and `hhmm_signed` write nothing for the empty string as well as for
+  `None`.** `None` is the app's own "nobody has answered yet"; the empty string
+  is what a *missing template variable* resolves to, and they arrive looking
+  identical. The filter used to take the first and raise on the second, so one
+  view forgetting one context key answered 500 for the whole contract page —
+  every employee, on the page a manager opens to fix anything at all. Writing
+  nothing for both is what a bare `{{ x }}` already does. A real nought is still
+  `00:00`: "they worked none of it" is an answer and is not "nobody has said".
 - **The roster and the timesheet are separate tables, and the roster is copied
   *from*, never *into*.** A `Shift` is what the manager arranged; a `DayRecord`
   is what happened. The tempting version makes them one row — the roster writes
@@ -1196,8 +1294,26 @@ targets**, so a page added next month is covered the day it lands:
   cross-employee doors by hand. Its route-reverser fails loudly on a route it
   cannot reverse rather than skipping it, because a skipped route is an
   unchecked route.
-- `apps/employees/tests.py` holds the four conditions on `link_by_email` and the
-  manager/staff split.
+- `apps/employees/tests.py` holds the four conditions on `link_by_email`, the
+  manager/staff split, and a sweep that renders *every* page of somebody's
+  contract. That sweep is there because of a real crash: the contract page named
+  a figure its view never supplied, `hhmm_signed` was handed the empty string,
+  and the page answered 500 for every employee with nothing in the suite
+  noticing — because nothing had ever asked those three routes to render.
+- `apps/absences/test_coverage.py` holds the coverage grid and the request
+  tiles, asserting on the context dictionaries and never on the markup. The
+  cases that matter are the ones about *what is drawn differently*: an approved
+  day and a waiting one, a cancellation (which is both in force and undecided),
+  a declined day (which is history and not on the grid at all), and the days a
+  booking was never charged for.
+- `apps/timesheets/test_contract_note.py` holds the note the month draws on the
+  day a contract changed — including that the `Soll` column really does step
+  across it, without which the note would be explaining something that did not
+  happen — and the manager's person picker, whose arrows must not wrap.
+- `apps/organisation/test_regeneration.py` holds the TVöD table, every step of
+  it, and the one that matters most: the steps must not move when the house's
+  `leave_rounding` changes, which is what says the type is a step function and
+  not a proportion.
 
 Two harness notes carried over from the family: the `english` fixture in
 `conftest.py` sets **both** `LANGUAGE_CODE` and `translation.override`, because

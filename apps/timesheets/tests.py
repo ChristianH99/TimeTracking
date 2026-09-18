@@ -497,3 +497,37 @@ class TestTimeOffInLieu:
         assert row["worked_minutes"] is None
         assert row["contracted_minutes"] == 480
         assert week["difference"] == -week["contracted_total"]
+
+
+class TestTheDurationFilterOnNothingAtAll:
+    """``{{ x|hhmm }}`` where ``x`` is not there.
+
+    ``None`` is the app's own "nobody has answered yet" and has always been
+    written as an empty cell. The *empty string* is what a missing template
+    variable resolves to, and the two reach the filter looking identical — but
+    the filter used to take the first and crash on the second, so one view
+    forgetting one context key answered 500 for the whole contract page rather
+    than leaving a gap in one panel.
+
+    Writing nothing for both is what a bare ``{{ x }}`` already does, and a
+    filter must not change that. The missing key stays a bug; it is simply one
+    that shows as a gap instead of as a stack trace.
+    """
+
+    @pytest.mark.parametrize("nothing", [None, ""])
+    def test_both_kinds_of_nothing_write_nothing(self, nothing):
+        from apps.timesheets.templatetags.hours import hhmm as filter_hhmm
+        from apps.timesheets.templatetags.hours import hhmm_signed
+
+        assert filter_hhmm(nothing) == ""
+        assert hhmm_signed(nothing) == ""
+
+    def test_a_real_nought_is_still_a_duration(self):
+        """The one thing the guard must not swallow. Nought minutes is an
+        answer — "they worked none of it" — and it is a different statement from
+        "nobody has said", which is the distinction `_day_row` exists to keep."""
+        from apps.timesheets.templatetags.hours import hhmm as filter_hhmm
+        from apps.timesheets.templatetags.hours import hhmm_signed
+
+        assert filter_hhmm(0) == "00:00"
+        assert hhmm_signed(0) == "00:00"

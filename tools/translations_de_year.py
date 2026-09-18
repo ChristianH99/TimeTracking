@@ -275,7 +275,6 @@ YEAR_END = {
         "Die Stunden fließen ab diesem Datum in den laufenden Saldo ein. Die Urlaubstage werden dem Anspruch dieses einen Jahres hinzugerechnet — was davon offen bleibt, wird anschließend übertragen wie bei allen anderen auch.",
     "Balance now": "Saldo aktuell",
     "Of which brought with them": "davon mitgebracht",
-    "Balance": "Saldo",
 
     "Includes %(opening)s brought from a previous contract.":
         "Enthält %(opening)s aus einem früheren Vertrag.",

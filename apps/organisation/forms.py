@@ -151,7 +151,8 @@ BreakRuleFormSet = inlineformset_factory(
 class SpecialLeaveTypeForm(forms.ModelForm):
     class Meta:
         model = SpecialLeaveType
-        fields = ["name", "mode", "days", "is_active"]
+        fields = ["name", "mode", "days", "is_active", "note"]
+        widgets = {"note": forms.TextInput(attrs={"maxlength": 300})}
 
     def clean(self):
         data = super().clean()

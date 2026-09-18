@@ -71,23 +71,6 @@
     draw();
   });
 
-  /* Outside the panel, and outside the summary that opens it — a click on the
-     summary is what closes it the ordinary way, and swallowing that here would
-     make the toggle close and reopen in one press. */
-  document.addEventListener("click", (event) => {
-    if (!picker.open) return;
-    if (!picker.contains(event.target)) picker.open = false;
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !picker.open) return;
-    picker.open = false;
-    /* Back to the control that opened it. A panel that closes and leaves the
-       focus where the panel used to be is one the keyboard has lost. */
-    const summary = picker.querySelector("summary");
-    if (summary) summary.focus();
-  });
-
   /* Opening it again always starts from the year on the page, whatever year was
      last browsed to and abandoned. */
   picker.addEventListener("toggle", () => {
@@ -97,5 +80,47 @@
       year = onPage;
       draw();
     }
+  });
+})();
+
+/* Closing a disclosure that is being used as a menu.
+ *
+ * Split out from the picker above and written over *both* of the toolbar's
+ * disclosures — the month, and the manager's list of people — because this half
+ * has nothing to do with either one's contents. `<details>` opens and closes on
+ * its own, which is why the markup needs no script to work at all; what it does
+ * not do is close when somebody clicks past it or presses Escape, and a panel
+ * that stays open over the page after the attention has moved reads as stuck
+ * rather than as open.
+ *
+ * Two disclosures now sit side by side on the timesheet, which is what made
+ * this general: the version scoped to one of them left the other hanging open
+ * over the month it had just been used to leave.
+ */
+(function () {
+  const pickers = Array.from(
+    document.querySelectorAll("[data-month-picker], [data-person-picker]")
+  );
+  if (!pickers.length) return;
+
+  /* A click *on* the summary is what closes an open panel the ordinary way, so
+     it has to be left alone here — swallowing it would close and reopen the
+     panel in one press. Only a click outside the whole disclosure counts. */
+  document.addEventListener("click", (event) => {
+    pickers.forEach((picker) => {
+      if (picker.open && !picker.contains(event.target)) picker.open = false;
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    pickers.forEach((picker) => {
+      if (!picker.open) return;
+      picker.open = false;
+      /* Back to the control that opened it. A panel that closes and leaves the
+         focus where the panel used to be is one the keyboard has lost. */
+      const summary = picker.querySelector("summary");
+      if (summary) summary.focus();
+    });
   });
 })();

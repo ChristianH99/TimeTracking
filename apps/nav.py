@@ -71,6 +71,11 @@ ITEMS = {
         ("timesheets", name)
         for name in ("month-end", "lock-month", "lock-day")
     },
+    # Who is off, everybody at once. Its own entry rather than a tab on the
+    # requests page: one is a wall a manager reads, the other is a pile a
+    # manager clears, and they are opened on different days for different
+    # reasons.
+    "team.absences": {("absences", "calendar")},
     "team.requests": {
         ("absences", name) for name in ("requests", "decide")
     },
@@ -92,6 +97,7 @@ ITEMS = {
     "settings.rules": {
         ("organisation", name)
         for name in ("settings", "break-rules", "leave-types", "leave-type-add",
+                     "leave-type-regeneration",
                      "leave-type-edit", "leave-type-delete", "holidays",
                      "holidays-generate", "closures", "closure-add",
                      "closure-edit", "closure-delete")
@@ -122,8 +128,8 @@ ITEMS = {
 # that hides the page you are looking at is a menu that looks broken.
 PARENTS = {
     "mine": ("mine.timesheet", "mine.absences", "mine.history"),
-    "team": ("team.roster", "team.timesheets", "team.month-end", "team.requests",
-             "team.employees",
+    "team": ("team.roster", "team.timesheets", "team.month-end", "team.absences",
+             "team.requests", "team.employees",
              "team.year-end", "team.export"),
     "settings": ("settings.rules", "settings.users", "settings.sso", "settings.audit",
                  "settings.retention"),

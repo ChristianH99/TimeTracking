@@ -20,6 +20,10 @@ urlpatterns = [
 
     path("leave-types/", views.leave_types, name="leave-types"),
     path("leave-types/new/", views.leave_type_form, name="leave-type-add"),
+    # The one type this app ships the numbers for. `views.install_regeneration_days`
+    # says why a preset rather than a special case in the code.
+    path("leave-types/regeneration/", views.install_regeneration_days,
+         name="leave-type-regeneration"),
     path("leave-types/<int:pk>/", views.leave_type_form, name="leave-type-edit"),
     path("leave-types/<int:pk>/delete/", views.leave_type_delete, name="leave-type-delete"),
 

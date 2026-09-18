@@ -136,7 +136,33 @@ def _facts_for(employee, first, last):
     # One query for the month rather than one per row — the fifth, and the only
     # one this added.
     locks = DayLock.dates_between(employee, first, last)
-    return shifts, records, holidays, absences, locks
+
+    # **The contract changes that take effect inside the window**, so the month
+    # can say on the day it happened that the hours the rows below are measured
+    # against are not the hours the rows above were.
+    #
+    # The *earliest* period is excluded and that is the whole of the rule:
+    # everybody has one, it is their contract rather than a change to it, and a
+    # note reading "the hours changed" on somebody's first day would be on every
+    # timesheet in the house saying nothing. `.first()` on the ascending order
+    # is that row; a window that does not contain it gets every period it does
+    # contain, because a change is a change whether or not this month is where
+    # the employment began.
+    periods = list(employee.contract_periods.order_by("valid_from"))
+    changes = {
+        period.valid_from: period
+        for period in periods[1:]
+        if first <= period.valid_from <= last
+    }
+    # What was in force the day before each of them, so the note can say what
+    # the hours moved *from*. A change is two figures and one of them is not on
+    # the row that announces it.
+    previous = {
+        period.valid_from: periods[index]
+        for index, period in enumerate(periods[1:])
+        if first <= period.valid_from <= last
+    }
+    return shifts, records, holidays, absences, locks, changes, previous
 
 
 def _day_row(employee, day, facts, settings, rules, today=None):
@@ -158,7 +184,7 @@ def _day_row(employee, day, facts, settings, rules, today=None):
     * and the figures the month's columns are: what the bookings came to, what
       the break took off, what was corrected by hand, and the saldo.
     """
-    shifts, records, holidays, absences, locks = facts
+    shifts, records, holidays, absences, locks, changes, previous = facts
     today = today or dt.date.today()
 
     record = records.get(day)
@@ -353,6 +379,22 @@ def _day_row(employee, day, facts, settings, rules, today=None):
         # closes that.
         "can_edit_hours": day not in locks and day <= today,
         "is_weekend": day.weekday() >= 5,
+        # **The day the contract changed**, and what it changed from.
+        #
+        # The month is a column of `Soll` figures read downwards, and the one
+        # thing that column cannot say for itself is why it steps: a row of 4:00
+        # under a run of 8:00 looks exactly like a mistake, and the answer —
+        # that these are different contracts — is on a page nobody opening a
+        # timesheet has any reason to visit. So the date the new period begins
+        # carries the period with it, and the month draws a line of its own
+        # above that row saying what moved.
+        #
+        # Decided here rather than in `build_month` because it is a fact about a
+        # *date*, which is what this function is for. The week window gets it
+        # for nothing as a result, which is right — the same step is just as
+        # unreadable across seven days as across thirty-one.
+        "contract_change": changes.get(day),
+        "contract_before": previous.get(day),
         # A day worth asking somebody to answer: they were rostered, it is not
         # in the future, and there is no record and no absence.
         "awaiting": bool(
@@ -705,6 +747,38 @@ def _people_with_unconfirmed_days():
     return sorted(grouped.items(), key=lambda pair: pair[0].full_name)
 
 
+def _employee_picker(employee):
+    """The people a manager can step between, and the two either side of this one.
+
+    The order is ``Employee.Meta.ordering`` — the same order the People page
+    lists them in — so "the next one" means the next name somebody would have
+    found by scrolling, rather than an order invented here that agrees with no
+    other page.
+
+    **Somebody switched off is kept when it is their own page being looked at.**
+    A manager opens a leaver's September precisely because they have left, and
+    a picker whose list did not contain the person it is naming would either
+    show the wrong name or have to say nothing at all — which is the fault the
+    month picker's grid replaced a ``<select>`` to escape. They are not added
+    to anybody else's list, because stepping *into* a leaver is not what the
+    arrows are for.
+    """
+    people = list(Employee.objects.filter(is_active=True))
+    if all(person.pk != employee.pk for person in people):
+        people.append(employee)
+    where = next(
+        (index for index, person in enumerate(people) if person.pk == employee.pk),
+        None,
+    )
+    return {
+        "people": people,
+        "previous_person": people[where - 1] if where else None,
+        "next_person": (
+            people[where + 1] if where is not None and where + 1 < len(people) else None
+        ),
+    }
+
+
 def _month_context(request, employee):
     """The month page's context. One function, two doors, for the usual reason."""
     from apps.organisation.models import SpecialLeaveType
@@ -749,6 +823,12 @@ def _month_context(request, employee):
     context["is_own"] = (
         employee.user_id is not None and employee.user_id == request.user.id
     )
+    # Who else a manager could be looking at, and who is either side of this
+    # person in the list. Only on somebody else's page: on your own there is
+    # nowhere to step to, and offering the control would be offering eleven
+    # timesheets to somebody entitled to one.
+    if not context["is_own"] and is_manager(request.user):
+        context.update(_employee_picker(employee))
     # The break table as plain data, so the pop-up can say what the break will
     # be while somebody is still typing the bookings rather than only after the
     # save. The browser gets the *rules* and applies the same formula — the only
@@ -784,36 +864,68 @@ def employee_month(request, pk):
 
 @manager_required
 def team(request):
-    """Everybody's week on one page, one row per person.
+    """Everybody, as two figures each: what is left of their leave, and where
+    their hours stand.
 
-    The overview a manager opens on a Monday morning. Each row is that person's
-    week collapsed to four numbers and a count of what is unanswered; the name
-    is a link into the same week view they see themselves.
+    **An overview, and deliberately not a week.** This page used to be a grid of
+    seven day-cells per person — a small copy of the timesheet, for eleven
+    people at once — and it was answering a question it was in the wrong shape
+    to answer. A cell that says whether last Wednesday was confirmed is a
+    question about *one person's* month, and the page for that already exists
+    and is better at it: it has thirty-one rows, the bookings, the break and the
+    saldo, and it is one click away from every name here. What was left was a
+    grid too small to read the detail out of and too detailed to read the
+    summary out of, and a manager opening it on a Monday morning got neither.
+
+    So the two questions that are genuinely about *everybody at once* are what
+    is on it: how many days off has each person got left, and how do their hours
+    stand. Both are figures nobody can arrive at by looking at a week — leave is
+    a year and the balance is everything since they started — which is exactly
+    why they belong on a page about the team rather than on a page about a
+    month.
+
+    ``Balance`` and ``hours_balance`` are the same two the employee sees on
+    their own pages. One implementation, deliberately: a figure that reads
+    differently depending on who is looking at it is the single most damaging
+    bug this app could have.
     """
-    monday = _monday_from(request)
     settings = OrgSettings.current()
+    year = dt.date.today().year
     # Everybody at once, so there is no single person to name — the note says
-    # which page it was and the week it was showing. An entry per employee would
-    # be eleven rows for one glance at a list, which is the read log burying
-    # itself.
-    record_view(request, note=f"team {monday:%Y-%m-%d}")
-    weeks = [
-        build_week(employee, monday, settings)
-        for employee in Employee.objects.filter(is_active=True)
-    ]
+    # which page it was. An entry per employee would be eleven rows for one
+    # glance at a list, which is the read log burying itself.
+    record_view(request, note=f"team {year}")
+
+    people = list(
+        Employee.objects.filter(is_active=True).prefetch_related("contract_periods")
+    )
+    rows = []
+    for employee in people:
+        balance = Balance(employee, year, settings=settings)
+        rows.append({
+            "employee": employee,
+            "balance": balance,
+            # The hours balance to date — the same number the last row of that
+            # person's running column reaches, because it is the same function.
+            "running": hours_balance(employee, settings=settings),
+            # What is still waiting on the manager, per person rather than as a
+            # total: "three requests" at the top of a page is a number nobody
+            # can act on until they know whose.
+            "waiting": employee.absences.filter(status__in=UNDECIDED).count(),
+        })
+
     return render(request, "timesheets/team.html", {
-        "monday": monday,
-        "weeks": weeks,
-        "previous_week": monday - dt.timedelta(days=7),
-        "next_week": monday + dt.timedelta(days=7),
-        "this_week": week_monday(dt.date.today()),
-        "days": [monday + dt.timedelta(days=offset) for offset in range(7)],
-        "worked_total": sum(week["worked_total"] for week in weeks),
-        "credited_total": sum(week["credited_total"] for week in weeks),
-        "counted_total": sum(week["counted_total"] for week in weeks),
-        "contracted_total": sum(week["contracted_total"] for week in weeks),
-        "awaiting_total": sum(week["awaiting"] for week in weeks),
-        "running_now": [week for week in weeks if week["clock"]["running"]],
+        "year": year,
+        "rows": rows,
+        "settings": settings,
+        # The two totals the page footer carries. Leave is summed because "how
+        # many days is the house still owed" is a real planning question in
+        # December; the hours balance is summed because a team that is
+        # collectively four hundred hours down is a staffing fact and not an
+        # individual one.
+        "leave_left_total": sum(row["balance"].remaining for row in rows),
+        "hours_total": sum(row["running"]["total"] for row in rows),
+        "waiting_total": sum(row["waiting"] for row in rows),
     })
 
 

@@ -1146,6 +1146,18 @@ select[data-unit-select] { max-width: 11rem; }
 /* ===== PEOPLE ===== */
 .people-table th[scope="row"] { font-weight: 600; text-transform: none; letter-spacing: normal; font-size: var(--text-base); background: transparent; color: var(--text-dark); }
 .people-sub { display: block; font-size: var(--text-xs); color: var(--text-light); font-weight: 400; }
+/* The sign-in name, in the machine face. `--font-mono` is for *machine text* —
+   a string that is copied and compared character by character rather than read
+   as a word — and a directory name is exactly that: `a.berger` matched against
+   `a.bergen` is a sign-in that silently links to nobody, and the one thing that
+   makes the difference findable is a face where the two characters do not look
+   alike. This is the same argument that keeps the mono stack *off* the
+   timesheet's columns, which are durations and want fixed-width digits in the
+   page's own family, not a terminal transcript. */
+.people-username {
+  font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-mid);
+  white-space: nowrap;
+}
 /* Four actions on one line push the table past the content width on a laptop,
    and the fourth — Delete — is the one that falls off the right-hand edge. So
    they wrap: the row is a little taller and every action is reachable without
@@ -1616,6 +1628,84 @@ tr.is-off > * { color: var(--text-light); }
   background: var(--gold-bg); border-color: var(--gold); color: var(--gold-deep);
 }
 
+/* ===== THE CONTRACT-CHANGE NOTE =====
+   The one row of the month that is not a date. It spans every column, because
+   what it says is true of everything below it and not of one Tuesday, and a
+   mark tucked into the day cell would be a footnote where a heading is wanted.
+
+   Drawn in the pine family and not in `--amber` or `--breach`, both of which
+   already mean something on this page: amber is a figure somebody typed over a
+   computed one, and the breach hues are a working time limit. A contract change
+   is neither a correction nor a fault — it is the page explaining itself — so
+   it takes the app's own quiet ground and the rule above it does the separating.
+
+   `height: auto` is the exception this row needs and the reason it is written
+   down: every other cell in this table has a height, because the grid is read
+   downwards and a row that grows moves every figure below it. This one is
+   *supposed* to interrupt — it is the announcement that the figures below are
+   measured against something new — and a sentence clipped to a data row's
+   height would be a sentence nobody could read. */
+.month-note > td {
+  height: auto;
+  padding: var(--space-4) var(--space-5);
+  background: var(--pine-bg);
+  border-top: 1px solid var(--pine-light);
+  color: var(--text-dark); font-size: var(--text-sm);
+  white-space: normal;
+}
+.month-note-mark { color: var(--pine); margin-right: var(--space-3); }
+.month-note-mark .icon { vertical-align: -0.15em; }
+.month-note-text { font-weight: 600; }
+/* What the manager wrote on the change, if anything. Quieter than the figures,
+   because the figures are the record and this is somebody's sentence about it. */
+.month-note-said {
+  display: block; margin-top: var(--space-2);
+  font-weight: 400; color: var(--text-mid);
+}
+
+/* ===== THE PERSON PICKER =====
+   The manager's second axis on the timesheet, built out of the month picker's
+   own parts because it is the same control asking the other question: a month
+   is read down for one person, and then the same month is read across the
+   team. Reusing `.month-picker` and `.month-panel` is what keeps the two
+   looking like one navigation rather than like two controls that happened to
+   land beside each other — only the panel's contents differ, and only because
+   the shapes of the two lists differ.
+
+   A column, not a grid. Twelve months are a shape somebody already knows from
+   a wall calendar, so three across is read rather than scanned; a list of
+   names has no such shape, and setting it in columns would make somebody scan
+   in two directions for a word they are matching letter by letter. */
+.person-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.person-cell {
+  display: flex; align-items: baseline; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent; border-radius: var(--radius-xs);
+  color: var(--text-mid); font-size: var(--text-sm); font-weight: 600;
+  transition: background var(--dur-3), color var(--dur-3);
+}
+.person-cell:hover { background: var(--pine-bg); color: var(--text-dark); }
+.person-cell.is-current {
+  background: var(--gold-bg); border-color: var(--gold); color: var(--gold-deep);
+}
+/* Wider than the month panel, because a name is longer than "Mär" and the one
+   thing this list must not do is truncate the thing somebody is reading it
+   for. */
+.person-panel { width: 18rem; }
+
+/* An arrow at the end of the list, where there is no next person to step to.
+   Drawn rather than taken away: a row of controls that loses one at the ends
+   is a row whose other controls move, on a toolbar somebody is clicking
+   through eleven times. It is not a button — no `<a>`, no `<button>`, nothing
+   focusable — so the keyboard walks past it instead of stopping on something
+   that does nothing. Wrapping round to the first person was the alternative
+   and is worse: an arrow that lands somewhere its direction did not promise is
+   a control that lies. */
+.icon-button.is-spent {
+  border-color: transparent; background: transparent;
+  color: var(--text-muted); opacity: 0.4; cursor: default;
+}
+
 /* min-width: 0 so the column holding the table can shrink below its content.
    The default is "never shrink below what I contain", which would push the
    whole page sideways and take the topbar and the sidebar with it. */
@@ -1823,8 +1913,27 @@ tr.no-hours .bookings-open:hover,
 tr.no-hours .correction-open:hover { background: none; border-color: transparent; }
 tr.no-hours .month-note { background: transparent; border-color: transparent; }
 
+/* **The padlock has a slot of its own at the end of the day cell**, and that is
+   what puts thirty-one of them in one line. It used to trail the weekday
+   abbreviation, so each padlock began wherever the two letters before it
+   happened to stop — and "Fr" is narrower than "Mi". Down a month that is a
+   column of padlocks wandering seven pixels from side to side, which does not
+   read as a column at all; it reads as thirty-one things slightly out of true,
+   on the one page whose whole argument is that a figure stays where the eye
+   last found it.
+
+   Three parts, and each is load-bearing. `margin-left: auto` takes it out of
+   the text's flow and pins it to the cell's right edge, which is a fixed
+   distance from everything above and below it. The width is written down so
+   that a shut padlock and an open one occupy the same box — they are two
+   glyphs and nothing guarantees they measure the same. And it is centred on
+   the row rather than sitting on the text's baseline: an emoji's baseline is a
+   fact about whichever font supplied it, which on Windows is not the font the
+   digits came from. */
 .day-lock {
-  background: none; border: 0; padding: 0 0 0 var(--space-2);
+  background: none; border: 0; padding: 0;
+  margin-left: auto; align-self: center;
+  width: 1.4em; flex: none; text-align: center;
   font-size: var(--text-xs); line-height: 1; cursor: pointer;
 }
 .day-lock--fixed { cursor: default; }
@@ -1976,33 +2085,240 @@ tr.is-today > * { background: var(--ember-bg); }
 .break-summary dd { margin: var(--space-2) 0 0; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-xl); color: var(--text-dark); font-weight: 700; }
 .checkbox-row { display: inline-flex; align-items: center; gap: var(--space-3); }
 
-/* ===== THE TEAM WEEK ===== */
-.team-week { table-layout: fixed; }
-.team-day { text-align: center; font-size: var(--text-xs); }
-.team-day-date { display: block; font-weight: 400; color: var(--text-light); font-size: var(--text-2xs); }
-.team-cell {
-  text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: var(--text-xs);
-  border-radius: var(--radius-xs);
-}
-.team-cell.is-confirmed { background: var(--success-bg); color: var(--success-strong); }
-.team-cell.is-entered { background: var(--gold-bg); color: var(--amber); }
-.team-cell.is-awaiting { background: var(--danger-bg); color: var(--danger); font-weight: 700; }
-.team-cell.is-away { background: var(--border-light); color: var(--text-light); }
-.team-cell.is-away--sick { background: var(--plum-bg); color: var(--plum); }
-.team-cell.is-off { color: var(--text-muted); }
-/* An outline rather than another background: "different from the roster" can be
-   true of a confirmed day *and* of an entered one, so it has to stack with the
-   colour rather than replace it. */
-.team-cell.is-differing { outline: 2px solid var(--amber); outline-offset: -2px; }
+/* ===== THE TEAM OVERVIEW =====
+   Two figures a person: what is left of their leave, and where their hours
+   stand. It replaced a grid of seven day-cells per person — the timesheet in
+   miniature, eleven times over — which was too small to read the detail out of
+   and too detailed to read the summary out of. The `.team-week`, `.team-cell`
+   and `.team-day` rules that drew it went with it rather than being left to be
+   found by somebody looking for a class that still had a stylesheet and no
+   markup. */
+.team-overview .hint { font-weight: 400; }
 
 .legend { display: flex; flex-wrap: wrap; gap: var(--space-6); list-style: none; padding: 0; margin-top: var(--space-6); font-size: var(--text-xs); color: var(--text-mid); }
 .legend li { display: inline-flex; align-items: center; gap: var(--space-3); }
 .legend-swatch { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-xs); display: inline-block; }
-.legend-swatch.is-confirmed { background: var(--success-bg); }
-.legend-swatch.is-entered { background: var(--gold-bg); }
-.legend-swatch.is-awaiting { background: var(--danger-bg); }
-.legend-swatch.is-away { background: var(--border-light); }
-.legend-swatch.is-differing { outline: 2px solid var(--amber); outline-offset: -2px; background: var(--white); }
+
+/* What a granted leave type is, under the table it is granted in. A list rather
+   than a `title` on each row: the whole reason it is here is that somebody has
+   to read it *before* deciding whether the days beside the type need typing
+   over, and a tooltip is only found by somebody already looking. */
+.type-notes {
+  list-style: none; padding: 0; margin: var(--space-5) 0 0;
+  font-size: var(--text-xs); color: var(--text-mid);
+}
+.type-notes li { margin-bottom: var(--space-3); }
+.type-notes strong { color: var(--text-dark); }
+
+/* ===== THE REQUEST TILES =====
+   One tile a person, not a card a request. A manager does not decide requests,
+   they decide about people: three of Anna's are one conversation and one
+   balance, and in the flat list they used to sit wherever their start dates put
+   them with other people's cards in between.
+
+   A grid that fills the width rather than a column, because the pile is meant
+   to be seen whole — how many people are waiting is the first thing this page
+   should answer, and a column of cards makes that a scroll. */
+.request-tiles {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: var(--space-6); margin-bottom: var(--space-7);
+}
+.request-tile {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--white);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  color: var(--text-dark);
+  transition: border-color var(--dur-3), box-shadow var(--dur-3);
+}
+.request-tile:hover { border-color: var(--pine-light); box-shadow: var(--shadow-md); color: var(--text-dark); }
+.request-tile-name { font-weight: 700; font-size: var(--text-lg); }
+.request-tile-count { color: var(--ember); font-weight: 600; font-size: var(--text-sm); }
+/* Three figures across, and the third is the one somebody presses Approve on.
+   `--space-10` between them rather than a border: a rule between three numbers
+   this small reads as a table, and a table is what the page stopped being. */
+.request-tile-figures { display: flex; gap: var(--space-6); margin: var(--space-2) 0 0; }
+.request-tile-figures dt { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); font-weight: 700; }
+.request-tile-figures dd {
+  margin: var(--space-1) 0 0; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+  font-size: var(--text-lg); font-weight: 700; color: var(--text-dark);
+}
+/* Going past the entitlement is the one thing a tile has to say before it is
+   opened, because it is the only reason to open one out of order. */
+.request-tile-figures .is-short dd { color: var(--breach); }
+.request-tile-foot {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  margin-top: auto; padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-xs); color: var(--text-light);
+}
+
+/* The balance said once at the top of a person's case rather than repeated on
+   each of their cards. It is a fact about the person, and the page is about one
+   person now — printing it three times was the flat list's answer to a page
+   that mixed people together, and it made every card twice as tall as its own
+   content. */
+.request-balance--wide { margin-bottom: var(--space-6); }
+/* ===== THE COVERAGE GRID =====
+   Who is off, everybody at once: a column per day and a row per person.
+
+   The employee's own Time off page is the other way round — twelve month
+   blocks for one person — because it answers a different question. This one is
+   about a *date*: is anybody in on Thursday. Putting the days across the top is
+   what makes the answer a vertical stripe somebody sees without reading, and it
+   is why the count of who is away sits under each column rather than beside
+   each row.
+
+   `table-layout: fixed` with a width on every column, for the reason the month
+   grid has it: thirty-one columns that resize themselves as bookings appear
+   would be a grid whose Thursday is somewhere new each time it is opened. */
+.coverage-scroll { overflow-x: auto; }
+.coverage {
+  table-layout: fixed; border-collapse: separate; border-spacing: 0;
+  width: 100%; min-width: 52rem;
+}
+.coverage th, .coverage td { padding: 0; }
+/* The one column that is not a day. Wide enough for a name and no wider: every
+   rem it takes is a rem the thirty-one columns beside it do not have. */
+.coverage-name {
+  width: 11rem; min-width: 11rem;
+  padding: var(--space-2) var(--space-4) var(--space-2) 0;
+  text-align: left; font-size: var(--text-sm); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* A name is read as a name. The table's own `th` styling sets small uppercase
+   with letter-spacing, which is right for a column heading — a label read once
+   — and wrong for eleven names being scanned for one of them: capitals take
+   away the word-shape that scanning works by, and ANNA BERGER has to be spelled
+   out where Anna Berger is recognised. The link keeps the page's text colour
+   for the same reason; eleven ember names down the side would make the row
+   labels shout louder than the grid they label. */
+.coverage tbody .coverage-name,
+.coverage tfoot .coverage-name {
+  text-transform: none; letter-spacing: normal;
+  font-size: var(--text-sm); color: var(--text-dark);
+}
+.coverage tbody .coverage-name a { color: var(--text-dark); }
+.coverage tbody .coverage-name a:hover { color: var(--ember); }
+.coverage tfoot .coverage-name { color: var(--text-light); font-weight: 400; }
+.coverage-day {
+  text-align: center; font-weight: 600;
+  padding-bottom: var(--space-3);
+}
+.coverage-day-number {
+  display: block; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs); color: var(--text-dark);
+}
+.coverage-day-name { display: block; font-size: var(--text-2xs); color: var(--text-light); font-weight: 400; }
+.coverage-day.is-weekend .coverage-day-number,
+.coverage-day.is-weekend .coverage-day-name { color: var(--text-muted); }
+.coverage-day.is-today .coverage-day-number { color: var(--ember); }
+
+/* A square, and nothing else — no number in it. The month grid on somebody's
+   own page writes the date inside each square because that page is read as a
+   calendar; this one is read as a picture, thirty-one squares wide, and a
+   figure in each would be three hundred numbers nobody looks at drawn over the
+   one thing they came for. The date is at the top of the column instead, where
+   it is written once. */
+.coverage-cell {
+  height: var(--space-8);
+  border: 2px solid transparent; border-radius: var(--radius-xs);
+  background: var(--white);
+}
+.coverage-cell.is-weekend, .coverage-cell.is-off, .coverage-cell.is-holiday {
+  background: var(--weekend-bg);
+}
+/* Today as a *ground* down the whole column, not as a border on each cell.
+   The border version drew an ember box in every row of one column, and six
+   empty boxes stacked up read as six things booked rather than as one date —
+   on a grid whose entire vocabulary is "a filled square means somebody is
+   away". A tint says the same thing without borrowing that vocabulary, and it
+   loses to the absence colours below it because they come after: a square that
+   is both today and booked is a booking first.
+
+   Never an `outline`, which is what the focus ring uses — a rule for today
+   would take the ring off exactly the column somebody is most likely to be
+   standing on. The same choice the year grid makes. */
+.coverage-cell.is-today { background: var(--ember-bg); }
+
+/* **Settled: a solid colour**, and each is the colour the same absence wears on
+   the employee's own calendar and in the pill beside it. Three pages, one
+   meaning — holiday and special leave share the green there for a reason that
+   holds here too: neither the square nor the manager reading it can act on the
+   difference. */
+.coverage-cell.is-away--holiday,
+.coverage-cell.is-away--special { background: var(--success); }
+.coverage-cell.is-away--overtime { background: var(--pine-light); }
+.coverage-cell.is-away--sick { background: var(--plum); }
+.coverage-cell.is-away--closure { background: var(--gold-deep); }
+
+/* **Waiting: the same colour, unfilled and dotted.** The state belongs to the
+   thing it is a state of, which is the argument `.pill.is-pending` and the year
+   grid both make — and somebody who has learnt the dots on one page has learnt
+   them on all three. The border is one the cell already reserves, so a square
+   waiting for an answer is exactly the size of a settled one. */
+.coverage-cell.is-away--holiday.is-pending,
+.coverage-cell.is-away--special.is-pending { background: var(--success-bg); border-color: var(--success-strong); }
+.coverage-cell.is-away--overtime.is-pending { background: var(--pine-bg); border-color: var(--pine); }
+.coverage-cell.is-away--sick.is-pending { background: var(--plum-bg); border-color: var(--plum); }
+.coverage-cell.is-pending { border-style: dotted; }
+
+/* Days booked together are drawn together, the same as on the year grid: the
+   inner edges of a run are made *transparent* rather than taken away, because
+   removing the width would move the box by two pixels and wobble a run of ten
+   squares as the eye runs along it. */
+.coverage-cell.joins-left { border-left-color: transparent; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.coverage-cell.joins-right { border-right-color: transparent; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+/* Half a day, drawn as half a square: the page's ground painted back over the
+   bottom half of the colour. It is the one thing a square of this size can
+   still say without a number in it, and it matters for the question this grid
+   is asked — somebody off for the afternoon is somebody who was in all morning.
+
+   A gradient over the top rather than a paler colour, because pale already
+   means "waiting for a decision" here, and a second meaning on the same
+   difference would make both unreadable. The `background` shorthand above
+   resets `background-image`, so this rule has to come after the colours — and
+   it does the resetting the other way for a settled square, which is why the
+   ring on a pending half day survives it: that ring is a border. */
+.coverage-cell.is-half {
+  background-image: linear-gradient(to bottom, transparent 50%, var(--white) 50%);
+}
+
+.coverage-total {
+  width: var(--space-10); padding-left: var(--space-4);
+  text-align: right; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs); color: var(--text-mid);
+}
+/* The row this grid is shaped for. Quiet where nobody is away, because a strip
+   of noughts across thirty-one columns is thirty-one figures saying nothing and
+   would bury the three that matter. */
+.coverage-count {
+  text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+  font-size: var(--text-2xs); color: var(--text-light);
+  padding-top: var(--space-3);
+}
+.coverage-count.has-some { color: var(--text-dark); font-weight: 700; }
+
+/* The filter above the grid. Tick boxes rather than a multi-select, because
+   somebody scanning for a name has to see all eleven at once — and because a
+   select that closes over the thing it is filtering answers the question by
+   hiding it. */
+.people-filter {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);
+  margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-mid);
+}
+.people-filter-label { font-weight: 700; color: var(--text-dark); }
+.people-filter-tick { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; white-space: nowrap; }
+.people-filter-rule { width: 1px; height: var(--space-6); background: var(--border); }
+
+.legend-swatch.is-away--holiday { background: var(--success); }
+.legend-swatch.is-away--sick { background: var(--plum); }
+.legend-swatch.is-away--overtime { background: var(--pine-light); }
+.legend-swatch.is-away--closure { background: var(--gold-deep); }
+.legend-swatch.is-pending-key {
+  background: var(--success-bg); border: 2px dotted var(--success-strong);
+}
 
 /* ===== THE CONTRACT ===== */
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-6); margin-bottom: var(--space-7); }
@@ -2082,6 +2398,22 @@ tr.is-today > * { background: var(--ember-bg); }
   gap: var(--space-7);
   margin-bottom: var(--space-7);
 }
+/* **Only the months a waiting day falls in**, on the requests page, and the one
+   either side of each. The full year is `auto-fit`, which stretches whatever it
+   is given across the whole width — right for twelve blocks and wrong for
+   three, which would each come out a third of the page wide with the squares
+   swimming inside them. `auto-fill` with a ceiling keeps a block the size a
+   month block is and leaves the rest of the row empty, which is the honest
+   shape: this is an excerpt and should look like one.
+
+   After the base rule rather than before it, because the two set the same
+   property and the cascade settles same-specificity rules by source order —
+   written above, it would have been silently overruled by the thing it is
+   meant to override. */
+.year-calendar--excerpt {
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 22rem));
+}
+
 .cal-month { table-layout: fixed; min-width: 0; }
 .cal-month-name {
   caption-side: top; text-align: left;

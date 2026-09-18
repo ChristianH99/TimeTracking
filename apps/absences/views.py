@@ -452,48 +452,351 @@ def request_cancel(request, pk):
 # --------------------------------------------------------------------------
 
 @manager_required
-def requests(request):
-    """Everything waiting to be decided, and what it would cost each person.
+def team_calendar(request):
+    """Who is off, everybody at once, one month at a time.
 
-    The balance is shown *beside* each request rather than left to be looked up,
-    because "can they afford this" is the question being answered and a decision
-    made without it is a decision made blind. ``remaining_if_all_approved`` is
-    the figure that matters: approving two of somebody's three pending requests
-    is a thing that happens, and the days are only committed as each is decided.
+    **A month with a row per person, not a year with a grid per person.** The
+    employee's own Time off page is twelve blocks because the question there is
+    "what does my year look like and what have I got left"; the question here is
+    the opposite one and it is about a *date* — is anybody in on Thursday, and
+    are three of them off in the same week of August. That is answered by
+    putting the days across the top and the people down the side, so a run of
+    colour in one column is instantly a day nobody is covering. A page of eleven
+    year-grids answers it only by being read eleven times.
+
+    **Everything undecided is drawn as undecided.** A manager looking at
+    coverage has to be able to tell what is settled from what is still a
+    request: those are different facts about next Thursday, and a page that
+    painted them the same colour would be showing cover that does not exist yet,
+    or an absence that may never happen. It is the same dotted edge the
+    employee's own calendar and the timesheet's status pill use, in the same
+    ``currentColor``, so "not yet decided" means one thing everywhere in the app.
+
+    The tick boxes are a filter and nothing else: nothing is saved, nobody is
+    removed from anything, and the page arrives with everybody showing. A house
+    has one set of people who are always relevant and one or two who are being
+    looked at today, and a filter is how somebody says which is which for the
+    next thirty seconds.
     """
-    # Everybody's pending time off is everybody's data, so opening the page is a
-    # read of it. No single employee to name — see `apps/audit/access.py`.
+    # **The month arithmetic and the picker's context come from the timesheets
+    # app rather than being written again here.** Reaching across an app
+    # boundary for four small functions looks like the wrong instinct and is the
+    # right one: this page uses `templates/_month_picker.html`, which is the
+    # control the timesheet and the month-end page use, and a second
+    # implementation of what that include reads is a picker that silently loses
+    # a key the day somebody adds one to the other two. `_month_from` also
+    # accepts a full date and reads it as the month it falls in, which is what
+    # makes a link carrying a *day* land here correctly — a detail a fresh
+    # four-liner would not have had.
+    from apps.audit.access import record_view
+    from apps.timesheets.views import _month_from, _month_picker, month_end, month_shift
+
+    first = _month_from(request)
+    last = month_end(first)
+    days = [first + dt.timedelta(days=offset) for offset in range((last - first).days + 1)]
+
+    # Everybody's time off is everybody's data, so opening the page is a read of
+    # it — and there is no single person to name.
+    record_view(request, note=f"absence calendar {first:%Y-%m}")
+
+    holidays = dict(
+        BankHoliday.objects.filter(date__gte=first, date__lte=last)
+        .values_list("date", "name")
+    )
+    people = list(
+        Employee.objects.filter(is_active=True).prefetch_related("contract_periods")
+    )
+    # One query for the whole page rather than one per person, grouped in Python
+    # afterwards: eleven dictionary lookups against eleven round trips.
+    grouped = {}
+    for absence in (
+        Absence.objects
+        .filter(employee__in=people, start_date__lte=last, end_date__gte=first)
+        .exclude(status__in=(RequestStatus.REJECTED, RequestStatus.WITHDRAWN))
+        .select_related("employee", "special_type", "closure")
+    ):
+        grouped.setdefault(absence.employee_id, []).append(absence)
+
+    today = dt.date.today()
+    rows = []
+    for employee in people:
+        booked = _by_date(grouped.get(employee.pk, []))
+        cells = [_coverage_cell(employee, day, holidays, booked, today) for day in days]
+        rows.append({
+            "employee": employee,
+            # Counted before `_join_runs` reaches into them, not after. The
+            # totals and the picture have to be the same arithmetic, and the
+            # cheapest way to guarantee that is to take both off one list.
+            "away_days": sum(1 for cell in cells if cell["absence"]),
+            "undecided_days": sum(
+                1 for cell in cells if cell["absence"] and cell["is_pending"]
+            ),
+            "cells": _join_runs(cells),
+        })
+
+    return render(request, "absences/team_calendar.html", {
+        "month": first,
+        "days": days,
+        "rows": rows,
+        "today": today,
+        **_month_picker(first),
+        "previous_month": month_shift(first, -1),
+        "next_month": month_shift(first, 1),
+        "this_month": dt.date.today().replace(day=1),
+        # **How thin the day is, per date rather than per person.** The column
+        # footer is the whole reason the grid is this way round: a manager does
+        # not open this page to find out about Anna, they open it to find out
+        # about Thursday.
+        "away_per_day": [
+            sum(1 for row in rows if row["cells"][index]["absence"])
+            for index in range(len(days))
+        ],
+        "people_count": len(people),
+        "undecided_total": sum(row["undecided_days"] for row in rows),
+    })
+
+
+def _coverage_cell(employee, day, holidays, booked, today):
+    """One square of the coverage grid: is this person here, and is it settled?
+
+    Deliberately not ``_day_cell``. That one answers the *employee's* question —
+    can I book this, and what would the button do — and carries a label, a title
+    naming the whole span, and the four states a booking control needs. A
+    manager reading a wall of three hundred squares is asking something much
+    smaller, and giving each square a control it does not have would be three
+    hundred invitations to press something that is not there.
+
+    The three subtractions are still the ones ``Absence.working_days`` makes, so
+    a fortnight booked over Christmas comes out with the holidays and the
+    Sundays pale between the blocks — which is exactly what was spent, and the
+    same picture the person's own calendar draws them.
+    """
+    holiday = holidays.get(day)
+    works = employee.works_on(day)
+    counts = works and holiday is None
+    absence = booked.get(day) if counts else None
+    cell = {
+        "date": day,
+        "day": day.day,
+        "is_weekend": day.weekday() >= 5,
+        "is_today": day == today,
+        "is_working": works,
+        "holiday": holiday,
+        "absence": absence,
+        "kind": absence.kind if absence else "",
+        "is_pending": bool(absence and absence.status in UNDECIDED),
+        "is_half": bool(absence and absence.is_half_day),
+        # Filled in by `_join_runs` once the row around this square exists.
+        "joins_left": False,
+        "joins_right": False,
+    }
+    if absence is not None:
+        what = (
+            absence.special_type.name
+            if absence.kind == AbsenceKind.SPECIAL and absence.special_type
+            else absence.get_kind_display()
+        )
+        # Punctuation is the only glue. A sentence assembled out of three
+        # translated fragments is one no translator can see the shape of.
+        cell["title"] = (
+            f"{employee.full_name} · {what} · {absence.get_status_display()}"
+        )
+    elif holiday:
+        cell["title"] = holiday
+    elif not works:
+        cell["title"] = _("Not a working day for this person.")
+    else:
+        cell["title"] = ""
+    return cell
+
+
+@manager_required
+def requests(request):
+    """What is waiting, **a person at a time**.
+
+    The page used to be one pile: every undecided absence in the house as a card,
+    oldest first, whoever it belonged to. That is the wrong unit and it showed —
+    a manager does not decide requests, they decide *about people*. Anna's three
+    requests are one conversation and one balance, and answering the second of
+    them without having seen the other two is exactly the decision this page
+    exists to prevent; in a single list those three sat wherever their start
+    dates put them, with other people's cards between.
+
+    So the page arrives as a tile a person: who is waiting, how many days, and
+    what it would leave them with. Opening one is the whole of that person's
+    case — **their calendar with the waiting days lit up on it**, and the cards
+    underneath it.
+
+    The calendar is the half a list cannot do. "14.–18. September, five working
+    days" is a fact somebody has to *convert* before they can answer the
+    question they actually have, which is whether that week is already thin. A
+    year with the days drawn on it answers it by being looked at, and it shows
+    the thing no card can: what else that person has booked either side of what
+    they are asking for.
+    """
     from apps.audit.access import record_view
 
-    record_view(request, note="requests")
-    waiting = (
+    waiting = list(
         Absence.objects.filter(status__in=UNDECIDED)
         .select_related("employee", "special_type")
         .order_by("start_date")
     )
+    chosen = _person_from(request, waiting)
+
+    # Recorded as one read of everybody's data, or as a read of one person's —
+    # which is the distinction `record_view` exists to draw. Opening Anna's tile
+    # is looking at Anna's time off, and the trail should say so by name.
+    if chosen is None:
+        record_view(request, note="requests")
+    else:
+        record_view(request, employee=chosen)
+
     year = dt.date.today().year
     balances = {}
-    rows = []
+
+    def balance_for(employee):
+        if employee.pk not in balances:
+            balances[employee.pk] = Balance(employee, year)
+        return balances[employee.pk]
+
+    # **One tile per person, not per request.** Ordered by who has been waiting
+    # longest rather than alphabetically: the pile is worked from the top, and
+    # the top should be whoever has been kept waiting.
+    tiles = []
+    seen = {}
     for absence in waiting:
         key = absence.employee_id
-        if key not in balances:
-            balances[key] = Balance(absence.employee, year)
-        rows.append({
-            "absence": absence,
-            "days": absence.working_days(),
-            "balance": balances[key],
-            "form": DecisionForm(),
-        })
+        if key not in seen:
+            seen[key] = {
+                "employee": absence.employee,
+                "count": 0,
+                "days": Decimal("0"),
+                "since": absence.start_date,
+                "cancelling": 0,
+                "balance": balance_for(absence.employee),
+            }
+            tiles.append(seen[key])
+        tile = seen[key]
+        tile["count"] += 1
+        tile["days"] += absence.working_days()
+        tile["since"] = min(tile["since"], absence.start_date)
+        if absence.is_cancelling:
+            tile["cancelling"] += 1
 
-    decided = (
-        Absence.objects.exclude(status__in=UNDECIDED)
-        .exclude(kind=AbsenceKind.CLOSURE)
-        .select_related("employee", "special_type", "decided_by")
-        .order_by("-decided_at", "-start_date")[:25]
+    context = {
+        "tiles": tiles,
+        "chosen": chosen,
+        "year": year,
+        "waiting_total": len(waiting),
+    }
+
+    if chosen is not None:
+        theirs = [a for a in waiting if a.employee_id == chosen.pk]
+        context["rows"] = [
+            {
+                "absence": absence,
+                "days": absence.working_days(),
+                "balance": balance_for(chosen),
+                "form": DecisionForm(),
+            }
+            for absence in theirs
+        ]
+        context["balance"] = balance_for(chosen)
+        # The year the waiting days are in, not necessarily this one: a request
+        # made in December for January is the ordinary case, and a calendar
+        # showing the wrong year would be a calendar with nothing lit on it.
+        calendar_year = min(absence.start_date for absence in theirs).year
+        context.update(
+            _person_calendar(chosen, calendar_year, theirs)
+        )
+    else:
+        # The record of what has been answered, and only on the tile page — on
+        # one person's it would be everybody's history under one person's case.
+        context["recent"] = (
+            Absence.objects.exclude(status__in=UNDECIDED)
+            .exclude(kind=AbsenceKind.CLOSURE)
+            .select_related("employee", "special_type", "decided_by")
+            .order_by("-decided_at", "-start_date")[:25]
+        )
+
+    return render(request, "absences/requests.html", context)
+
+
+def _person_from(request, waiting):
+    """The employee whose tile was opened, or ``None`` for the tile page.
+
+    Read out of the *waiting* list rather than looked up by primary key, which
+    is the whole check: a `?person=` naming somebody with nothing outstanding
+    would otherwise render a case with no requests in it and a calendar with
+    nothing lit, and the manager would be left wondering what they had missed.
+    Anything that does not name somebody on the list falls back to the tiles.
+    """
+    raw = (request.GET.get("person") or "").strip()
+    if not raw.isdigit():
+        return None
+    return next(
+        (a.employee for a in waiting if a.employee_id == int(raw)), None,
     )
-    return render(request, "absences/requests.html", {
-        "rows": rows, "recent": decided, "year": year,
-    })
+
+
+def _person_calendar(employee, year, waiting):
+    """One person's year, cut down to the months their waiting days fall in.
+
+    **Not all twelve.** The employee's own Time off page is a whole year because
+    the question there is what the year looks like; here the question is a
+    decision about three specific days, and ten empty month blocks around them
+    are ten blocks somebody has to look past. The months either side of each
+    request come with it, because "is that week already thin" is a question
+    about the fortnight and not about the calendar month it happens to sit in.
+
+    Built from the same ``_year_calendar`` the employee sees, so the squares mean
+    exactly what they mean on their own page — a waiting day is dotted here for
+    the same reason and in the same colour, and nothing about this page had to
+    invent a second way of drawing one.
+    """
+    prefetch_related_objects([employee], "contract_periods")
+    first, last = year_bounds(year)
+    absences = list(
+        employee.absences
+        .filter(start_date__lte=last, end_date__gte=first)
+        .select_related("special_type", "closure")
+    )
+    wanted = set()
+    for absence in waiting:
+        for day in absence.dates():
+            if day.year == year:
+                wanted.update({
+                    max(1, day.month - 1), day.month, min(12, day.month + 1),
+                })
+    months = [
+        block for block in _year_calendar(employee, year, absences)
+        if block["number"] in wanted
+    ]
+    return {
+        "calendar_year": year,
+        "months": months,
+        "weekday_labels": [WEEKDAYS_ABBR[index] for index in range(7)],
+        "today": dt.date.today(),
+    }
+
+
+def _after_deciding(employee):
+    """Where a decision lands: back on that person's case while anything of
+    theirs is still waiting, and on the tiles once it is not.
+
+    **The unit is the person, and the redirect has to agree with that.** Going
+    to the tile page after every press would throw a manager out of the case
+    they are in the middle of, three times in a row, for somebody with three
+    requests — and each time they would have to find the tile again and reopen
+    the same calendar. Going *back* to it once the person is cleared is the
+    other half: a case with nothing left in it is a page about nothing, and the
+    pile is where the next one is.
+    """
+    still_waiting = Absence.objects.filter(
+        employee=employee, status__in=UNDECIDED,
+    ).exists()
+    where = reverse("absences:requests")
+    return redirect(f"{where}?person={employee.pk}" if still_waiting else where)
 
 
 @manager_required
@@ -502,12 +805,12 @@ def decide(request, pk):
     absence = get_object_or_404(Absence, pk=pk)
     if not absence.is_decidable:
         messages.error(request, _("That request has already been decided."))
-        return redirect("absences:requests")
+        return _after_deciding(absence.employee)
 
     form = DecisionForm(request.POST)
     if not form.is_valid():
         messages.error(request, form.errors.get("note", [_("That could not be saved.")])[0])
-        return redirect("absences:requests")
+        return _after_deciding(absence.employee)
 
     approved = form.cleaned_data["approve"]
     who = absence.employee.full_name
@@ -526,7 +829,7 @@ def decide(request, pk):
             messages.success(request, _(
                 "%(who)s’s absence stays booked, and they were told why."
             ) % {"who": who})
-        return redirect("absences:requests")
+        return _after_deciding(absence.employee)
 
     absence.decide(approved, by=request.user, note=form.cleaned_data["note"])
     if approved:
@@ -535,7 +838,7 @@ def decide(request, pk):
         messages.success(request, _(
             "%(who)s’s request was declined and they were told why."
         ) % {"who": who})
-    return redirect("absences:requests")
+    return _after_deciding(absence.employee)
 
 
 def _year_from(request):

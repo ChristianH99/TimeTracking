@@ -20,14 +20,35 @@
 
   <table class="data-table">
     <thead>
+      {% comment %}**Every column says what it means, and the two that both
+      held a username now say which username they hold.**
+
+      The name column carried the person's sign-in name under their real one and
+      the last column carried the *account's* — and for almost everybody those
+      are the same string, so the page printed "anna.berger" twice, five columns
+      apart, with nothing to say why. Read as a mistake, and on the one row where
+      the two genuinely differ — the person the directory calls something else —
+      it was the one thing on the page nobody would notice.
+
+      So the sign-in name has a column of its own with a heading that names it,
+      and the account column answers the only question left: whether a login has
+      ever arrived and been matched to this contract. Where the two agree it
+      says so in a word; where they differ it prints the account's name, which
+      is the case the column exists for.
+
+      The `title` on each heading is the sentence that would not fit in it. A
+      heading of one word over a column of numbers is a heading somebody has to
+      guess at, and "Days" over a 3 could be days a week, days of leave or days
+      this month.{% endcomment %}
       <tr>
         <th scope="col">{% translate "Name" %}</th>
-        <th scope="col">{% translate "Week" %}</th>
-        <th scope="col" class="numeric">{% translate "Hours" %}</th>
-        <th scope="col" class="numeric">{% translate "Days" %}</th>
-        <th scope="col" class="numeric">{% translate "Leave" %}</th>
-        <th scope="col" class="numeric">{% translate "Balance" %}</th>
-        <th scope="col">{% translate "Account" %}</th>
+        <th scope="col" title="{% translate 'The name the directory knows them by. The first token that arrives with this name is matched to this contract.' %}">{% translate "Sign-in name" %}</th>
+        <th scope="col" title="{% translate 'Which days of the week the contract gives hours to.' %}">{% translate "Working week" %}</th>
+        <th scope="col" class="numeric" title="{% translate 'Contracted hours per week, added up across the seven days.' %}">{% translate "Hours a week" %}</th>
+        <th scope="col" class="numeric" title="{% translate 'How many days a week the contract gives hours to. The leave entitlement is worked out from this.' %}">{% translate "Days a week" %}</th>
+        <th scope="col" class="numeric" title="{% translate 'Days off a full year of this contract is worth. Any extra leave they have been granted is the pill beside it.' %}">{% translate "Days off a year" %}</th>
+        <th scope="col" class="numeric" title="{% translate 'Hours worked, less hours contracted, since they started. Positive means they are owed time.' %}">{% translate "Hours balance" %}</th>
+        <th scope="col" title="{% translate 'Whether a sign-in has been matched to this contract yet.' %}">{% translate "Account" %}</th>
         <th scope="col"></th>
       </tr>
     </thead>
@@ -38,8 +59,14 @@
             {{ row.employee.full_name }}
             {% if row.employee.is_manager %}<span class="pill pill--gold">{% translate "manager" %}</span>{% endif %}
             {% if not row.employee.is_active %}<span class="pill pill--off">{% translate "left" %}</span>{% endif %}
-            <span class="people-sub">{{ row.employee.username }}</span>
           </th>
+          {% comment %}The name on the contract, which is what an arriving token
+          is matched against — `Employee.link_by_username`. Set in the machine
+          face for the reason `--font-mono` exists: it is a string that gets
+          copied and compared character by character against a directory, and a
+          letter mistaken for another one here is a sign-in that silently
+          matches nobody.{% endcomment %}
+          <td class="people-username">{{ row.employee.username }}</td>
           <td class="pattern">
             {% comment %}The seven days as a strip, so the shape of a contract
             is readable at a glance across the whole list. A day with no hours
@@ -70,11 +97,31 @@
               {{ row.running.total|hhmm_signed }}
             </span>
           </td>
+          {% comment %}**Whether a login has arrived, and only the name when it
+          is a different one.** Repeating the account's username beside the
+          contract's is printing one string twice for everybody, which is what
+          made this column read as an accident — so where the two agree the
+          column says "linked" and where they differ it says what the difference
+          *is*, which is the whole reason anybody would look at it. That second
+          case is real: somebody the directory calls `a.berger` under a contract
+          typed as `anna.berger`, linked by hand on the contract page.
+          {% endcomment %}
           <td>
             {% if row.employee.user %}
-              <span class="pill pill--pine">{{ row.employee.user.get_username|truncatechars:18 }}</span>
+              {% if row.employee.user.get_username == row.employee.username %}
+                <span class="pill pill--pine" title="{% translate 'They have signed in, and the account matches the sign-in name on the contract.' %}">{% translate "linked" %}</span>
+              {% else %}
+                {% comment %}`--amber` is this app's "a value that is not what
+                the rule would have produced" — the colour an overridden break
+                wears — and that is exactly what a link between two different
+                names is. Not `--gold`, which means "the one currently
+                selected", and not `--danger`: a directory that calls somebody
+                something else is ordinary, and only needs to be visible.
+                {% endcomment %}
+                <span class="pill pill--attention" title="{% blocktranslate with account=row.employee.user.get_username contract=row.employee.username %}Signed in as {{ account }} — not the {{ contract }} this contract is matched on.{% endblocktranslate %}">{{ row.employee.user.get_username|truncatechars:18 }}</span>
+              {% endif %}
             {% else %}
-              <span class="hint">{% translate "not yet" %}</span>
+              <span class="hint" title="{% translate 'Nobody has signed in with this name yet. That is ordinary — the link is made by itself at the first sign-in.' %}">{% translate "not yet" %}</span>
             {% endif %}
           </td>
           <td class="people-actions">
@@ -86,7 +133,7 @@
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="7" class="hint">{% translate "Nobody has been added yet." %}</td></tr>
+        <tr><td colspan="9" class="hint">{% translate "Nobody has been added yet." %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -460,7 +460,6 @@ SINGULAR = {
     "confirmed": "bestätigt",
     "not confirmed": "nicht bestätigt",
     "differs": "abweichend",
-    "away": "abwesend",
     "not yet": "noch nicht",
     "no contract": "kein Vertrag",
     "not offered": "nicht angeboten",
@@ -473,7 +472,6 @@ SINGULAR = {
     "This week": "Diese Woche",
     "Next": "Weiter",
 
-    "Difference": "Differenz",
     "Worked": "Gearbeitet",
     "Rostered": "Eingeteilt",
     "Contracted": "Vertraglich",

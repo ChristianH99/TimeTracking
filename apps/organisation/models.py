@@ -513,6 +513,56 @@ def _month_day(year, month, day):
 # looked up. A default that has to be explained is not a safe default.
 DEFAULT_BREAK_RULES = ((360, 30), (540, 45))
 
+# --------------------------------------------------------------------------
+# Regenerationstage
+# --------------------------------------------------------------------------
+#
+# **A preset, not a special case in the code.** Regenerationstage are an
+# ordinary ``SpecialLeaveType`` in the threshold mode with two rows in its
+# table; what follows is the numbers written down once so a kindergarten does
+# not have to derive them from the collective agreement with a form open. The
+# button that installs it creates the same rows anybody could type by hand, and
+# once created it is an editable type like any other — a house on a different
+# agreement changes it, and nothing in the app knows the difference.
+#
+# The rule (Nr. 1a of Anlage D.12 to the TVöD-V, § 3.2a TVöD-B): everybody in the
+# S-groups of the Sozial- und Erziehungsdienst gets **two Regenerationstage a
+# calendar year** on a five-day week, and fewer days a week reduces it in
+# proportion — with a rounding that is *not* the app's own: at least half a day
+# rounds up to a whole one and anything under a half is dropped. That gives
+#
+#     1 day a week → 0     2–3 days a week → 1     4 days or more → 2
+#
+# which is a step function, and a step function is exactly what the threshold
+# mode is. Running it as `pro_rata` instead would hand a three-day week 1.2 days
+# and then round it by the *house's* rounding setting, which is a different
+# rule that agrees with this one only by accident.
+#
+# **Two things the app does not work out, and they are in the note on purpose.**
+# The entitlement drops to one day for somebody who had fewer than four calendar
+# months of pay entitlement in the year, and the days must be taken by 31
+# December — carried to 30 September of the next year only where the employer's
+# own reasons stopped them being taken. Neither is modelled: the first is a step
+# this app's pro-rata weighting does not have, and the second is a carry-over
+# rule that exists here for annual leave and not for special types. Both are
+# reasons a manager sets the figure by hand, which is what `days_override` is
+# for — so the note says so at the point of granting rather than leaving
+# somebody to discover it from a payroll query.
+REGENERATION_NAME = "Regenerationstage"
+
+# ``min_days_per_week -> days``, the two rows of the table above. The most
+# generous row somebody clears is the one they get, so a week of one day matches
+# no row and gets nothing — which is the answer, not a gap.
+REGENERATION_THRESHOLDS = ((2, "1.0"), (4, "2.0"))
+
+REGENERATION_NOTE = _(
+    "Two days a calendar year on a five-day week (TVöD SuE, Anlage D.12 Nr. 1a); "
+    "fewer days a week gives fewer, rounded up from half a day. Set the days by "
+    "hand for anybody who has already taken some of them elsewhere this year, "
+    "who had less than four months of pay entitlement in it, or whose days were "
+    "carried past 31 December — the app does not work those three out."
+)
+
 # The shortest pause that is a break at all. §4 ArbZG lets the break be split
 # "in Zeitabschnitte von jeweils mindestens 15 Minuten", so anything shorter is
 # neither a Ruhepause nor an interruption of the work: it counts towards
@@ -620,6 +670,14 @@ class SpecialLeaveType(models.Model):
     is_active = models.BooleanField(
         _("offered"), default=True,
         help_text=_("Switching this off keeps the leave already taken and stops it being granted to anybody new."),
+    )
+    note = models.CharField(
+        _("what this is"), max_length=300, blank=True,
+        help_text=_(
+            "Where the entitlement comes from, and anything about it the app does "
+            "not work out for itself. Shown to a manager beside the grant on "
+            "somebody’s contract — which is the moment they need to know it."
+        ),
     )
 
     class Meta:

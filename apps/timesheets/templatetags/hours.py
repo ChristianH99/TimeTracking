@@ -22,6 +22,21 @@ from apps.timesheets import hours as hours_module
 register = template.Library()
 
 
+def _blank(minutes):
+    """Whether there is no duration here to write.
+
+    ``None`` is the app's own "nobody has answered yet"; the empty string is
+    what a *missing template variable* resolves to, and the two arrive at this
+    filter looking identical. Writing nothing for either is what Django does
+    for a bare ``{{ x }}``, and it is the behaviour a filter must not change:
+    the contract page answered with a 500 for a year because one view forgot a
+    context key, and an unwritten figure in a panel is a far smaller fault than
+    a page nobody can open. The missing key is still a bug — it is simply one
+    that shows as a gap rather than as a stack trace.
+    """
+    return minutes is None or minutes == ""
+
+
 @register.filter(name="hhmm")
 def hhmm(minutes):
     """A duration as ``07:35``. The whole of how this app writes one.
@@ -32,7 +47,7 @@ def hhmm(minutes):
     mixing 7,5 with 12,25 in a column somebody is scanning for a wrong number
     defeats the point of the column.
     """
-    if minutes is None:
+    if _blank(minutes):
         return ""
     return hours_module.hhmm(minutes)
 
@@ -45,7 +60,7 @@ def hhmm_signed(minutes):
     not be the only thing carrying it — a reader who cannot tell red from green
     still has to get the right answer out of the column.
     """
-    if minutes is None:
+    if _blank(minutes):
         return ""
     text = hours_module.hhmm(minutes)
     return f"+{text}" if minutes > 0 else text

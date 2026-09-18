@@ -1,96 +1,116 @@
 {% extends "base.html" %}
 {% load i18n hours %}
-{% block title %}{% translate "Team timesheets" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block page_title %}{% translate "Team timesheets" %}{% endblock %}
-{% block page_subtitle %}{{ monday|date:"d.m.Y" }} – {{ days|last|date:"d.m.Y" }}{% endblock %}
+{% block title %}{% translate "Team" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% translate "Team" %}{% endblock %}
+{% block page_subtitle %}{{ year }}{% endblock %}
+
+{% comment %}**An overview, not a week.**
+
+This page was a grid of seven day-cells per person — the timesheet in miniature,
+for eleven people at once — and it was the wrong shape for either question
+anybody had on it. A cell saying whether last Wednesday was confirmed is a
+question about one person's month, and the page for that has thirty-one rows,
+the bookings, the break and the saldo, and is one click away from every name
+here. What was left over was a grid too small to read the detail out of and too
+detailed to read the summary out of.
+
+So what is on it now is the pair of figures that are genuinely about everybody
+at once and cannot be got by looking at a week: what is left of each person's
+leave, which is a year, and where their hours stand, which is everything since
+they started. Both come from the same `Balance` and `hours_balance` the employee
+sees on their own pages — one implementation, because a figure that reads
+differently depending on who is looking at it is the worst bug this app could
+have.
+{% endcomment %}
 
 {% block content %}
-  <div class="list-toolbar">
-    <div class="week-nav">
-      {% comment %}Drawn chevrons rather than the &larr; and &rarr; entities
-      these used to carry: those are type, and they render in whatever the
-      surrounding family has for them — three weights and two lengths across
-      Inter, the system fallbacks and a phone. The same icon the month picker
-      uses, so the two navigations look like one thing.{% endcomment %}
-      <a class="button button--secondary button--small" href="?week={{ previous_week|date:'Y-m-d' }}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>{% translate "Previous" %}</a>
-      <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
-      <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></a>
-    </div>
-  </div>
+  <p class="page-lead">
+    {% blocktranslate %}Where everybody stands: the days off they still have this year, and the hours they are up or down overall. Open a name for the month behind the figure.{% endblocktranslate %}
+  </p>
 
   <div class="stat-row">
     <div class="stat">
-      <span class="stat-value">{{ worked_total|hhmm }}</span>
-      <span class="stat-label">{% translate "Worked, everybody" %}</span>
+      <span class="stat-value">{{ leave_left_total|floatformat:"-1" }}</span>
+      <span class="stat-label">{% translate "Days off still to be taken" %}</span>
     </div>
     <div class="stat">
-      <span class="stat-value">{{ contracted_total|hhmm }}</span>
-      <span class="stat-label">{% translate "Contracted, everybody" %}</span>
+      {% comment %}Signed, because the sign is the message: a team four hundred
+      hours down and one four hundred hours up are opposite facts and the
+      column heading cannot carry which.{% endcomment %}
+      <span class="stat-value{% if hours_total < 0 %} is-short{% elif hours_total > 0 %} is-over{% endif %}">{{ hours_total|hhmm_signed }}</span>
+      <span class="stat-label">{% translate "Hours, everybody together" %}</span>
     </div>
     <div class="stat">
-      <span class="stat-value">{{ awaiting_total }}</span>
-      <span class="stat-label">{% translate "Days nobody has answered for" %}</span>
+      <span class="stat-value">{{ waiting_total }}</span>
+      <span class="stat-label">{% translate "Waiting for a decision" %}</span>
     </div>
   </div>
 
-  <table class="data-table team-week">
+  <table class="data-table team-overview">
     <thead>
       <tr>
         <th scope="col">{% translate "Employee" %}</th>
-        {% for day in days %}
-          <th scope="col" class="team-day">{{ day|date:"D" }}<span class="team-day-date">{{ day|date:"d.m." }}</span></th>
-        {% endfor %}
-        <th scope="col" class="numeric">{% translate "Worked" %}</th>
-        <th scope="col" class="numeric">{% translate "Difference" %}</th>
+        <th scope="col" class="numeric">{% translate "Days off a year" %}</th>
+        <th scope="col" class="numeric">{% translate "Taken" %}</th>
+        <th scope="col" class="numeric">{% translate "Left" %}</th>
+        <th scope="col" class="numeric">{% translate "Hours balance" %}</th>
+        <th scope="col">{% translate "Waiting" %}</th>
+        <th scope="col"></th>
       </tr>
     </thead>
     <tbody>
-      {% for week in weeks %}
+      {% for row in rows %}
         <tr>
           <th scope="row">
-            <a href="{% url 'timesheets:employee' week.employee.pk %}?month={{ monday|date:'Y-m' }}">
-              {{ week.employee.full_name }}
-            </a>
+            <a href="{% url 'timesheets:employee' row.employee.pk %}">{{ row.employee.full_name }}</a>
+            {% if row.employee.is_manager %}<span class="pill pill--gold pill--small">{% translate "manager" %}</span>{% endif %}
           </th>
-          {% for row in week.rows %}
-            {% comment %}One cell per day, and the cell's class is the story:
-            what it is, at a glance, across eleven people at once. A manager
-            scanning this is looking for the amber and the outline, not reading
-            the numbers.{% endcomment %}
-            <td class="team-cell
-                       {% if row.absence %}is-away is-away--{{ row.absence.kind }}
-                       {% elif row.record and row.record.is_confirmed %}is-confirmed
-                       {% elif row.record %}is-entered
-                       {% elif row.awaiting %}is-awaiting
-                       {% elif not row.is_working_day %}is-off{% endif %}
-                       {% if row.differs_from_roster %} is-differing{% endif %}">
-              {% if row.absence %}
-                <abbr title="{{ row.absence.get_kind_display }}">{{ row.absence.get_kind_display|slice:":1" }}</abbr>
-              {% elif row.record %}
-                {{ row.worked_minutes|hhmm }}
-              {% elif row.awaiting %}
-                <abbr title="{% translate 'Rostered, but nobody has said what was worked' %}">?</abbr>
-              {% else %}
-                <span class="hint">·</span>
-              {% endif %}
-            </td>
-          {% endfor %}
-          <td class="numeric">{{ week.worked_total|hhmm }}</td>
-          <td class="numeric{% if week.difference < 0 %} is-short{% elif week.difference > 0 %} is-over{% endif %}">
-            {{ week.difference|hhmm_signed }}
+          <td class="numeric">{{ row.balance.entitlement|floatformat:"-1" }}</td>
+          <td class="numeric">{{ row.balance.taken|floatformat:"-1" }}</td>
+          {% comment %}**Pending is not subtracted and is said beside the
+          figure, never folded into it.** A request nobody has decided has not
+          been spent — showing it as spent means somebody whose request is
+          declined watches their days come back, which reads as the app having
+          lost them. The second figure is what would be left if everything
+          waiting were approved, which is the number a manager about to press
+          Approve actually needs.{% endcomment %}
+          <td class="numeric">
+            <strong>{{ row.balance.remaining|floatformat:"-1" }}</strong>
+            {% if row.balance.pending %}
+              <span class="hint" title="{% blocktranslate with days=row.balance.pending|floatformat:'-1' %}{{ days }} more asked for and not yet decided{% endblocktranslate %}">
+                → {{ row.balance.remaining_if_all_approved|floatformat:"-1" }}
+              </span>
+            {% endif %}
+          </td>
+          <td class="numeric">
+            <span class="{% if row.running.total < 0 %}is-short{% elif row.running.total > 0 %}is-over{% endif %}">
+              {{ row.running.total|hhmm_signed }}
+            </span>
+          </td>
+          <td>
+            {% if row.waiting %}
+              {% comment %}Straight to that person's case on the requests page,
+              not to the top of the pile. The tile is one click further on and
+              the manager already knows whose requests they meant — landing them
+              on the wall of tiles would make them find the same name again.
+              {% endcomment %}
+              <a class="pill pill--attention pill--small" href="{% url 'absences:requests' %}?person={{ row.employee.pk }}">
+                {% blocktranslate count counter=row.waiting %}{{ counter }} request{% plural %}{{ counter }} requests{% endblocktranslate %}
+              </a>
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+          <td class="people-actions">
+            <div class="people-actions-group">
+              <a class="link-button" href="{% url 'timesheets:employee' row.employee.pk %}">{% translate "Timesheet" %}</a>
+              <a class="link-button" href="{% url 'employees:leave' row.employee.pk %}">{% translate "Leave" %}</a>
+            </div>
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="10" class="hint">{% translate "Nobody is employed yet." %}</td></tr>
+        <tr><td colspan="7" class="hint">{% translate "Nobody is employed at the moment." %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
-
-  <ul class="legend">
-    <li><span class="legend-swatch is-confirmed"></span>{% translate "confirmed" %}</li>
-    <li><span class="legend-swatch is-entered"></span>{% translate "entered, not confirmed" %}</li>
-    <li><span class="legend-swatch is-awaiting"></span>{% translate "rostered, nothing entered" %}</li>
-    <li><span class="legend-swatch is-differing"></span>{% translate "different from the roster" %}</li>
-    <li><span class="legend-swatch is-away"></span>{% translate "away" %}</li>
-  </ul>
 {% endblock %}

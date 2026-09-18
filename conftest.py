@@ -228,6 +228,21 @@ def dilan(db):
 
 
 @pytest.fixture
+def staff_client(staff):
+    """Signed in as somebody who may administer the *software*.
+
+    The counterpart of ``manager_client``, and the pair is the point: the two
+    rights are deliberately different (``apps/employees/permissions.py`` is the
+    roster door, ``apps/accounts/permissions.py`` the software one), so a test
+    that needs the settings pages must not reach for the manager and a test
+    about the roster must not reach for this.
+    """
+    c = Client()
+    c.force_login(staff)
+    return c
+
+
+@pytest.fixture
 def manager(db):
     """Somebody who manages the roster and is *not* Django staff."""
     account = User.objects.create_user(username="ben", password="pw")

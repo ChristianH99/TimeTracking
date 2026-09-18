@@ -23,6 +23,15 @@ app, so they sit at the top of it in the toolbar below.{% endcomment %}
     that changes which month is showing moved up into the space.{% endcomment %}
     {% include "_month_picker.html" %}
 
+    {% comment %}Beside the month picker and shaped like it, because they are
+    the two axes of one grid: a manager reads a month down for one person, then
+    the same month across the team. Only on somebody else's page — `people` is
+    put in the context by `_employee_picker` and only then — so on your own
+    timesheet there is nothing here at all.{% endcomment %}
+    {% if people %}
+      {% include "_employee_picker.html" %}
+    {% endif %}
+
     {% if is_manager %}
       {% comment %}The whole month, in one gesture — the default, and the one a
       manager reaches for. Unlocking a single day is the padlock on its row; this
@@ -140,6 +149,54 @@ app, so they sit at the top of it in the toolbar below.{% endcomment %}
         column starts from, and `hours_balance` is still the number the last row
         of it reaches.{% endcomment %}
         {% for row in rows %}
+          {% comment %}**The day the contract changed gets a line of its own,
+          above the day it changed on.**
+
+          The `Soll` column is read straight down, and a row of 4:00 under a run
+          of 8:00 is indistinguishable from a mistake — the answer, that these
+          are two different contracts, is on a page nobody opening a timesheet
+          has a reason to visit. So the month says it where the step happens,
+          once, and names both figures: a change is two numbers and the row
+          below only carries one of them.
+
+          A row rather than a mark on the day cell, and that is the point of it:
+          this is a statement about *everything below*, not about the 15th, and
+          it has to be as wide as the thing it qualifies. It is the one row in
+          this table that is not a date — which is why it carries no `data-day`
+          and the script that rewrites rows after a save walks straight past it.
+
+          Everybody sees it. The hours somebody is measured against changing is
+          not a manager's private fact; it is the first thing the person whose
+          timesheet this is will want to know when the saldo column steps.
+          {% endcomment %}
+          {% if row.contract_change %}
+            <tr class="month-note">
+              <td colspan="10">
+                <span class="month-note-mark" aria-hidden="true">
+                  <svg class="icon" viewBox="0 0 24 24" focusable="false"><path d="M12 8v5m0 3h.01M12 3l9 16H3z"/></svg>
+                </span>
+                <span class="month-note-text">
+                  {% blocktranslate with date=row.date|date:"d.m.Y" %}The contract changed on {{ date }}.{% endblocktranslate %}
+                  {% if row.contract_before %}
+                    {% blocktranslate with before=row.contract_before.weekly_hours after=row.contract_change.weekly_hours before_days=row.contract_before.working_days_per_week after_days=row.contract_change.working_days_per_week %}From here on the week is {{ after }} hours over {{ after_days }} days, where it was {{ before }} hours over {{ before_days }} days.{% endblocktranslate %}
+                  {% else %}
+                    {% blocktranslate with after=row.contract_change.weekly_hours after_days=row.contract_change.working_days_per_week %}From here on the week is {{ after }} hours over {{ after_days }} days.{% endblocktranslate %}
+                  {% endif %}
+                  {% comment %}The leave follows the working days, and that is the
+                  half somebody is most likely to be surprised by later — the
+                  entitlement is worked out per day and not per hour, so a week
+                  that keeps its hours and moves them onto fewer days changes it.
+                  Said only when the days actually moved, because on a change
+                  that only adds hours it would be a sentence about nothing.
+                  {% endcomment %}
+                  {% if row.contract_before and row.contract_before.working_days_per_week != row.contract_change.working_days_per_week %}
+                    {% translate "The leave entitlement is worked out from the working days, so it moves with this." %}
+                  {% endif %}
+                  {% if row.contract_change.note %}<span class="month-note-said">{{ row.contract_change.note }}</span>{% endif %}
+                </span>
+              </td>
+            </tr>
+          {% endif %}
           <tr class="month-row{% if row.is_today %} is-today{% endif %}{% if row.is_weekend %} is-weekend{% endif %}{% if not row.is_working_day %} is-off{% endif %}{% if row.is_future %} is-future{% endif %}{% if row.is_locked %} is-locked{% endif %}{% if not row.can_edit_hours %} no-hours{% endif %}"
               data-day="{{ row.date|date:'Y-m-d' }}"
               data-label="{{ row.date|date:'l, d.m.Y' }}">
