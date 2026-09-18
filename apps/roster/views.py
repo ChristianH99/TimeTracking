@@ -14,7 +14,6 @@ notices until the morning they do not arrive.
 import datetime as dt
 
 from django.contrib import messages
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -152,7 +151,12 @@ def _absences_by_day(days):
     rows = (
         Absence.objects
         .filter(start_date__lte=days[-1], end_date__gte=days[0])
-        .filter(Q(status=RequestStatus.APPROVED) | Q(status=RequestStatus.REQUESTED))
+        # Booked and merely asked for alike — deciding it and planning round it
+        # are the same act. A cancellation somebody has asked for is *booked*,
+        # so it is in `IN_FORCE` and shows here as the absence it still is.
+        .exclude(status__in=(
+            RequestStatus.REJECTED, RequestStatus.WITHDRAWN,
+        ))
         .select_related("employee", "special_type")
     )
     by_day = {}

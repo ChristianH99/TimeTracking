@@ -1,11 +1,10 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Public holidays" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Public holidays" %}{% endblock %}
-{% block topbar_sub %}{{ year }} · {{ land_label }}{% endblock %}
+{% block page_title %}{% translate "Public holidays" %}{% endblock %}
+{% block page_subtitle %}{{ year }} · {{ land_label }}{% endblock %}
 
 {% block content %}
-  <h1>{% translate "Public holidays" %}</h1>
   <p class="page-lead">
     {% blocktranslate with land=land_label %}Worked out for {{ land }} — nine of the thirteen German public holidays depend on the Land, and the Land is set on the Rules page. A public holiday is never taken off anybody’s leave, and nobody is expected in on one.{% endblocktranslate %}
   </p>

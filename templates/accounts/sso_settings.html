@@ -1,16 +1,11 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Sign-in" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Sign-in" %}{% endblock %}
-{% block topbar_sub %}{% translate "Single sign-on" %}{% endblock %}
+{% block page_title %}{% translate "Signing in through SSO" %}{% endblock %}
+{% block page_subtitle %}{% translate "Single sign-on" %}{% endblock %}
 
-{% block topbar_actions %}
-  <button type="button" class="topbar-help" data-help-open
-          aria-label="{% translate 'Help for this page' %}" title="{% translate 'Help for this page' %}">?</button>
-{% endblock %}
 
 {% block content %}
-  <h1>{% translate "Signing in through SSO" %}</h1>
   <p class="page-lead">{% translate "Setting this up is three steps and two of them are on the provider. Work down this page in order." %}</p>
 
   {% comment %}The callback is fixed by config/urls.py and has to be registered

@@ -1,37 +1,79 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
 {% block title %}{% translate "Time off" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Time off" %}{% endblock %}
-{% block topbar_sub %}{{ year }}{% endblock %}
+{% block page_title %}{% translate "My time off" %}{% endblock %}
+{% block page_subtitle %}{{ year }}{% endblock %}
+{% comment %}Twelve months of seven columns do not fit the app's reading
+measure. The same exception the timesheet takes, and for the same reason: a
+grid that scrolls sideways at every window size is one nobody sees the
+right-hand half of.{% endcomment %}
+{% block content_class %} content--wide{% endblock %}
+
+{% comment %}**Extra off days are the one thing asked for from a button.** They
+are not chosen by looking at a year — the date is whatever the funeral or the
+move forces — and the question that has to be answered before anything else is
+which entitlement they come out of, which is a list and not a day. Everything
+else on this page is asked for by clicking the day it is on.
+
+Nothing here at all for somebody who has been granted no special type: a form
+whose only possible outcome is a refusal is worse than no button.{% endcomment %}
+{% block page_actions %}{% if can_ask_special %}<button type="button" class="button" data-special-open>{% translate "Ask for extra off days" %}</button>{% endif %}{% endblock %}
 
 {% block content %}
   <div class="list-toolbar">
-    <h1>{% translate "My time off" %}</h1>
-    <form method="get" class="inline-form">
-      <label class="sr-only" for="year-select">{% translate "Year" %}</label>
-      <select id="year-select" name="year">
-        {% for option in years %}
-          <option value="{{ option }}"{% if option == year %} selected{% endif %}>{{ option }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="button button--secondary button--small">{% translate "Show" %}</button>
-    </form>
+    {% comment %}Two arrows and the year between them. Links, not a select with
+    a Show button beside it: choosing a year is navigation, it works before any
+    script has run, and it is one press rather than three.{% endcomment %}
+    <nav class="year-nav" aria-label="{% translate 'Year' %}">
+      <a class="icon-button" href="?year={{ previous_year }}"
+         title="{{ previous_year }}" aria-label="{{ previous_year }}">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+      </a>
+      <span class="year-nav-label">{{ year }}</span>
+      <a class="icon-button" href="?year={{ next_year }}"
+         title="{{ next_year }}" aria-label="{{ next_year }}">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>
+      </a>
+    </nav>
+    {% if year != this_year %}
+      <a class="link-button" href="?year={{ this_year }}">{% translate "This year" %}</a>
+    {% endif %}
   </div>
 
+  {% comment %}The three figures the page is opened for, in the order somebody
+  asks them: how many days do I get, how many extra ones do I get, and how many
+  have I still got. Everything after them qualifies one of the three.{% endcomment %}
   <div class="stat-row">
     <div class="stat">
       <span class="stat-value">{{ balance.entitlement }}</span>
-      <span class="stat-label">{% translate "Days a year" %}</span>
+      <span class="stat-label">{% translate "Off days" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ special_entitled }}</span>
+      <span class="stat-label">{% translate "Extra off days" %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ balance.remaining }}</span>
+      <span class="stat-label">{% translate "Unused off days" %}</span>
     </div>
     <div class="stat">
       <span class="stat-value">{{ balance.taken }}</span>
       <span class="stat-label">{% translate "Taken" %}</span>
     </div>
-    <div class="stat">
-      <span class="stat-value">{{ balance.remaining }}</span>
-      <span class="stat-label">{% translate "Left" %}</span>
-    </div>
-  
+    {% if balance.pending %}
+      <div class="stat stat--pending">
+        <span class="stat-value">{{ balance.pending }}</span>
+        <span class="stat-label">{% translate "Waiting for approval" %}</span>
+      </div>
+    {% endif %}
+    {% if balance.sick_days %}
+      <div class="stat">
+        <span class="stat-value">{{ balance.sick_days }}</span>
+        <span class="stat-label">{% translate "Sick days" %}</span>
+      </div>
+    {% endif %}
+  </div>
+
   {% comment %}The line that explains the entitlement figure above. Without it,
   somebody whose balance is 24 in one year and 29 in the next has no way to tell
   a carry-over from a mistake — and the figure they cannot explain is the one
@@ -61,24 +103,98 @@
   {% endif %}
 
   {% if balance.pending %}
-      <div class="stat stat--pending">
-        <span class="stat-value">{{ balance.pending }}</span>
-        <span class="stat-label">{% translate "Waiting for approval" %}</span>
-      </div>
-    {% endif %}
-    {% if balance.sick_days %}
-      <div class="stat">
-        <span class="stat-value">{{ balance.sick_days }}</span>
-        <span class="stat-label">{% translate "Sick days" %}</span>
-      </div>
-    {% endif %}
-  </div>
-
-  {% if balance.pending %}
     <p class="help">
       {% blocktranslate with left=balance.remaining_if_all_approved %}Days you have asked for are not taken off yet — a request that is declined has not been spent. If everything waiting is approved you will have {{ left }} left.{% endblocktranslate %}
     </p>
   {% endif %}
+
+  {# ---- the year ---- #}
+  {% comment %}**The calendar is the control.** Clicking a day is how time off
+  is asked for, which is the same argument the timesheet's status cell makes: a
+  form with two date boxes cannot answer the question somebody actually has when
+  they open this page, which is never "what is 14 March" but always "what does
+  this fortnight look like and what have I already got".
+
+  A day that is not a control is not a button — a weekend, a public holiday, a
+  day the contract gives no hours, a day somebody has locked, and a workplace
+  closure, which is the employer's to declare and nobody else's to take back.
+  Inviting somebody to press a control that refuses is worse than a square that
+  quietly says nothing, and the title on it says why it is quiet.{% endcomment %}
+  <div class="year-calendar" data-year-calendar
+       data-today="{{ today|date:'Y-m-d' }}"
+       data-cancel-url="{% url 'absences:request-cancel' 0 %}">
+    {% for month in months %}
+      <table class="cal-month">
+        <caption class="cal-month-name">{{ month.name }}</caption>
+        <thead>
+          <tr>
+            {% for label in weekday_labels %}
+              <th scope="col" class="cal-head">{{ label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for week in month.weeks %}
+            <tr>
+              {% for cell in week %}
+                {% if cell %}
+                  <td class="cal-cell{% if cell.is_weekend %} is-weekend{% endif %}{% if cell.holiday %} is-bankholiday{% endif %}{% if not cell.is_working %} is-nonworking{% endif %}{% if cell.is_today %} is-today{% endif %}">
+                    {% if cell.can_book %}
+                      <button type="button"
+                              class="cal-day cal-day--{{ cell.kind|default:'free' }}{% if cell.is_pending %} is-pending{% endif %}{% if cell.is_half %} is-half{% endif %}{% if cell.joins_left %} is-joined-left{% endif %}{% if cell.joins_right %} is-joined-right{% endif %}"
+                              title="{{ cell.title }}"
+                              data-date="{{ cell.date|date:'Y-m-d' }}"
+                              data-label="{{ cell.label }}"
+                              data-what="{{ cell.what }}"
+                              data-when="{{ cell.when }}"
+                              data-state="{{ cell.state }}"
+                              data-half="{% if cell.is_half %}1{% endif %}"
+                              data-group="{% if cell.is_group %}1{% endif %}"
+                              data-action="{{ cell.action }}"
+                              data-absence="{{ cell.absence.pk|default_if_none:'' }}">{{ cell.day }}</button>
+                    {% else %}
+                      <span class="cal-day cal-day--{{ cell.kind|default:'free' }} is-static{% if cell.is_pending %} is-pending{% endif %}{% if cell.is_half %} is-half{% endif %}{% if cell.joins_left %} is-joined-left{% endif %}{% if cell.joins_right %} is-joined-right{% endif %}"
+                            title="{{ cell.title }}">{{ cell.day }}</span>
+                    {% endif %}
+                  </td>
+                {% else %}
+                  <td class="cal-cell cal-cell--blank"></td>
+                {% endif %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+  </div>
+
+  {% comment %}The key. Each swatch is a real calendar square — the same
+  classes a day in the grid carries, wrapped in `.cal-cell` so it picks up the
+  same rules. A key drawn by a second set of styles is a key that stops
+  matching the thing it describes the first time either is changed.
+
+  **Extra off days are not in it, because they are not drawn differently.**
+  Sonderurlaub is asked for through its own button and counted against its own
+  entitlement, and neither of those is something a square can say; on the
+  calendar it is a day off like any other day off, and a swatch would be a
+  second green claiming to be a distinction.
+
+  Nor is "a day you were not due to work". That is the one state on the page
+  that needs no key at all — it is every weekend of the year, three hundred and
+  more squares of it, and a legend entry for the *background* is a line
+  explaining what the page has already said a hundred times.{% endcomment %}
+  <ul class="cal-legend">
+    <li><span class="cal-cell"><span class="cal-day cal-day--holiday cal-swatch"></span></span>{% translate "Holiday" %}</li>
+    <li><span class="cal-cell"><span class="cal-day cal-day--overtime cal-swatch"></span></span>{% translate "Time off in lieu" %}</li>
+    <li><span class="cal-cell"><span class="cal-day cal-day--sick cal-swatch"></span></span>{% translate "Sick" %}</li>
+    <li><span class="cal-cell"><span class="cal-day cal-day--closure cal-swatch"></span></span>{% translate "Workplace closed" %}</li>
+    <li><span class="cal-cell"><span class="cal-day cal-day--holiday is-pending cal-swatch"></span></span>{% translate "Waiting for approval" %}</li>
+    <li><span class="cal-cell"><span class="cal-day cal-day--holiday is-half cal-swatch"></span></span>{% translate "Half a day" %}</li>
+  </ul>
+
+  <p class="help">
+    {% translate "Click a day to ask for it off, or to say you were ill. A day drawn in a solid colour has been approved; a dotted one is still with your manager. Weekends, public holidays and days your contract gives no hours are not squares you can book, because they cost you nothing." %}
+  </p>
 
   {% comment %}How the entitlement was arrived at. On the page rather than left
   to be asked about, because "why do I have 24 and not 30" is the single most
@@ -89,8 +205,8 @@
     {% blocktranslate with this_year=balance.this_year %}This year is worth {{ this_year }} days, worked out from every contract that was in force during it — so a change to your hours part-way through moves it, and so does joining or leaving part-way through.{% endblocktranslate %}
   </p>
 
-  {% if balance.special %}
-    <h2 class="form-section">{% translate "Special leave" %}</h2>
+  {% if special %}
+    <h2 class="form-section">{% translate "Extra off days" %}</h2>
     <table class="data-table">
       <thead>
         <tr>
@@ -101,7 +217,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for grant, entitled, taken, left in balance.special %}
+        {% for grant, entitled, taken, left in special %}
           <tr>
             <th scope="row">{{ grant.leave_type.name }}</th>
             <td class="numeric">{{ entitled }}</td>
@@ -113,55 +229,12 @@
     </table>
   {% endif %}
 
-  {# ---- asking for time off ---- #}
-  <h2 class="form-section">{% translate "Ask for time off" %}</h2>
-  <details class="disclosure"{% if show_request_form or request_form.errors %} open{% endif %}>
-    <summary>{% translate "New request" %}</summary>
-    <form method="post" action="{% url 'absences:request' %}" class="stacked-form">
-      {% csrf_token %}
-      {% for error in request_form.non_field_errors %}
-        <p class="notice notice--error">{{ error }}</p>
-      {% endfor %}
-      {% for field in request_form %}
-        <div class="field">
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
-          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-        </div>
-      {% endfor %}
-      <div class="form-actions">
-        <button type="submit" class="button">{% translate "Send for approval" %}</button>
-      </div>
-    </form>
-  </details>
-
-  {# ---- illness ---- #}
-  <h2 class="form-section">{% translate "Sickness" %}</h2>
-  {% if open_sickness and not open_sickness.end_date %}
-    <p class="hint">{% translate "You are recorded as ill." %}</p>
-  {% endif %}
-  <p class="help">{% translate "You are telling the app, not asking it. It counts from the moment you record it: the hours for those days are credited, it does not come out of your leave, and days you were not due to work are not counted. Your manager is shown it so they know, and confirms that they have seen it — that is a receipt, not a permission." %}</p>
-  <details class="disclosure">
-    <summary>{% translate "Report sickness" %}</summary>
-    <form method="post" action="{% url 'absences:sick' %}" class="stacked-form">
-      {% csrf_token %}
-      {% for field in sick_form %}
-        <div class="field">
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
-          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-        </div>
-      {% endfor %}
-      <div class="form-actions">
-        <button type="submit" class="button button--secondary">{% translate "Record it" %}</button>
-      </div>
-    </form>
-  </details>
-
-  {# ---- the year ---- #}
-  <h2 class="form-section">{% translate "This year" %}</h2>
+  {# ---- the record ---- #}
+  {% comment %}The calendar draws what is standing; this is the record of every
+  conversation, declined and withdrawn rows included. The two are not the same
+  page furniture said twice — a refusal has a written reply on it, and there is
+  nowhere on a square one line high to put a sentence.{% endcomment %}
+  <h2 class="form-section">{% translate "Everything asked for this year" %}</h2>
   <table class="data-table">
     <thead>
       <tr>
@@ -197,29 +270,47 @@
           </td>
           <td class="numeric">{{ absence.working_days }}</td>
           <td>
-            <span class="pill pill--{% if absence.status == 'approved' %}ok{% elif absence.status == 'requested' %}pending{% else %}off{% endif %}">
+            {% comment %}A cancellation wears the waiting colour, because that is
+            what it is — but the row underneath it is still booked, which is why
+            the button beside it says so rather than offering to ask
+            again.{% endcomment %}
+            <span class="pill pill--{% if absence.status == 'approved' %}ok{% elif absence.status == 'requested' or absence.status == 'cancelling' %}pending{% else %}off{% endif %}">
               {{ absence.get_status_display }}
             </span>
           </td>
           <td>
-            {% if absence.status == 'requested' or absence.status == 'approved' %}
-              {% if absence.kind != 'closure' and absence.kind != 'sick' %}
+            {% comment %}**Two different acts behind one column.** Nothing a
+            manager has not answered is theirs yet, so it is withdrawn outright;
+            something they have approved is a day the roster was built around, so
+            it is *asked* for and waits on their list. A closure is neither: the
+            employer declared it.{% endcomment %}
+            {% if absence.kind != 'closure' %}
+              {% if absence.status == 'requested' %}
                 <form method="post" action="{% url 'absences:request-cancel' absence.pk %}" class="inline-form"
                       data-confirm-title="{% translate 'Withdraw this?' %}"
                       data-confirm="{% translate 'It stays in the list as withdrawn, so the record still shows that it was asked for.' %}"
                       data-confirm-accept="{% translate 'Withdraw' %}">
                   {% csrf_token %}
+                  <input type="hidden" name="year" value="{{ year }}">
                   <button type="submit" class="link-button">{% translate "Withdraw" %}</button>
                 </form>
+              {% elif absence.status == 'approved' %}
+                <form method="post" action="{% url 'absences:request-cancel' absence.pk %}" class="inline-form"
+                      data-confirm-title="{% translate 'Ask to cancel this?' %}"
+                      data-confirm="{% translate 'Your manager decides it. It stays booked until they answer — the days stay spent and the hours stay credited.' %}"
+                      data-confirm-accept="{% translate 'Ask' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="year" value="{{ year }}">
+                  <button type="submit" class="link-button">{% translate "Ask to cancel" %}</button>
+                </form>
+              {% elif absence.status == 'cancelling' %}
+                {% comment %}Not "cancellation requested" again — the status pill
+                two columns left already says that, and a row that says the same
+                thing twice is a row somebody reads twice. This says the thing
+                the pill does not: where it is now, and that there is nothing
+                further to press.{% endcomment %}
+                <span class="hint">{% translate "Your manager has it" %}</span>
               {% endif %}
-            {% endif %}
-            {% if absence.kind == 'sick' and absence.end_date >= today %}
-              <form method="post" action="{% url 'absences:sick-end' absence.pk %}" class="inline-form">
-                {% csrf_token %}
-                <label class="sr-only" for="end-{{ absence.pk }}">{% translate "Last day of illness" %}</label>
-                <input type="date" id="end-{{ absence.pk }}" name="end_date" value="{{ absence.end_date|date:'Y-m-d' }}">
-                <button type="submit" class="link-button">{% translate "Say when it ended" %}</button>
-              </form>
             {% endif %}
           </td>
         </tr>
@@ -228,4 +319,221 @@
       {% endfor %}
     </tbody>
   </table>
+
+  {% comment %}The day pop-up. One dialog for the whole year rather than one per
+  square: three hundred and sixty-five hidden dialogs is three hundred and
+  sixty-five copies of the same markup, and the one being filled is always the
+  day that was clicked.
+
+  It has two halves and shows exactly one of them. A day with something on it
+  answers "what is this and can I take it back"; an empty one answers "what
+  would you like it to be". A single form doing both would have to mean two
+  different things by its Save button.{% endcomment %}
+  <div class="modal-overlay" id="book-modal" hidden data-book-modal>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="book-title">
+      <h2 class="modal-title" id="book-title" data-book-title></h2>
+
+      <div data-book-existing hidden>
+        <dl class="cal-facts">
+          <div>
+            <dt>{% translate "Booked" %}</dt>
+            <dd>
+              <span data-book-what></span>
+              <span class="pill pill--muted" data-book-half hidden>{% translate "half day" %}</span>
+            </dd>
+          </div>
+          <div><dt>{% translate "When" %}</dt><dd data-book-when></dd></div>
+          <div><dt>{% translate "State" %}</dt><dd data-book-state></dd></div>
+        </dl>
+
+        {% comment %}Said out loud on a booking of more than one day, because
+        the square that was clicked is one of several and the button below is
+        about all of them. Somebody who clicked the Wednesday of a week off and
+        pressed Withdraw expecting to lose a Wednesday has lost a week.
+        {% endcomment %}
+        <p class="notice" data-book-group hidden>
+          {% translate "These days were booked together and can only be taken back together — the whole booking goes, not the day you clicked." %}
+        </p>
+
+        {% comment %}The two sentences the two buttons need, both rendered and
+        one shown. Written here rather than assembled in the script, so they are
+        in the page's own catalogue and read as prose rather than as three
+        fragments glued together.{% endcomment %}
+        <p class="modal-body" data-book-note-withdraw hidden>
+          {% translate "Nobody has decided this yet, so it is still yours to take back. It stays in the record as withdrawn, which is what shows that it was asked for at all." %}
+        </p>
+        <p class="modal-body" data-book-note-ask hidden>
+          {% translate "This is approved and the roster has been built around it, so your manager decides. It stays booked until they answer — the days stay spent and the hours stay credited." %}
+        </p>
+        <p class="modal-body" data-book-note-waiting hidden>
+          {% translate "Your manager has been asked to cancel this and has not answered yet. There is nothing further to press." %}
+        </p>
+
+        <form method="post" data-book-cancel-form>
+          {% csrf_token %}
+          <input type="hidden" name="year" value="{{ year }}">
+          <div class="modal-actions">
+            <button type="submit" class="button" data-book-withdraw hidden>{% translate "Withdraw" %}</button>
+            <button type="submit" class="button" data-book-ask hidden>{% translate "Ask to cancel" %}</button>
+            <button type="button" class="button button--secondary" data-book-close>{% translate "Close" %}</button>
+          </div>
+        </form>
+      </div>
+
+      <form method="post" action="{% url 'absences:book' %}" data-book-new hidden>
+        {% csrf_token %}
+        <input type="hidden" name="year" value="{{ year }}">
+
+        {% comment %}Three radios and not a select: they are the whole question
+        the dialog asks, there are three of them, and a closed list of three is
+        read in one glance where a select has to be opened first.{% endcomment %}
+        <fieldset class="choice-set">
+          <legend>{% translate "What is it" %}</legend>
+          <label class="choice">
+            <input type="radio" name="kind" value="holiday" checked data-book-kind>
+            <span>{% translate "Holiday" %}</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="kind" value="overtime" data-book-kind>
+            <span>{% translate "Time off in lieu" %}</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="kind" value="sick" data-book-kind>
+            <span>{% translate "Sick" %}</span>
+          </label>
+        </fieldset>
+
+        <p class="help" data-book-hint-holiday>{% translate "Comes out of your leave." %}</p>
+        <p class="help" data-book-hint-overtime hidden>{% translate "Costs no leave. The day reads as a shortfall against your contracted hours, and that shortfall is the overtime being taken back." %}</p>
+        <p class="help" data-book-hint-sick hidden>{% translate "Costs no leave, and dates are all it records. There is no note and never a diagnosis — your manager is shown that you were ill, not why." %}</p>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="book-start">{% translate "From" %}</label>
+            <input type="date" id="book-start" name="start_date" required data-book-start>
+          </div>
+          <div class="field">
+            <label for="book-end">{% translate "To" %}</label>
+            <input type="date" id="book-end" name="end_date" required data-book-end>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="checkbox-row" for="book-half">
+            <input type="checkbox" id="book-half" name="is_half_day" value="1" data-book-halfday>
+            {% translate "Half a day" %}
+          </label>
+          {% comment %}A half day is one date and only one date — the general
+          version is four more states, every one of which has to be right in the
+          day count, in the credited hours and in the closure materialiser. So
+          the box is offered only while the two dates agree, rather than offered
+          and then refused by the server.{% endcomment %}
+          <span class="help">{% translate "Only when the two dates are the same one." %}</span>
+        </div>
+
+        <div class="field" data-book-note-field>
+          <label for="book-note">{% translate "Note" %}</label>
+          <input type="text" id="book-note" name="reason" maxlength="200" autocomplete="off" data-book-note>
+          <span class="help">{% translate "Optional, and read by whoever decides it." %}</span>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="button">{% translate "Send for approval" %}</button>
+          <button type="button" class="button button--secondary" data-book-cancel>{% translate "Cancel" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if can_ask_special %}
+    {% comment %}Extra off days. A dialog of its own rather than a fourth radio
+    in the one above, because it asks a question none of the other three has:
+    which entitlement it comes out of. Special leave cannot be saved without
+    that, so a fourth radio would be the one choice the form always refused
+    until a second control had been answered.{% endcomment %}
+    <div class="modal-overlay" id="special-modal" hidden data-special-modal>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="special-title">
+        <h2 class="modal-title" id="special-title">{% translate "Ask for extra off days" %}</h2>
+        <p class="modal-body">
+          {% translate "Days that come out of an entitlement of their own — a funeral, a move, a wedding. Which one it is has to be named, or the days cannot be counted against anything." %}
+        </p>
+
+        <form method="post" action="{% url 'absences:book' %}" data-special-form>
+          {% csrf_token %}
+          <input type="hidden" name="year" value="{{ year }}">
+          <input type="hidden" name="kind" value="special">
+
+          <div class="field">
+            <label for="special-type">{% translate "Which" %}</label>
+            <select id="special-type" name="special_type" required>
+              {% for grant, entitled, taken, left in special %}
+                <option value="{{ grant.leave_type.pk }}">{{ grant.leave_type.name }} ({{ left }})</option>
+              {% endfor %}
+            </select>
+            <span class="help">{% translate "The figure in brackets is what is left of that type." %}</span>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="special-start">{% translate "From" %}</label>
+              <input type="date" id="special-start" name="start_date" required data-special-start>
+            </div>
+            <div class="field">
+              <label for="special-end">{% translate "To" %}</label>
+              <input type="date" id="special-end" name="end_date" required data-special-end>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="checkbox-row" for="special-half">
+              <input type="checkbox" id="special-half" name="is_half_day" value="1" data-special-halfday>
+              {% translate "Half a day" %}
+            </label>
+            <span class="help">{% translate "Only when the two dates are the same one." %}</span>
+          </div>
+
+          <div class="field">
+            <label for="special-note">{% translate "Note" %}</label>
+            <input type="text" id="special-note" name="reason" maxlength="200" autocomplete="off">
+            <span class="help">{% translate "Optional, and read by whoever decides it." %}</span>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="button">{% translate "Send for approval" %}</button>
+            <button type="button" class="button button--secondary" data-special-cancel>{% translate "Cancel" %}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block help_modal %}
+  <div class="modal-overlay" id="absences-help" hidden data-help-modal>
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="absences-help-title">
+      <h2 class="modal-title" id="absences-help-title">{% translate "Reading this page" %}</h2>
+      <div class="modal-body">
+        <h3>{% translate "The three figures" %}</h3>
+        <p>{% translate "Off days is what this year is worth to you, including anything carried over from last year. Extra off days are the separate entitlements — a funeral, a move — and they are not part of the first figure. Unused off days is what is left once the approved days have come off; days still waiting are not taken off, because a request that is declined was never spent." %}</p>
+
+        <h3>{% translate "The calendar" %}</h3>
+        <p>{% translate "A solid square is approved. A dotted one is still with your manager and counts for nothing yet. A square filled diagonally is half a day. A pale square is a day you were not due to work anyway — a weekend, a public holiday, or a day your contract gives no hours — and booking one would cost you nothing, so it cannot be clicked." %}</p>
+        <p>{% translate "Click any other day to ask for it off or to say you were ill. The pop-up opens on that date at both ends; change the second one to ask for a run of days." %}</p>
+
+        <h3>{% translate "Taking something back" %}</h3>
+        <p>{% translate "Click a day that is already booked. Anything your manager has not answered yet is yours to withdraw outright. Anything approved is a day the roster has been built around, so you ask instead and it stays booked — the days stay spent and the hours stay credited — until they answer." %}</p>
+        <p>{% translate "Days asked for together are one booking and are drawn as one bar. They come back together too: clicking the Wednesday of a week off acts on the whole week, not on the Wednesday. To give back part of a booking, take the whole thing back and ask for the days you are keeping." %}</p>
+
+        <h3>{% translate "What each kind costs" %}</h3>
+        <p>{% translate "Holiday and extra off days come out of an entitlement. Sickness never does, and it is paid as though you had worked the day. Time off in lieu costs no leave either, and is the one kind that credits no hours — that shortfall against your contracted hours is the overtime being taken back." %}</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="button" data-help-close>{% translate "Close" %}</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/absences_year.js' %}"></script>
 {% endblock %}

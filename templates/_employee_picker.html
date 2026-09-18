@@ -1,0 +1,74 @@
+{% load i18n %}
+{% comment %}Which person's timesheet this is, and the way to the next one.
+
+The manager's counterpart of the month picker, and deliberately built to the
+same pattern: two arrows with a disclosure between them, **and everything in it
+is a link**. No form, no `<select>`, no submit — stepping from Anna's September
+to Ben's September is navigation, so a list of links is what works with the
+keyboard, with the middle mouse button and before any script has loaded. A
+`<select>` here would also repeat the fault the month picker was built to
+escape: a select whose selected option is missing shows the first entry instead
+and says nothing about it, which on this page would be one person's name over
+another person's hours.
+
+**Every link carries the month.** Stepping to the next person keeps September
+rather than dropping back to today: a manager reads down one month across the
+team, and a picker that reset the month would make that eleven navigations
+instead of ten.
+
+The arrows step through the same order the list is in — `Employee.Meta.ordering`,
+which is the order the People page uses — so "next" means the next name a
+manager would have found by scrolling. At the ends there is nothing to step to
+and the arrow is drawn as a dead one rather than wrapping round: a `›` on the
+last person that silently lands on the first is a control that lies about where
+it goes, and the disclosure beside it is how somebody gets back to the top.
+{% endcomment %}
+<div class="month-nav person-nav">
+  {% if previous_person %}
+    <a class="icon-button" href="{% url 'timesheets:employee' previous_person.pk %}?month={{ month|date:'Y-m' }}"
+       title="{% blocktranslate with name=previous_person.full_name %}{{ name }}’s timesheet{% endblocktranslate %}"
+       aria-label="{% blocktranslate with name=previous_person.full_name %}{{ name }}’s timesheet{% endblocktranslate %}">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+    </a>
+  {% else %}
+    <span class="icon-button is-spent" aria-hidden="true">
+      <svg class="icon" viewBox="0 0 24 24" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+    </span>
+  {% endif %}
+
+  <details class="month-picker person-picker" data-person-picker>
+    <summary class="month-picker-toggle" title="{% translate 'Choose somebody' %}">
+      <span class="month-picker-label">{{ employee.full_name }}</span>
+      <svg class="icon month-picker-caret" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9.5 6 6 6-6"/></svg>
+    </summary>
+    <div class="month-panel person-panel">
+      {% comment %}One column, not three. The month grid is three across because
+      twelve months are a shape people already know from a wall calendar; a list
+      of names has no such shape and reading it across would make somebody scan
+      in two directions for a word they are matching letter by letter.
+      {% endcomment %}
+      <div class="person-list">
+        {% for person in people %}
+          <a class="person-cell{% if person.pk == employee.pk %} is-current{% endif %}"
+             href="{% url 'timesheets:employee' person.pk %}?month={{ month|date:'Y-m' }}"
+             aria-current="{% if person.pk == employee.pk %}true{% else %}false{% endif %}">
+            {{ person.full_name }}
+            {% if not person.is_active %}<span class="hint">{% translate "left" %}</span>{% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+
+  {% if next_person %}
+    <a class="icon-button" href="{% url 'timesheets:employee' next_person.pk %}?month={{ month|date:'Y-m' }}"
+       title="{% blocktranslate with name=next_person.full_name %}{{ name }}’s timesheet{% endblocktranslate %}"
+       aria-label="{% blocktranslate with name=next_person.full_name %}{{ name }}’s timesheet{% endblocktranslate %}">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>
+    </a>
+  {% else %}
+    <span class="icon-button is-spent" aria-hidden="true">
+      <svg class="icon" viewBox="0 0 24 24" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>
+    </span>
+  {% endif %}
+</div>

@@ -112,18 +112,39 @@ class TestTheNightTheClocksGoBack:
         assert not nonexistent(FALL_BACK, dt.time(2, 30), BERLIN)
 
     def test_the_break_rules_see_the_longer_day(self, org):
-        """The point of getting the length right, in one assertion.
+        """The point of getting the length right, in the figure it feeds.
 
-        A nine-hour span crosses the second break tier and a eight-hour one does
-        not, so the wall-clock version would deduct 30 minutes where 45 are
-        owed — the error compounding into the figure it feeds.
+        The hour does not stop at the span. It goes into the gross, which the
+        break rules and the balance are computed from, so a wall-clock reading
+        of this night short-changes somebody by a whole hour of paid time —
+        which is the number they are paid on and the one a labour court is
+        shown.
         """
         gross = elapsed_minutes(
             FALL_BACK - dt.timedelta(days=1),
             dt.time(23, 0), dt.time(7, 0), BERLIN,
         )
+        assert gross == 9 * 60
+        naive = 8 * 60  # what subtracting the two clock readings would give
+
+        assert gross - org.required_break(gross) == 8 * 60 + 30
+        assert naive - org.required_break(naive) == 7 * 60 + 30
+
+    def test_a_long_enough_night_crosses_the_second_tier(self, org):
+        """And on a longer shift the error crosses a tier as well.
+
+        22:00 to 07:00 is ten hours on this night and nine on any other, which
+        is exactly the boundary §4 ArbZG puts the forty-five-minute break at —
+        so the wall-clock reading deducts thirty where forty-five are owed, on
+        top of losing the hour.
+        """
+        gross = elapsed_minutes(
+            FALL_BACK - dt.timedelta(days=1),
+            dt.time(22, 0), dt.time(7, 0), BERLIN,
+        )
+        assert gross == 10 * 60
         assert org.required_break(gross) == 45
-        assert org.required_break(8 * 60) == 30
+        assert org.required_break(9 * 60) == 30
 
 
 class TestWhichClock:

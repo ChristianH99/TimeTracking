@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Retention" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% translate "Retention" %}{% endblock %}
+{% block page_subtitle %}{% translate "how long each record is kept" %}{% endblock %}
+{% comment %}Six rows of five columns, one of which is a paragraph of statute.
+Wide, and it scrolls sideways rather than folding — a period without the reason
+beside it is a number somebody changes.{% endcomment %}
+{% block content_class %} content--wide{% endblock %}
+
+{% block content %}
+  {% comment %}**Both directions, said first.** Everybody who opens this page
+  expects the deleting half; the keeping half is the one that surprises them, and
+  it is the one with a fine attached. Saying it here is what stops somebody
+  setting every figure to the minimum on the way to being tidy.{% endcomment %}
+  <p class="help">
+    {% translate "A retention policy has two halves and this page is both. Records must be deleted once their period is up — that is storage limitation under Art. 5(1)(e) DSGVO. They must also be kept until it is up: §16 ArbZG, §17 MiLoG, §147 AO and §28f SGB IV each set a minimum, and deleting inside one destroys evidence the employer is required to produce. Keeping everything forever is the wrong answer to both at once." %}
+  </p>
+
+  <div class="table-scroll">
+    <table class="data-table retention-table">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Records" %}</th>
+          <th scope="col" class="numeric">{% translate "Kept for" %}</th>
+          <th scope="col">{% translate "Deleted before" %}</th>
+          <th scope="col">{% translate "Oldest held" %}</th>
+          <th scope="col" class="numeric">{% translate "Out of period" %}</th>
+          <th scope="col">{% translate "Why that minimum" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <th scope="row">{{ row.label }}</th>
+            <td class="numeric">
+              {% if row.years %}
+                {% blocktranslate count counter=row.years %}{{ counter }} year{% plural %}{{ counter }} years{% endblocktranslate %}
+                {% comment %}Said out loud rather than obeyed silently. A figure
+                the app overrides without a word is a figure somebody believes,
+                and this is the one page where believing a wrong number has a
+                fine on the end of it.{% endcomment %}
+                {% if row.raised_to_floor %}
+                  <span class="retention-raised" title="{% blocktranslate with wanted=row.wanted floor=row.floor %}Set to {{ wanted }} and raised to the statutory minimum of {{ floor }}.{% endblocktranslate %}">!</span>
+                {% endif %}
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+            <td>
+              {% if row.cutoff %}{{ row.cutoff|date:"d.m.Y" }}
+              {% else %}<span class="hint">{% translate "when nothing is left" %}</span>{% endif %}
+            </td>
+            <td>
+              {% if row.oldest %}{{ row.oldest|date:"d.m.Y" }}
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+            {% comment %}The figure the page exists for: not what the policy says
+            but what it would do today. A policy nobody has checked against the
+            data is a paragraph, not a policy.{% endcomment %}
+            <td class="numeric">
+              {% if row.due %}<strong class="retention-due">{{ row.due }}</strong>
+              {% else %}<span class="hint">0</span>{% endif %}
+            </td>
+            <td class="retention-why">{{ row.why }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% comment %}**Nothing is deleted from this page**, and the reason is worth the
+  sentence: a button that removes ten years of somebody's timesheet does not
+  belong beside a Save. The command is a dry run unless the word is typed, which
+  is a deliberate act on a machine somebody had to log into.{% endcomment %}
+  <p class="help">
+    {% if total_due %}
+      {% blocktranslate count counter=total_due %}<strong>{{ counter }} record</strong> is out of its period. Nothing on this page deletes it.{% plural %}<strong>{{ counter }} records</strong> are out of their period. Nothing on this page deletes them.{% endblocktranslate %}
+    {% else %}
+      {% translate "Nothing is out of its period. Nothing on this page deletes anything in any case." %}
+    {% endif %}
+    {% translate "Deleting is one command, and it says what it would do unless it is told twice:" %}
+    <code>manage.py apply_retention</code> {% translate "reports;" %}
+    <code>manage.py apply_retention --apply</code> {% translate "removes, and writes one audit entry for each kind of record that went." %}
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <h2 class="form-section">{% translate "The periods" %}</h2>
+    <div class="field-grid">
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="hint">{{ field.help_text }}</p>{% endif %}
+          <p class="field-error">{{ field.errors|join:" " }}</p>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save" %}</button>
+    </div>
+  </form>
+{% endblock %}

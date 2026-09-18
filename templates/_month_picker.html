@@ -1,0 +1,73 @@
+{% load i18n %}
+{% comment %}The month picker: two arrows, and a calendar the month is chosen
+from. On the timesheet and on the month-end page, which are the two pages that
+are *about* a month — one include rather than two copies, because the day they
+drift is the day one of them still has the old control.
+
+**Everything in here is a link.** No form, no select, no submit: choosing a
+month is navigation, and a grid of twelve links is a grid that works with the
+keyboard, with the middle mouse button and with no script at all. The panel is a
+<details>, which opens and closes on its own for the same reason — the same
+choice the Settings disclosure in the sidebar makes.
+
+The year arrows are links too, to the *same month in the adjacent year*, so that
+without script they do something correct rather than nothing. With script,
+monthpicker.js intercepts them and redraws the twelve cells in place, which is
+what somebody looking for March 2024 actually wants.
+
+The month names do not change from year to year, so the script rewrites hrefs
+and never text — which is what keeps this out of the JavaScript catalogue and
+means the grid is written in the same German as the rest of the page.
+{% endcomment %}
+<div class="month-nav">
+  <a class="icon-button" href="?month={{ previous_month|date:'Y-m' }}"
+     title="{% translate 'The month before' %}" aria-label="{% translate 'The month before' %}">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+  </a>
+
+  <details class="month-picker" data-month-picker data-current="{{ month|date:'Y-m' }}">
+    <summary class="month-picker-toggle" title="{% translate 'Choose a month' %}">
+      <span class="month-picker-label">{{ month|date:"F Y" }}</span>
+      <svg class="icon month-picker-caret" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9.5 6 6 6-6"/></svg>
+    </summary>
+    <div class="month-panel">
+      <div class="month-panel-year">
+        <a class="icon-button icon-button--quiet" data-year-step="-1"
+           href="?month={{ previous_year|date:'Y-m' }}"
+           title="{% translate 'The year before' %}" aria-label="{% translate 'The year before' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+        </a>
+        {% comment %}A live region: with script on, this text is the only thing
+        that changes when a year arrow is pressed, and a panel that silently
+        redraws under somebody who cannot see it has answered nothing.{% endcomment %}
+        <span class="month-panel-year-label" data-year-label role="status" aria-live="polite">{{ month|date:"Y" }}</span>
+        <a class="icon-button icon-button--quiet" data-year-step="1"
+           href="?month={{ next_year|date:'Y-m' }}"
+           title="{% translate 'The year after' %}" aria-label="{% translate 'The year after' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>
+        </a>
+      </div>
+      {% comment %}Three across and four down. Twelve months are a shape people
+      already know from a wall calendar, and the shape is what makes a month
+      findable without reading all twelve — which is the whole difference
+      between this and the list it replaced.{% endcomment %}
+      <div class="month-grid" data-month-grid>
+        {% for choice in year_months %}
+          <a class="month-cell{% if choice == month %} is-current{% endif %}"
+             data-month-cell="{{ choice|date:'m' }}"
+             href="?month={{ choice|date:'Y-m' }}"
+             aria-current="{% if choice == month %}true{% else %}false{% endif %}">{{ choice|date:"M" }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+
+  <a class="icon-button" href="?month={{ next_month|date:'Y-m' }}"
+     title="{% translate 'The month after' %}" aria-label="{% translate 'The month after' %}">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>
+  </a>
+
+  {% if month != this_month %}
+    <a class="link-button" href="?month={{ this_month|date:'Y-m' }}">{% translate "This month" %}</a>
+  {% endif %}
+</div>

@@ -36,7 +36,6 @@ urlpatterns = [
     # client secret.
     # One person's own settings. Not staff-only and not superuser-only: it is
     # about a body rather than about the household, and everybody has one.
-    path("preferences/", views.preferences, name="preferences"),
 
     path("sso/", sso_views.sso_settings, name="sso"),
     path("sso/discover/", sso_views.sso_discover, name="sso-discover"),

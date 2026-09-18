@@ -129,17 +129,90 @@
     return String(hours).padStart(2, "0") + ":" + String(rest).padStart(2, "0");
   }
 
+  /* 455 -> "07:35"; -45 -> "-00:45"; 0 -> "00:00". The twin of
+     apps/timesheets/hours.hhmm, and the only way the timesheet writes a
+     duration.
+
+     Padded, which `clock` above is not, and signed, which `clockOfDay` is not —
+     the two existing formatters are each wrong for this in one direction. It
+     does *not* wrap at 24: this is a length, so twenty-five hours is "25:00"
+     and not "01:00".
+
+     There is no decimal form here on purpose. The month is the one page whose
+     figures ignore the reader's `hours_format`, because ten columns read down
+     only line up when every figure is the same width — and a second formatter
+     in this file would be an invitation to use it there. Every other page
+     renders its durations on the server, where the preference lives. */
+  function hhmm(minutes) {
+    const total = Math.round(minutes);
+    const sign = total < 0 ? "-" : "";
+    const absolute = Math.abs(total);
+    const whole = Math.floor(absolute / 60);
+    const rest = absolute % 60;
+    return sign + String(whole).padStart(2, "0") + ":" + String(rest).padStart(2, "0");
+  }
+
+  /* The shortest pause that is a break at all — §4 ArbZG splits one "in
+     Zeitabschnitte von jeweils mindestens 15 Minuten". The twin of
+     MIN_BREAK_CHUNK in apps/organisation/models.py. */
+  const MIN_BREAK_CHUNK = 15;
+
+  /* Stretches merged across any gap too short to be a break. Four hours, five
+     minutes off and two and a half more is six and a half hours *hintereinander*
+     however it was clocked. */
+  function unbrokenStretches(blocks, gaps) {
+    const merged = [];
+    blocks.forEach((block, index) => {
+      const joined = index > 0 && index - 1 < gaps.length
+        && gaps[index - 1] < MIN_BREAK_CHUNK;
+      if (joined && merged.length) merged[merged.length - 1] += block;
+      else merged.push(block);
+    });
+    return merged;
+  }
+
   /* See the header. `rules` is [{over, break}, …] as the page's json_script
      supplied it; an empty list means no break is required, which is what an
-     organisation that deleted every rule has asked for. */
-  function requiredBreak(grossMinutes, rules) {
-    const gross = Math.max(0, grossMinutes || 0);
-    let required = 0;
-    (rules || []).forEach((rule) => {
-      const needed = Math.min(rule.break, Math.max(0, gross - rule.over));
-      if (needed > required) required = needed;
+     organisation that deleted every rule has asked for.
+
+     `blocks` is each unbroken stretch of work and `gaps` is the time between
+     them, because **the shape matters and the totals are not enough**. A day of
+     08:30–15:00 and then 16:00–17:00 has an hour off in it and still contains
+     six and a half hours worked straight through; counting the later hour
+     against the earlier stretch lets a break taken afterwards pay for one that
+     was never taken. Each stretch owes its own break, and the day owes its
+     total — the answer is whichever is larger. OrgSettings.required_break is
+     the same four lines with the argument written out. */
+  function requiredBreak(blocks, gaps, rules) {
+    const stretches = blocks || [];
+    const between = gaps || [];
+    const table = rules || [];
+
+    const gross = stretches.reduce((sum, block) => sum + Math.max(0, block), 0);
+    const taken = between.reduce(
+      (sum, gap) => sum + (gap >= MIN_BREAK_CHUNK ? gap : 0), 0,
+    );
+
+    let inside = 0;
+    unbrokenStretches(stretches, between).forEach((stretch) => {
+      let needed = 0;
+      table.forEach((rule) => {
+        const owed = Math.min(rule.break, Math.max(0, stretch - rule.over));
+        if (owed > needed) needed = owed;
+      });
+      inside += needed;
     });
-    return required;
+
+    let overall = 0;
+    table.forEach((rule) => {
+      const owed = Math.min(
+        Math.max(0, gross - rule.over),
+        Math.max(0, rule.break - taken),
+      );
+      if (owed > overall) overall = owed;
+    });
+
+    return Math.max(inside, overall);
   }
 
   window.ttHours = {
@@ -147,6 +220,7 @@
     span: span,
     clock: clock,
     clockOfDay: clockOfDay,
+    hhmm: hhmm,
     requiredBreak: requiredBreak,
   };
 })();

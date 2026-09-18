@@ -262,7 +262,7 @@ class TestTheGermanPublicHolidays:
 
 class TestTheRequestFlow:
     def test_an_employee_asks_and_it_waits(self, org, anna, client, monday):
-        response = client.post("/absences/request/", {
+        response = client.post("/absences/book/", {
             "kind": AbsenceKind.HOLIDAY,
             "start_date": (monday + dt.timedelta(days=30)).isoformat(),
             "end_date": (monday + dt.timedelta(days=32)).isoformat(),
@@ -319,38 +319,41 @@ class TestTheRequestFlow:
         }, employee=anna)
         assert form.is_valid(), form.errors
 
-    def test_sickness_counts_before_anybody_acknowledges_it(self, org, anna, client, monday):
-        """The acknowledgement is a receipt, not a permission.
+    def test_sickness_is_asked_for_and_credits_nothing_until_it_is_decided(
+        self, org, anna, client, monday,
+    ):
+        """**Sickness behaves like every other absence**, and this is the test
+        that says so.
 
-        A manager confirms that a report reached them, and that is worth
-        recording. What must never happen is the *counting* waiting on it: an
-        employee off with flu for a fortnight while their manager is away would
-        otherwise show eighty hours of shortfall, which is a debt §3 EFZG says
-        outright they do not owe. So the row waits on the manager's list and the
-        absence itself takes effect immediately.
+        It used to be the exception: reported rather than requested, credited
+        the moment it was entered, and stopped only by a positive refusal. One
+        kind behaving unlike the rest meant the timesheet had to say two
+        different things about what a waiting day was worth. The one difference
+        that survives is the only one that was ever about sickness itself — it
+        costs no leave.
         """
-        client.post("/absences/sick/", {"start_date": monday.isoformat(), "end_date": ""})
+        client.post("/absences/book/", {
+            "kind": AbsenceKind.SICK,
+            "start_date": monday.isoformat(), "end_date": monday.isoformat(),
+        })
         absence = anna.absences.get()
         assert absence.kind == AbsenceKind.SICK
         assert absence.status == RequestStatus.REQUESTED
-        assert absence.credits_hours, "a reported sick day counts from the moment it is reported"
+        assert not absence.credits_hours, "nothing is credited before it is approved"
         assert not absence.costs_leave, "sickness never comes off the leave balance"
 
-    def test_only_a_refusal_stops_a_sick_day_counting(self, org, anna, client, monday):
-        """The one act that withholds the credit, and it is a positive one.
+        absence.status = RequestStatus.APPROVED
+        assert absence.credits_hours
+        assert not absence.costs_leave, "and still does not, once approved"
 
-        An employer disputing an absence — no Krankmeldung arrived, the dates
-        are wrong — is real and rare. It is not the same state as a report
-        nobody has looked at yet, and the two must not be one status.
-        """
-        client.post("/absences/sick/", {"start_date": monday.isoformat(), "end_date": ""})
-        absence = anna.absences.get()
-
-        absence.status = RequestStatus.REJECTED
-        assert not absence.credits_hours
-        # Blank end means today, not null: on the morning somebody rings in
-        # nobody knows when it ends.
-        assert absence.end_date == absence.start_date
+    def test_an_end_date_is_required_for_sickness(self, org, anna, client, monday):
+        """It used to be optional — blank meant "today, and I will say later",
+        which is the honest state on the morning somebody rings in and is also
+        what made an open-ended absence possible. Somebody who does not know yet
+        books the days they know about."""
+        client.post("/absences/book/", {
+            "kind": AbsenceKind.SICK,"start_date": monday.isoformat(), "end_date": ""})
+        assert not anna.absences.exists()
 
     def test_declining_without_a_reason_is_refused(self, org, anna, manager_client, monday):
         absence = Absence.objects.create(
@@ -401,3 +404,404 @@ class TestTheRequestFlow:
         client.post(f"/absences/request/{absence.pk}/withdraw/")
         absence.refresh_from_db()
         assert absence.status == RequestStatus.WITHDRAWN
+
+    # -- taking back what has already been approved ------------------------
+    #
+    # The line is approval, and it is the same line for every kind. Nothing a
+    # manager has not answered is theirs yet; something they have approved is a
+    # day the roster was built around and the leave already spent against.
+
+    @pytest.mark.parametrize("kind", [AbsenceKind.HOLIDAY, AbsenceKind.SICK])
+    def test_an_approved_absence_is_asked_about_rather_than_withdrawn(
+        self, org, anna, client, monday, kind,
+    ):
+        """And **it stays in force while the asking waits.** A cancellation that
+        took effect on the press would move the balance and the credited hours
+        before anybody had answered — which is the same fault as spending
+        pending days, in the other direction."""
+        absence = Absence.objects.create(
+            employee=anna, kind=kind,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.APPROVED,
+        )
+        client.post(f"/absences/request/{absence.pk}/withdraw/")
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.CANCELLING
+        assert absence.credits_hours, "still booked until the manager answers"
+        assert absence.is_decidable, "and on their list until they do"
+
+    def test_a_manager_agreeing_takes_it_off(self, org, anna, manager, manager_client, monday):
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.CANCELLING,
+        )
+        manager_client.post(f"/absences/requests/{absence.pk}/decide/",
+                            {"approve": "1", "note": ""})
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.WITHDRAWN
+        assert absence.decided_by == manager.user
+
+    def test_a_manager_refusing_leaves_it_exactly_as_it_was(
+        self, org, anna, manager_client, monday,
+    ):
+        """Refused is ``APPROVED`` and not a state of its own: an absence whose
+        cancellation was declined is an ordinary approved absence, and
+        "approved, but somebody once asked to cancel it" is a state nothing else
+        in the app knows how to read."""
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.CANCELLING,
+        )
+        manager_client.post(f"/absences/requests/{absence.pk}/decide/",
+                            {"note": "Der Dienstplan steht schon."})
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.APPROVED
+        assert absence.costs_leave
+        assert absence.decision_note
+
+    def test_refusing_a_cancellation_without_a_reason_is_refused(
+        self, org, anna, manager_client, monday,
+    ):
+        """The same rule as declining a request, through the same form: a no
+        without a sentence sends somebody to go and ask for one."""
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.CANCELLING,
+        )
+        manager_client.post(f"/absences/requests/{absence.pk}/decide/", {"note": ""})
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.CANCELLING
+
+    def test_asking_twice_changes_nothing(self, org, anna, client, monday):
+        absence = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.CANCELLING,
+        )
+        client.post(f"/absences/request/{absence.pk}/withdraw/")
+        absence.refresh_from_db()
+        assert absence.status == RequestStatus.CANCELLING
+
+
+def _square(response, day):
+    """The one cell of the rendered year that is ``day``.
+
+    Walks the whole structure rather than indexing into it, which is the half
+    of the assertion that matters: a month's weeks start on a Monday and carry
+    the neighbouring month's dates, so arithmetic on the offsets is exactly the
+    thing that goes wrong and exactly the thing this must not repeat.
+    """
+    found = [
+        cell
+        for month in response.context["months"]
+        for week in month["weeks"]
+        for cell in week
+        if cell is not None and cell["date"] == day
+    ]
+    assert len(found) == 1, (
+        f"{day} appears {len(found)} times in the year; a date drawn twice is a "
+        "date somebody can click twice and see two different things about"
+    )
+    return found[0]
+
+
+class TestTheYearAsAGrid:
+    """The Time off page is a year of squares and the square is the control.
+
+    Every assertion below is about the *cell dictionary* rather than about the
+    markup, because that is where the six things a day has to know at once are
+    decided — and template logic asking them in six nested ``{% if %}``s is
+    logic no test can reach.
+    """
+
+    def test_it_draws_the_twelve_months_of_the_year_it_was_asked_for(
+        self, org, anna, client,
+    ):
+        response = client.get("/absences/?year=2026")
+        assert response.status_code == 200
+        months = response.context["months"]
+        assert [month["number"] for month in months] == list(range(1, 13))
+
+    def test_no_date_is_drawn_in_two_months(self, org, anna, client):
+        """``monthdatescalendar`` hands back whole weeks, so a January block
+        contains dates in December and February. Drawing them would put the
+        same day on the page twice, in two blocks, each with its own button."""
+        response = client.get("/absences/?year=2026")
+        for month in response.context["months"]:
+            for week in month["weeks"]:
+                for cell in week:
+                    assert cell is None or cell["date"].month == month["number"]
+
+    def test_a_working_day_is_a_control_and_a_weekend_is_not(
+        self, org, anna, client, monday,
+    ):
+        response = client.get(f"/absences/?year={monday.year}")
+        assert _square(response, monday)["can_book"]
+        saturday = monday + dt.timedelta(days=5)
+        assert not _square(response, saturday)["can_book"]
+        assert _square(response, saturday)["is_weekend"]
+
+    def test_a_day_the_contract_gives_no_hours_is_not_a_control(
+        self, org, cem, monday, client, user,
+    ):
+        """Cem works Monday to Wednesday. His Thursday is not a square anybody
+        can book: it costs nothing, so the form would refuse it — and inviting
+        somebody to press a control that refuses is worse than a pale square."""
+        cem.user = user
+        cem.save(update_fields=["user"])
+        response = client.get(f"/absences/?year={monday.year}")
+        assert not _square(response, monday + dt.timedelta(days=3))["can_book"]
+
+    def test_a_public_holiday_costs_nothing_so_it_cannot_be_booked(
+        self, org, anna, client,
+    ):
+        BankHoliday.objects.create(date=dt.date(2026, 5, 1), name="Tag der Arbeit")
+        response = client.get("/absences/?year=2026")
+        cell = _square(response, dt.date(2026, 5, 1))
+        assert not cell["can_book"]
+        assert cell["holiday"] == "Tag der Arbeit"
+        # The name, because that is the one thing a square this size cannot say
+        # for itself and the one thing somebody pointing at it wants.
+        assert cell["title"] == "Tag der Arbeit"
+
+    def test_approved_is_solid_and_waiting_is_dotted(self, org, anna, client, monday):
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday, status=RequestStatus.APPROVED,
+        )
+        tuesday = monday + dt.timedelta(days=1)
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.SICK,
+            start_date=tuesday, end_date=tuesday, status=RequestStatus.REQUESTED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+
+        settled = _square(response, monday)
+        assert settled["kind"] == AbsenceKind.HOLIDAY and not settled["is_pending"]
+        waiting = _square(response, tuesday)
+        assert waiting["kind"] == AbsenceKind.SICK and waiting["is_pending"]
+
+    def test_a_declined_request_is_not_drawn_at_all(self, org, anna, client, monday):
+        """Declined and withdrawn rows are history, not a claim on the
+        calendar. They are still in the table below it, which is where the
+        manager's written reply lives."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday, status=RequestStatus.REJECTED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        assert _square(response, monday)["kind"] == ""
+        assert _square(response, monday)["can_book"]
+
+    def test_a_day_inside_a_range_that_cost_nothing_is_drawn_as_costing_nothing(
+        self, org, anna, client, monday,
+    ):
+        """A fortnight booked over a weekend is not a fortnight of leave — it is
+        ten days, and ``working_days`` says so. The grid has to agree with the
+        balance or the page argues with itself: painting the whole stretch one
+        colour would be claiming days that were never taken."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday + dt.timedelta(days=6),
+            status=RequestStatus.APPROVED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        assert _square(response, monday + dt.timedelta(days=4))["kind"] == AbsenceKind.HOLIDAY
+        assert _square(response, monday + dt.timedelta(days=5))["kind"] == ""
+
+    def test_days_booked_together_are_joined_into_one_bar(
+        self, org, anna, client, monday,
+    ):
+        """One booking, one bar. The middles of a run lose the edge that faces
+        the next day, so a week off does not read as five separate bookings
+        that happen to be adjacent — which is also the truth about what can be
+        withdrawn, since the row is the unit."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday + dt.timedelta(days=2),
+            status=RequestStatus.APPROVED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        first = _square(response, monday)
+        middle = _square(response, monday + dt.timedelta(days=1))
+        last = _square(response, monday + dt.timedelta(days=2))
+
+        assert not first["joins_left"] and first["joins_right"]
+        assert middle["joins_left"] and middle["joins_right"]
+        assert last["joins_left"] and not last["joins_right"]
+
+    def test_two_bookings_side_by_side_stay_two_bars(
+        self, org, anna, client, monday,
+    ):
+        """Compared on identity and not on kind or on adjacency: two holidays
+        that touch are two decisions, and withdrawing one must not look like
+        withdrawing both."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday, status=RequestStatus.APPROVED,
+        )
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday + dt.timedelta(days=1),
+            end_date=monday + dt.timedelta(days=1),
+            status=RequestStatus.APPROVED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        assert not _square(response, monday)["joins_right"]
+        assert not _square(response, monday + dt.timedelta(days=1))["joins_left"]
+
+    def test_a_run_is_named_by_its_span_and_a_single_day_by_its_date(
+        self, org, anna, client, monday,
+    ):
+        """What the pop-up is headed. A square inside a booking of several days
+        is a handle on the whole booking, so naming it after the date that was
+        clicked would misname what the only button on the dialog does."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday + dt.timedelta(days=2),
+            status=RequestStatus.APPROVED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        middle = _square(response, monday + dt.timedelta(days=1))
+        assert middle["is_group"]
+        assert middle["label"] == middle["when"]
+
+        empty = _square(response, monday + dt.timedelta(days=3))
+        assert not empty["is_group"]
+        assert str(monday.year) in empty["label"]
+        assert empty["label"] != empty["when"]
+
+    def test_the_square_says_which_way_taking_it_back_would_go(
+        self, org, anna, client, monday,
+    ):
+        """The same line ``request_cancel`` draws, decided once and rendered on
+        the button: nothing a manager has not answered is theirs yet, and
+        something approved is a day the roster was built around."""
+        waiting = Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday, status=RequestStatus.REQUESTED,
+        )
+        response = client.get(f"/absences/?year={monday.year}")
+        assert _square(response, monday)["action"] == "withdraw"
+
+        waiting.status = RequestStatus.APPROVED
+        waiting.save(update_fields=["status"])
+        response = client.get(f"/absences/?year={monday.year}")
+        assert _square(response, monday)["action"] == "ask"
+
+        waiting.status = RequestStatus.CANCELLING
+        waiting.save(update_fields=["status"])
+        response = client.get(f"/absences/?year={monday.year}")
+        # Already with the manager: still drawn, still in force, and nothing
+        # left to press.
+        assert _square(response, monday)["action"] == ""
+        assert _square(response, monday)["is_pending"]
+
+    def test_a_closure_is_drawn_and_cannot_be_taken_back(
+        self, org, anna, client, monday,
+    ):
+        closure = CompanyClosure(
+            name="Betriebsferien", start_date=monday, end_date=monday,
+        )
+        closure.save()
+        closure.apply()
+        response = client.get(f"/absences/?year={monday.year}")
+        cell = _square(response, monday)
+        assert cell["kind"] == AbsenceKind.CLOSURE
+        assert not cell["can_book"], "the employer declared it; one person cannot undo it"
+
+    def test_a_locked_day_is_not_a_control(self, org, anna, client, monday):
+        """The lock is honoured by every door, this page included. A square
+        that offered to book a locked day would be offering a control whose
+        only answer is the refusal in ``AbsenceRequestForm``."""
+        from apps.timesheets.models import DayLock
+
+        DayLock.objects.create(employee=anna, date=monday)
+        response = client.get(f"/absences/?year={monday.year}")
+        assert not _square(response, monday)["can_book"]
+        assert _square(response, monday)["is_locked"]
+
+
+class TestTheOneDoorForAsking:
+    """``book`` dispatches to the two forms and adds nothing else.
+
+    Every rule about who may ask for what lives in ``AbsenceRequestForm`` and
+    ``SickForm``; a second answer here would disagree with the first the day
+    either changed. What is tested is the dispatch, and that a refusal writes
+    nothing.
+    """
+
+    def test_a_day_off_and_an_illness_go_through_the_same_route(
+        self, org, anna, client, monday,
+    ):
+        client.post("/absences/book/", {
+            "kind": AbsenceKind.HOLIDAY, "year": str(monday.year),
+            "start_date": monday.isoformat(), "end_date": monday.isoformat(),
+        })
+        tuesday = monday + dt.timedelta(days=1)
+        client.post("/absences/book/", {
+            "kind": AbsenceKind.SICK, "year": str(monday.year),
+            "start_date": tuesday.isoformat(), "end_date": tuesday.isoformat(),
+        })
+        kinds = set(anna.absences.values_list("kind", flat=True))
+        assert kinds == {AbsenceKind.HOLIDAY, AbsenceKind.SICK}
+        assert set(anna.absences.values_list("status", flat=True)) == {
+            RequestStatus.REQUESTED,
+        }
+
+    def test_extra_off_days_name_the_entitlement_they_come_out_of(
+        self, org, anna, client, monday,
+    ):
+        from apps.employees.models import SpecialLeaveGrant
+        from apps.organisation.models import AssignmentMode, SpecialLeaveType
+
+        funeral = SpecialLeaveType.objects.create(
+            name="Trauerfall", mode=AssignmentMode.FIXED, days=Decimal("2.0"),
+        )
+        SpecialLeaveGrant.objects.create(employee=anna, leave_type=funeral)
+
+        client.post("/absences/book/", {
+            "kind": AbsenceKind.SPECIAL, "special_type": str(funeral.pk),
+            "year": str(monday.year),
+            "start_date": monday.isoformat(), "end_date": monday.isoformat(),
+        })
+        absence = anna.absences.get()
+        assert absence.kind == AbsenceKind.SPECIAL
+        assert absence.special_type_id == funeral.pk
+
+    def test_extra_off_days_without_a_type_are_refused_and_write_nothing(
+        self, org, anna, client, monday,
+    ):
+        """Special leave that does not say which entitlement it came out of
+        cannot be counted against one, so it is refused rather than saved
+        against nothing."""
+        response = client.post("/absences/book/", {
+            "kind": AbsenceKind.SPECIAL, "year": str(monday.year),
+            "start_date": monday.isoformat(), "end_date": monday.isoformat(),
+        })
+        assert response.status_code == 302
+        assert not anna.absences.exists()
+
+    def test_the_button_is_not_offered_to_somebody_with_no_grant(
+        self, org, anna, client,
+    ):
+        """A type not listed on somebody's contract is not theirs — it is not
+        "zero days of it" — so the form's list would be empty and its only
+        possible outcome a refusal."""
+        assert client.get("/absences/").context["can_ask_special"] is False
+
+    def test_it_comes_back_to_the_year_that_was_being_looked_at(
+        self, org, anna, client,
+    ):
+        """The year travels in the body, not only the query string. Without it
+        a request made for next March would answer with this year's grid, on
+        which the day just booked does not appear at all — which reads exactly
+        like a save that did not take."""
+        response = client.post("/absences/book/", {
+            "kind": AbsenceKind.HOLIDAY, "year": "2027",
+            "start_date": "2027-03-01", "end_date": "2027-03-02",
+        })
+        assert response["Location"].endswith("?year=2027")

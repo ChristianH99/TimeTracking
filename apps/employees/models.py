@@ -34,6 +34,7 @@ import unicodedata
 from decimal import Decimal
 
 from django.conf import settings as django_settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
@@ -691,6 +692,10 @@ class SpecialLeaveGrant(models.Model):
         validators=[MinValueValidator(Decimal("0"))],
         help_text=_("Leave empty to use the type’s own rule."),
     )
+    override_reason = models.CharField(
+        _("why"), max_length=200, blank=True,
+        help_text=_("Only needed when the days above are set by hand."),
+    )
 
     class Meta:
         ordering = ["leave_type__name"]
@@ -704,6 +709,32 @@ class SpecialLeaveGrant(models.Model):
 
     def __str__(self):
         return f"{self.employee} — {self.leave_type}"
+
+    def clean(self):
+        """A figure typed over a computed one has to say why.
+
+        The same rule ``DayRecord.correction_reason`` makes, for the same
+        reason and with the same force: a number the rules produced and a number
+        somebody typed are the same number and mean entirely different things to
+        whoever has to explain the entitlement afterwards. "One Regenerationstag
+        instead of two" is either a mistake or the fact that they took the other
+        one at their last job, and only one of those is worth keeping — a year
+        later nobody can tell which it was from a bare 1.0.
+
+        Only ever on the *override*. The rule's own answer explains itself by
+        being the rule, and asking for a sentence about it would be asking a
+        manager to justify not intervening.
+        """
+        super().clean()
+        if self.days_override is not None and not (self.override_reason or "").strip():
+            raise ValidationError({
+                "override_reason": _(
+                    "Say why this is set by hand — “two days already taken at a "
+                    "previous employer”, for instance. A figure typed over the "
+                    "rule with no reason beside it is one nobody can account for "
+                    "later."
+                ),
+            })
 
     def days(self, settings=None, year=None):
         """How many days this grant is worth, override first.

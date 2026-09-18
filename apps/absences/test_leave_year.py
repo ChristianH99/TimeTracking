@@ -94,7 +94,7 @@ class TestAbsenceCreditsHours:
         Absence.objects.create(
             employee=anna, kind=AbsenceKind.SICK,
             start_date=monday, end_date=monday,
-            status=RequestStatus.REQUESTED,
+            status=RequestStatus.APPROVED,
         )
         week = build_week(anna, monday)
         row = week["rows"][0]
@@ -144,15 +144,35 @@ class TestAbsenceCreditsHours:
         )
         assert build_week(anna, monday)["rows"][0]["credited_minutes"] == 0
 
-    def test_a_refused_sick_day_credits_nothing(self, org, anna, monday):
-        """The one act that withholds the credit, and it is a positive one with
-        a written reason behind it."""
+    @pytest.mark.parametrize("status", [
+        RequestStatus.REQUESTED, RequestStatus.REJECTED, RequestStatus.WITHDRAWN,
+    ])
+    def test_a_sick_day_that_is_not_approved_credits_nothing(
+        self, org, anna, monday, status,
+    ):
+        """**Including one nobody has decided yet.** Sickness used to be the
+        exception here — reported was as good as granted, and only a positive
+        refusal stopped the credit. It behaves like every other absence now, and
+        the parametrisation is the point: waiting, refused and withdrawn are one
+        answer, not three."""
         Absence.objects.create(
             employee=anna, kind=AbsenceKind.SICK,
-            start_date=monday, end_date=monday,
-            status=RequestStatus.REJECTED,
+            start_date=monday, end_date=monday, status=status,
         )
         assert build_week(anna, monday)["rows"][0]["credited_minutes"] == 0
+
+    def test_an_absence_waiting_to_be_cancelled_still_counts(self, org, anna, monday):
+        """Asking is not the same as being granted it. The day is still booked
+        until a manager answers, so the hours are still credited — otherwise the
+        figures would move on a press nobody had responded to."""
+        Absence.objects.create(
+            employee=anna, kind=AbsenceKind.HOLIDAY,
+            start_date=monday, end_date=monday,
+            status=RequestStatus.CANCELLING,
+        )
+        assert build_week(anna, monday)["rows"][0]["credited_minutes"] == (
+            contracted_minutes(Decimal("8"))
+        )
 
 
 # --------------------------------------------------------------------------

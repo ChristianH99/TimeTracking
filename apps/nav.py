@@ -30,12 +30,18 @@ ITEMS = {
     # which is where confirming and manual entry both happen.
     "mine.timesheet": {
         ("timesheets", name)
-        for name in ("mine", "confirm-week", "day", "confirm-day", "clock")
+        for name in ("mine", "save-day", "set-status", "confirm-week", "day",
+                     "confirm-day", "clock")
     },
     "mine.absences": {
         ("absences", name)
-        for name in ("mine", "request", "request-cancel", "sick", "sick-end")
+        for name in ("mine", "book", "request-cancel")
     },
+    # Your own history, and your own copy of it. Both belong under "My time"
+    # because they are about your own hours — `audit:employee` is the same page
+    # about somebody else's and is registered under the team below, which is the
+    # whole reason those are two routes onto one view.
+    "mine.history": {("audit", "mine"), ("timesheets", "export")},
 
     # The manager's pages. Note that `timesheets:employee-day` is here and
     # `timesheets:day` is above, while both resolve to one view: the same
@@ -48,9 +54,28 @@ ITEMS = {
     },
     "team.timesheets": {
         ("timesheets", name)
-        for name in ("team", "employee", "employee-day", "employee-confirm-day",
-                     "employee-clock")
+        for name in ("team", "employee", "employee-save-day", "employee-set-status",
+                     "employee-day", "employee-confirm-day", "employee-clock",
+                     "employee-export")
+    } | {("audit", "employee")},
+    # Handing the records over: an inspector's question is several people and a
+    # range, which is not a shape the month page has anywhere to put.
+    "team.export": {
+        ("timesheets", name)
+        for name in ("export-page", "export-run", "export-everybody")
     },
+    # Closing a month, beside closing a year. Both are periodic acts a manager
+    # performs over everybody at once, and neither belongs inside the page for
+    # one person's timesheet.
+    "team.month-end": {
+        ("timesheets", name)
+        for name in ("month-end", "lock-month", "lock-day")
+    },
+    # Who is off, everybody at once. Its own entry rather than a tab on the
+    # requests page: one is a wall a manager reads, the other is a pile a
+    # manager clears, and they are opened on different days for different
+    # reasons.
+    "team.absences": {("absences", "calendar")},
     "team.requests": {
         ("absences", name) for name in ("requests", "decide")
     },
@@ -69,10 +94,10 @@ ITEMS = {
     # same, because "which entry is current" and "who may see the entry" are
     # different questions, and conflating them is how an entry ends up marked on
     # a page nobody can reach.
-    "settings.me": {("accounts", "preferences")},
     "settings.rules": {
         ("organisation", name)
         for name in ("settings", "break-rules", "leave-types", "leave-type-add",
+                     "leave-type-regeneration",
                      "leave-type-edit", "leave-type-delete", "holidays",
                      "holidays-generate", "closures", "closure-add",
                      "closure-edit", "closure-delete")
@@ -83,6 +108,14 @@ ITEMS = {
                      "user-delete", "user-active")
     },
     "settings.sso": {("accounts", name) for name in ("sso", "sso-discover", "sso-check")},
+    # The whole trail, staff-only. Under Settings rather than under Team because
+    # it is a page about the *software* — who signed in, what the rules were
+    # changed to — and only half about the people.
+    "settings.audit": {("audit", "log")},
+    # How long everything is kept. Beside the audit trail rather than with the
+    # working time rules: those are what the app computes with, and these two are
+    # what it keeps and what it can prove.
+    "settings.retention": {("organisation", "retention")},
 }
 
 # Parent entry -> the entries nested under it. A parent is a link too, but never
@@ -94,10 +127,12 @@ ITEMS = {
 # open by itself when one of the pages inside it is the current one — a menu
 # that hides the page you are looking at is a menu that looks broken.
 PARENTS = {
-    "mine": ("mine.timesheet", "mine.absences"),
-    "team": ("team.roster", "team.timesheets", "team.requests", "team.employees",
-             "team.year-end"),
-    "settings": ("settings.me", "settings.rules", "settings.users", "settings.sso"),
+    "mine": ("mine.timesheet", "mine.absences", "mine.history"),
+    "team": ("team.roster", "team.timesheets", "team.month-end", "team.absences",
+             "team.requests", "team.employees",
+             "team.year-end", "team.export"),
+    "settings": ("settings.rules", "settings.users", "settings.sso", "settings.audit",
+                 "settings.retention"),
 }
 
 

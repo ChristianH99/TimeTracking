@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load static i18n %}
 {% block title %}{% translate "Change the working hours" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Change the working hours" %}{% endblock %}
-{% block topbar_sub %}{{ employee.full_name }}{% endblock %}
+{% block page_title %}{% translate "Change the working hours" %}{% endblock %}
+{% block page_subtitle %}{{ employee.full_name }}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="contract-form">{% translate "Change the hours" %}</button>
 {% endblock %}
 

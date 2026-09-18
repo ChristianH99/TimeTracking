@@ -51,6 +51,10 @@ urlpatterns = [
     path('employees/', include('apps.employees.urls')),
     path('roster/', include('apps.roster.urls')),
     path('absences/', include('apps.absences.urls')),
+    # What changed, who changed it, and what it was before — plus who signed in
+    # and who looked at whose hours. docs/AUDIT.md says which auditor each half
+    # of that is for.
+    path('audit/', include('apps.audit.urls')),
     # Un-namespaced on purpose — see apps/accounts/urls.py. This is what fixes
     # the callback URL at /oidc/callback/, which is the exact string that has to
     # be registered as the redirect URI in the Synology SSO client.

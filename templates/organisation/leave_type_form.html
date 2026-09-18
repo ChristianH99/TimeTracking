@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load static i18n %}
 {% block title %}{% if leave_type %}{{ leave_type.name }}{% else %}{% translate "New leave type" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% if leave_type %}{{ leave_type.name }}{% else %}{% translate "New leave type" %}{% endif %}{% endblock %}
+{% block page_title %}{% if leave_type %}{{ leave_type.name }}{% else %}{% translate "New leave type" %}{% endif %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="type-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Special leave type" %}</h1>
 
   <form method="post" id="type-form" data-unsaved-guard>
     {% csrf_token %}

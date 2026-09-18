@@ -17,10 +17,13 @@ from django.views.decorators.http import require_POST
 from apps.absences.models import BankHoliday, CompanyClosure
 from apps.accounts.permissions import staff_required
 from apps.organisation.forms import (
-    BreakRuleFormSet, OrgSettingsForm, SpecialLeaveTypeForm, ThresholdFormSet,
+    BreakRuleFormSet, OrgSettingsForm, RetentionForm, SpecialLeaveTypeForm,
+    ThresholdFormSet,
 )
 from apps.organisation.models import (
-    DEFAULT_BREAK_RULES, AssignmentMode, BreakRule, OrgSettings, SpecialLeaveType,
+    DEFAULT_BREAK_RULES, REGENERATION_NAME, REGENERATION_NOTE,
+    REGENERATION_THRESHOLDS, AssignmentMode, BreakRule, OrgSettings,
+    SpecialLeaveThreshold, SpecialLeaveType,
 )
 
 
@@ -69,20 +72,37 @@ def settings_view(request):
 
 
 def _break_examples(settings):
-    """``[(gross label, break, net label), …]`` for four representative days.
+    """``[(shape, at work, taken, deducted, counted), …]`` for six real days.
 
-    Chosen to show the three things the naive implementation gets wrong: a day
-    just over the first threshold (which needs *part* of a break, not all of
-    it), a day just over the second (which does not reach the second tier once
-    its own break is taken off), and a long one that does.
+    Chosen to show the things somebody gets wrong reading the table on its own:
+    a day under every tier; one just over the first, which needs *part* of a
+    break and not all of it; a long one that reaches the second; **a day where
+    the break was already taken**, which has nothing further deducted; and — the
+    last row — **a day where it was taken too late**, which does. That last pair
+    is what people write in about, and the two of them together are the only way
+    to show that the app is looking at the shape of the day rather than at its
+    total.
+
+    Written as real clock times rather than as lengths, because "6 h 30 then an
+    hour off then 1 h" is a day somebody recognises and "390, 60, 60" is not.
     """
     from apps.timesheets.hours import clock
 
     rules = list(settings.break_rules.all()) if settings.is_stored else None
+    days = (
+        ("08:00–13:00", [300], []),
+        ("08:00–14:05", [365], []),
+        ("08:00–18:00", [600], []),
+        ("09:30–15:30, 16:00–18:00", [360, 120], [30]),
+        ("08:00–12:00, 12:05–14:35", [240, 150], [5]),
+        ("08:30–15:00, 16:00–17:00", [390, 60], [60]),
+    )
     rows = []
-    for gross in (300, 365, 390, 485, 600):
-        length = settings.required_break(gross, rules=rules)
-        rows.append((clock(gross), length, clock(gross - length)))
+    for label, blocks, gaps in days:
+        gross = sum(blocks)
+        taken = sum(gaps)
+        length = settings.required_break(blocks, gaps, rules=rules)
+        rows.append((label, clock(gross), taken, length, clock(gross - length)))
     return rows
 
 
@@ -130,7 +150,80 @@ def leave_types(request):
         })
     return render(request, "organisation/leave_types.html", {
         "rows": rows, "settings": settings,
+        # No button once it is there. An offer that can only be refused is worse
+        # than no offer, and this is the one type the page knows the name of.
+        "regeneration_name": REGENERATION_NAME,
+        "has_regeneration": any(
+            row["type"].name.lower() == REGENERATION_NAME.lower() for row in rows
+        ),
     })
+
+
+@staff_required
+@require_POST
+def install_regeneration_days(request):
+    """Create the Regenerationstage type with the TVöD table already in it.
+
+    **A preset, not a special case.** What this writes is an ordinary
+    ``SpecialLeaveType`` in the threshold mode with two rows — exactly what
+    somebody could type by hand — and the moment it exists the app knows nothing
+    special about it: it is edited, granted, switched off and taken like any
+    other type. What the button buys is that a kindergarten does not have to
+    derive `2 → 1, 4 → 2` from a collective agreement with a form open, and does
+    not silently get it wrong by reaching for the pro-rata mode, which is the
+    obvious choice and produces different numbers.
+
+    Guarded on the name rather than trusted to the button being hidden, and the
+    refusal is a message rather than a second type: two rows called
+    Regenerationstage is a grant list where nobody can tell which one is theirs,
+    and it is the state a double-submitted POST would otherwise leave behind.
+
+    ``apps/organisation/models.py`` holds the rule and the two things it does not
+    model; the note this writes onto the type is what carries those to the
+    manager doing the granting.
+    """
+    from decimal import Decimal
+
+    if SpecialLeaveType.objects.filter(name__iexact=REGENERATION_NAME).exists():
+        messages.info(request, _(
+            "“%(name)s” already exists, so nothing was changed. Edit it if the "
+            "days are not what your agreement says."
+        ) % {"name": REGENERATION_NAME})
+        return redirect("organisation:leave-types")
+
+    leave_type = SpecialLeaveType.objects.create(
+        name=REGENERATION_NAME,
+        mode=AssignmentMode.THRESHOLD,
+        # Never read in the threshold mode — the table answers instead — and
+        # written here as the full-week figure all the same, so that a house
+        # switching the type to another mode later starts from the right number
+        # rather than from the field's default of one day.
+        days=Decimal("2.0"),
+        note=REGENERATION_NOTE,
+    )
+    for min_days, days in REGENERATION_THRESHOLDS:
+        SpecialLeaveThreshold.objects.create(
+            leave_type=leave_type, min_days_per_week=min_days, days=Decimal(days),
+        )
+
+    settings = OrgSettings.current()
+    if settings.full_time_days_per_week != 5:
+        # The table is written against the five-day week the agreement assumes.
+        # Said rather than silently adjusted: what a house on a different full
+        # week is entitled to is a question about their agreement, not one this
+        # app may answer by scaling somebody's statutory days.
+        messages.warning(request, _(
+            "“%(name)s” was added with the table the agreement gives for a "
+            "five-day week. A full week here is %(days)s days, so check the "
+            "steps against what your own agreement says before granting it."
+        ) % {"name": REGENERATION_NAME, "days": settings.full_time_days_per_week})
+    else:
+        messages.success(request, _(
+            "“%(name)s” was added: two days for a four- or five-day week, one for "
+            "two or three days, none for one. Grant it to the people it applies "
+            "to on their contract."
+        ) % {"name": REGENERATION_NAME})
+    return redirect("organisation:leave-types")
 
 
 @staff_required
@@ -298,3 +391,38 @@ def closure_delete(request, pk):
         "“%(name)s” was deleted and the days it took off everybody were given back."
     ) % {"name": name})
     return redirect("organisation:closures")
+
+
+@staff_required
+def retention_view(request):
+    """How long each kind of record is kept, and what is out of period today.
+
+    A report and a form on one page, because the two questions are asked in one
+    breath: somebody opens this either because a data protection request has
+    arrived — "what do you still hold about me" — or because an auditor asked
+    what the policy is. Both want the numbers and the consequence side by side.
+
+    **Nothing is deleted from here.** The page says what is due and names the
+    command; the button that removes ten years of somebody's timesheet is not one
+    to have on a settings page next to a save. `apps/audit/retention.py` and
+    `manage.py apply_retention` are the whole of that path, and it is a dry run
+    unless the word is typed.
+    """
+    from apps.audit import retention
+
+    current = OrgSettings.current()
+    if request.method == "POST":
+        form = RetentionForm(request.POST, instance=current)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("The retention periods were saved."))
+            return redirect("organisation:retention")
+    else:
+        form = RetentionForm(instance=current)
+
+    rows = retention.survey(current)
+    return render(request, "organisation/retention.html", {
+        "form": form,
+        "rows": rows,
+        "total_due": sum(row["due"] for row in rows),
+    })

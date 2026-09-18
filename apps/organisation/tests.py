@@ -21,12 +21,17 @@ from apps.organisation.models import (
 
 
 class TestTheBreakIsResolvedTheRightWay:
-    """The formula is ``max over rules of min(break, max(0, gross - over))``.
+    """The formula is
+
+        D = max over rules of  min(max(0, gross - over), max(0, break - taken))
 
     The obvious alternative — "worked over six hours, so thirty minutes" applied
     to the clock-in-to-clock-out span — agrees with it on the long days and is
     wrong on exactly the days most people work. Each case below is one the naive
     version gets wrong, and the numbers are what a works council would write.
+
+    The shipped tiers are the statute: 30 minutes over six hours, 45 over nine
+    (§4 ArbZG).
     """
 
     @pytest.mark.parametrize("gross, expected", [
@@ -41,38 +46,177 @@ class TestTheBreakIsResolvedTheRightWay:
         # At and past the point where the full first tier is needed.
         (390, 30),
         (420, 30),
+        (480, 30),
         # Just over the second tier. Its own break already brings the day back
-        # under eight hours, so the second tier does not apply — the naive
+        # under nine hours, so the second tier does not apply — the naive
         # version charges 45 here and takes 15 minutes somebody was working.
-        (485, 30),
-        (500, 30),
+        (545, 30),
+        (570, 30),
         # Far enough over that 30 is not enough.
-        (525, 45),
+        (585, 45),
         (600, 45),
     ])
     def test_the_break_is_only_as_long_as_it_needs_to_be(self, org, gross, expected):
         assert org.required_break(gross) == expected
 
+    @pytest.mark.parametrize("blocks, gaps, expected", [
+        # **The day somebody actually took their break.** 09:30–15:30 and
+        # 16:00–18:00 is eight hours at work with thirty minutes off in the
+        # middle, which is exactly what §4 ArbZG asks of an eight-hour day.
+        # Deducting another thirty charges them twice for a break they took.
+        ([360, 120], [30], 0),
+        # More than the tier wants, on a day that does not reach the next one.
+        ([240, 240], [60], 0),
+        # A long day with the first tier's break already taken still owes the
+        # difference up to the second.
+        ([300, 300], [30], 15),
+        ([300, 300], [45], 0),
+        # A short day owes nothing whether or not anything was taken.
+        ([150, 150], [30], 0),
+        # Taken *and* only just over the first tier: the day has to come back
+        # under, and thirty already did that.
+        ([182, 183], [30], 0),
+        # **Taken too late.** 08:30–15:00 is six and a half hours worked
+        # straight through; the hour off afterwards does not un-work it, and a
+        # break taken after the fact cannot pay for one that was never taken.
+        # This is the case that was reported: adding the evening hour made the
+        # deduction disappear.
+        ([390, 60], [60], 30),
+        ([390], [], 30),
+        # And once the stretch itself is inside the tier, the later break does
+        # count — which is the difference between the two rows above and this.
+        ([360, 90], [60], 0),
+        # **A pause under fifteen minutes is not a break.** §4 splits one into
+        # chunks "von jeweils mindestens 15 Minuten", so five minutes counts
+        # towards nothing and the stretches either side of it are one stretch:
+        # four hours plus two and a half is six and a half worked through.
+        ([240, 150], [5], 30),
+        # Fifteen exactly does count, and is enough to make them two stretches.
+        ([240, 150], [15], 15),
+    ])
+    def test_the_shape_of_the_day_decides_it(self, org, blocks, gaps, expected):
+        assert org.required_break(blocks, gaps) == expected
+
+    def test_an_hour_off_afterwards_does_not_pay_for_a_break_never_taken(self, org):
+        """The reported bug, stated on its own because it is the whole point.
+
+        Six and a half hours worked straight through owes thirty minutes.
+        Clocking out for an hour and coming back for one more does not change
+        that: §4 ArbZG has two sentences, and the second one is that nobody may
+        work "länger als sechs Stunden hintereinander ohne Ruhepause".
+        """
+        alone = org.required_break([390], [])
+        with_evening = org.required_break([390, 60], [60])
+        assert alone == 30
+        assert with_evening == 30, (
+            "adding work after a break removed the break the earlier stretch owed"
+        )
+
+    # Days written as (blocks, gaps), which is what the rules actually read.
+    # Chosen to cover a stretch inside every tier, one just over each, gaps
+    # below and above the fifteen-minute floor, and days split three ways.
+    SHAPES = [
+        ([0], []), ([300], []), ([360], []), ([365], []), ([390], []),
+        ([540], []), ([545], []), ([600], []), ([720], []),
+        ([360, 120], [30]), ([390, 60], [60]), ([240, 150], [5]),
+        ([240, 150], [15]), ([200, 200], [20]), ([300, 300], [30]),
+        ([180, 180, 180], [20, 20]), ([180, 180, 180], [5, 5]),
+        ([400, 200], [45]), ([120, 120, 400], [30, 30]),
+    ]
+
     def test_the_result_never_leaves_working_time_over_a_tier(self, org):
         """The property the formula exists to guarantee, checked across the day.
 
-        Stated as an invariant rather than as more examples: for every length of
-        day, the working time left after the break must not exceed any tier
-        whose break was not fully granted. That is the whole content of the
-        rule, and a reimplementation that satisfies it cannot be wrong in the
-        direction that costs somebody a break.
+        Stated as an invariant rather than as more examples: for every shape of
+        day, the working time left afterwards must not exceed any tier whose
+        break — counting what was already taken — was not fully granted. That is
+        the whole content of the rule, and a reimplementation that satisfies it
+        cannot be wrong in the direction that costs somebody a break.
         """
+        from apps.organisation.models import MIN_BREAK_CHUNK
+
         rules = list(org.break_rules.all())
-        for gross in range(0, 16 * 60, 5):
-            taken = org.required_break(gross)
-            net = gross - taken
+        for blocks, gaps in self.SHAPES:
+            deducted = org.required_break(blocks, gaps)
+            gross = sum(blocks)
+            already = sum(gap for gap in gaps if gap >= MIN_BREAK_CHUNK)
+            net = gross - deducted
+            total = already + deducted
             for rule in rules:
                 if net > rule.over_minutes:
-                    assert taken >= rule.break_minutes, (
-                        f"a {gross}-minute day gets {taken} minutes, leaving {net} "
-                        f"minutes of working time — over the {rule.over_minutes} tier "
-                        f"without its full {rule.break_minutes}"
+                    assert total >= rule.break_minutes, (
+                        f"{blocks}/{gaps} gets {deducted}, leaving {net} minutes of "
+                        f"working time — over the {rule.over_minutes} tier on a total "
+                        f"break of {total}, short of {rule.break_minutes}"
                     )
+
+    def test_no_stretch_is_worked_through_without_its_own_break(self, org):
+        """The second sentence of §4, and the one the reported bug was in.
+
+        Every unbroken stretch owes the break its own length asks for, whatever
+        else happens in the day — a pause afterwards cannot pay for one that was
+        never taken, and a pause under fifteen minutes does not split the
+        stretch at all.
+        """
+        from apps.organisation.models import unbroken_stretches
+
+        rules = list(org.break_rules.all())
+        for blocks, gaps in self.SHAPES:
+            deducted = org.required_break(blocks, gaps)
+            owed = sum(
+                max((min(rule.break_minutes, max(0, stretch - rule.over_minutes))
+                     for rule in rules), default=0)
+                for stretch in unbroken_stretches(blocks, gaps)
+            )
+            assert deducted >= owed, (
+                f"{blocks}/{gaps} gets {deducted}, but its stretches owe {owed} "
+                "between them and a break taken later cannot pay for one that was "
+                "never taken"
+            )
+
+    def test_it_never_deducts_more_than_it_has_to(self, org):
+        """The other half, and the one that catches the bug this was reported
+        for the first time round: a day that satisfies every rule must be
+        deducted nothing. Without it, "always deduct 30" would pass both checks
+        above and still be wrong."""
+        from apps.organisation.models import MIN_BREAK_CHUNK, unbroken_stretches
+
+        rules = list(org.break_rules.all())
+        for blocks, gaps in self.SHAPES:
+            deducted = org.required_break(blocks, gaps)
+            if deducted == 0:
+                continue
+            gross = sum(blocks)
+            already = sum(gap for gap in gaps if gap >= MIN_BREAK_CHUNK)
+            owed = sum(
+                max((min(rule.break_minutes, max(0, stretch - rule.over_minutes))
+                     for rule in rules), default=0)
+                for stretch in unbroken_stretches(blocks, gaps)
+            )
+            # One minute less must break something, or the answer is not the
+            # least one.
+            short = deducted - 1
+            fails_overall = any(
+                gross - short > rule.over_minutes
+                and already + short < rule.break_minutes
+                for rule in rules
+            )
+            assert fails_overall or short < owed, (
+                f"{blocks}/{gaps} was deducted {deducted}, but {short} would have "
+                "satisfied every rule"
+            )
+
+    def test_the_defaults_are_the_statute(self, org):
+        """30 minutes over six hours, 45 over nine — §4 ArbZG, exactly.
+
+        Pinned because it moved: the second tier was eight hours for a while, on
+        the argument that a default may only err towards the employee. It reads
+        as a wrong figure to anybody who has looked the law up, and a default
+        that has to be explained is not a safe default.
+        """
+        from apps.organisation.models import DEFAULT_BREAK_RULES
+
+        assert DEFAULT_BREAK_RULES == ((360, 30), (540, 45))
 
     def test_an_empty_table_falls_back_to_the_defaults(self, db):
         """A database that has never had the settings page opened still computes
@@ -288,14 +432,19 @@ class TestTheWorkingTimeRulesAreStaffOnly:
         assert manager_client.get(reverse("organisation:settings")).status_code == 404
 
 
-def test_the_defaults_are_stricter_than_the_law_rather_than_looser(db):
-    """The second tier is eight hours; the Arbeitszeitgesetz says nine.
+def test_the_defaults_are_the_arbeitszeitgesetz(db):
+    """Thirty minutes over six hours, forty-five over nine — §4 ArbZG, exactly.
 
-    A default that erred the other way would ship an app quietly recording
-    45-minute breaks as taken when only 30 were required — which is the one
-    direction a default about a legal minimum may not err in.
+    **This reverses an earlier decision**, and the reversal is the point. The
+    second tier was eight hours for a while, on the argument that a default
+    about a legal minimum may only err towards the employee. The argument does
+    not survive contact with the page: a house that wants forty-five minutes at
+    eight hours can say so in one edit on the settings page, whereas everybody
+    else was reading a timesheet whose figures did not match the law they had
+    looked up — and being told the app was being generous on their behalf. A
+    default that has to be explained is not a safe default.
     """
     tiers = dict(DEFAULT_BREAK_RULES)
     assert tiers[360] == 30, "the six-hour tier is statutory"
-    assert 480 in tiers and tiers[480] == 45
-    assert 540 not in tiers, "nine hours would be the statutory minimum, not a stricter house rule"
+    assert tiers[540] == 45, "the nine-hour tier is statutory"
+    assert 480 not in tiers, "eight hours is a house rule, not the statute"

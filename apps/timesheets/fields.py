@@ -256,7 +256,72 @@ class BreakMinutesField(forms.Field):
         return minutes
 
 
+class SignedMinutesField(forms.Field):
+    """A correction, in minutes, which may be negative. Returns an ``int``.
+
+    ``BreakMinutesField`` with a sign, and both halves of that are deliberate.
+
+    Bare digits are **minutes**, for the same reason they are in a break box:
+    the label says minutes and nobody has ever meant thirty hours by typing 30
+    into a box marked "correction". Anything with a separator is read as a
+    duration, so ``0:30`` and ``1:15`` work for whoever thinks in those.
+
+    The sign is the point of the field. The correction that matters most is the
+    one that takes time *off* a day somebody over-recorded, and a field that
+    could only add would leave a doctored booking as the only way to do it — a
+    booking claiming somebody left earlier than they did, which is the one thing
+    the bookings must never be made to say.
+    """
+
+    widget = _TextTimeWidget
+
+    # The same three the signed duration field takes, and for the same reason:
+    # a Unicode minus is what a spreadsheet pastes and its sign is perfectly
+    # legible on the screen.
+    _MINUS = ("-", "−", "–")
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault(
+            # `0:30` and not `30`. Both are read as thirty minutes — bare digits
+            # are minutes in this box, as the docstring above says — but a
+            # placeholder is an example of the answer, and every duration this
+            # app prints is hh:mm. "30" beside a column of 0:30 reads as thirty
+            # of something the column never shows.
+            "widget", _TextTimeWidget("signed-minutes", {"placeholder": "0:30"}),
+        )
+        kwargs.setdefault("required", False)
+        super().__init__(**kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return str(value)
+        return value
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+
+        text = str(value).strip()
+        sign = 1
+        if text[:1] in self._MINUS:
+            sign, text = -1, text[1:].strip()
+        elif text[:1] == "+":
+            text = text[1:].strip()
+        if not text:
+            raise TimeFormatError(value)
+
+        minutes = int(text) if text.isdigit() else parse_duration(text)
+        if minutes > MINUTES_PER_DAY:
+            raise ValidationError(
+                _("A correction cannot be longer than a day."), code="too_long",
+            )
+        return sign * minutes
+
+
 __all__ = [
     "BreakMinutesField", "ContractHoursField", "DurationField",
-    "SignedDurationField", "TimeOfDayField", "TimeFormatError",
+    "SignedDurationField", "SignedMinutesField", "TimeOfDayField",
+    "TimeFormatError",
 ]

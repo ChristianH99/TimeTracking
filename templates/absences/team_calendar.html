@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Absence calendar" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% translate "Who is off" %}{% endblock %}
+{% block page_subtitle %}{{ month|date:"F Y" }}{% endblock %}
+{% comment %}The grid is one column per day and one row per person, which at
+thirty-one days is wider than the reading measure and must be allowed to be.
+{% endcomment %}
+{% block content_class %} content--wide{% endblock %}
+
+{% block content %}
+  <div class="list-toolbar">
+    {% include "_month_picker.html" %}
+  </div>
+
+  {% comment %}**The people filter.** A tick box each, above the grid rather
+  than in the rows — a control that hides the row it lives in is a control
+  nobody can find again to switch back on.
+
+  Nothing here is saved and nobody is removed from anything: the page always
+  arrives with everybody showing, and the ticks are how somebody says which two
+  people they are looking at for the next thirty seconds. That is why it is not
+  a form and posts nothing — it is a way of reading the page, not a setting
+  about it.
+
+  With no script the boxes do nothing and the whole grid is on show, which is
+  the right failure: the page's job is to show who is off, and a filter is an
+  aid to that rather than a part of it.{% endcomment %}
+  <div class="people-filter" data-people-filter>
+    <span class="people-filter-label">{% translate "Show" %}</span>
+    <label class="people-filter-tick">
+      <input type="checkbox" checked data-filter-all>
+      <span>{% translate "everybody" %}</span>
+    </label>
+    <span class="people-filter-rule" aria-hidden="true"></span>
+    {% for row in rows %}
+      <label class="people-filter-tick">
+        <input type="checkbox" checked data-filter-person="{{ row.employee.pk }}">
+        <span>{{ row.employee.full_name }}</span>
+      </label>
+    {% endfor %}
+  </div>
+
+  {% if undecided_total %}
+    <p class="notice notice--info">
+      {% blocktranslate count counter=undecided_total %}{{ counter }} day on this page is still waiting for a decision — it is drawn with a dotted edge, and until somebody answers it is neither cover you have nor cover you have lost.{% plural %}{{ counter }} days on this page are still waiting for a decision — they are drawn with a dotted edge, and until somebody answers they are neither cover you have nor cover you have lost.{% endblocktranslate %}
+      <a href="{% url 'absences:requests' %}">{% translate "Open the requests" %}</a>
+    </p>
+  {% endif %}
+
+  <div class="coverage-scroll">
+    <table class="coverage" data-coverage>
+      <caption class="sr-only">{% blocktranslate with month=month|date:"F Y" %}Time off in {{ month }}, one row per person{% endblocktranslate %}</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="coverage-name">{% translate "Employee" %}</th>
+          {% for day in days %}
+            {% comment %}Two lines in one cell: the number, which is what somebody
+            is looking for, and the weekday letter under it, which is what tells
+            them a Thursday from a Friday without counting across. The weekend
+            columns carry a ground of their own for the same reason the timesheet's
+            weekend rows do — they are the pair the eye uses to find its place
+            across thirty-one of these.{% endcomment %}
+            <th scope="col" class="coverage-day{% if day.weekday >= 5 %} is-weekend{% endif %}{% if day == today %} is-today{% endif %}">
+              <span class="coverage-day-number">{{ day|date:"d" }}</span>
+              <span class="coverage-day-name">{{ day|date:"D"|slice:":2" }}</span>
+            </th>
+          {% endfor %}
+          <th scope="col" class="coverage-total numeric">{% translate "Off" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr data-person-row="{{ row.employee.pk }}">
+            <th scope="row" class="coverage-name">
+              <a href="{% url 'employees:leave' row.employee.pk %}">{{ row.employee.full_name }}</a>
+            </th>
+            {% for cell in row.cells %}
+              {% comment %}**A day that costs nothing is drawn as costing
+              nothing, whatever covers it.** A weekend, a public holiday and a
+              date this person's contract gives no hours are the three
+              subtractions `Absence.working_days` makes — so a fortnight over
+              Christmas comes out as blocks with the holidays pale between them,
+              which is exactly what was spent. Painting the whole stretch one
+              colour would be the grid claiming days the balance never took, and
+              it would tell a manager somebody is away on a day the house is
+              shut anyway.
+
+              `is-pending` is an *inset* outline, so a square waiting for an
+              answer is not two pixels bigger than a settled one on a grid whose
+              cells have a written height — the same choice `.pill.is-pending`
+              makes and for the same reason.{% endcomment %}
+              <td class="coverage-cell
+                         {% if cell.absence %}is-away is-away--{{ cell.kind }}{% endif %}
+                         {% if cell.is_pending %} is-pending{% endif %}
+                         {% if cell.is_half %} is-half{% endif %}
+                         {% if cell.joins_left %} joins-left{% endif %}
+                         {% if cell.joins_right %} joins-right{% endif %}
+                         {% if cell.holiday %} is-holiday{% endif %}
+                         {% if not cell.is_working %} is-off{% endif %}
+                         {% if cell.is_weekend %} is-weekend{% endif %}
+                         {% if cell.is_today %} is-today{% endif %}"
+                  {% if cell.title %}title="{{ cell.title }}"{% endif %}></td>
+            {% endfor %}
+            <td class="coverage-total numeric">
+              {{ row.away_days }}{% if row.undecided_days %}<span class="hint" title="{% translate 'of which are still waiting for a decision' %}">&nbsp;({{ row.undecided_days }})</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="33" class="hint">{% translate "Nobody is employed at the moment." %}</td></tr>
+        {% endfor %}
+      </tbody>
+      {% comment %}**The row the grid is this way round for.** A manager does not
+      open this page to find out about Anna, they open it to find out about
+      Thursday — so the count of who is away is under each column, where it can
+      be read straight across without adding anything up.{% endcomment %}
+      <tfoot>
+        <tr>
+          <th scope="row" class="coverage-name">{% translate "Away that day" %}</th>
+          {% comment %}`data-count` is what the people filter rewrites. The
+          server renders the whole team's figure, which is the right answer for
+          the page as it arrives; the moment somebody unticks two colleagues the
+          question changes to "how thin is Thursday *among these people*", and a
+          footer still counting the hidden rows would be a total that disagrees
+          with the grid above it. Rewriting a number is not writing text —
+          nothing here reaches the JavaScript catalogue.{% endcomment %}
+          {% for count in away_per_day %}
+            <td class="coverage-count{% if count %} has-some{% endif %}" data-count>{% if count %}{{ count }}{% endif %}</td>
+          {% endfor %}
+          <td class="coverage-total"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% comment %}The same key the employee's own year carries, and deliberately
+  the same three entries. Holiday and special leave share the green there
+  because neither the square nor the person reading it can act on the
+  difference, and a second green claiming a distinction is a colour somebody has
+  to look up in order to learn it means nothing.{% endcomment %}
+  <ul class="legend">
+    <li><span class="legend-swatch is-away--holiday"></span>{% translate "off" %}</li>
+    <li><span class="legend-swatch is-away--sick"></span>{% translate "sick" %}</li>
+    <li><span class="legend-swatch is-away--overtime"></span>{% translate "hours taken back" %}</li>
+    <li><span class="legend-swatch is-away--closure"></span>{% translate "the workplace is shut" %}</li>
+    <li><span class="legend-swatch is-pending-key"></span>{% translate "waiting for a decision" %}</li>
+  </ul>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/monthpicker.js' %}"></script>
+  <script src="{% static 'js/absences_team.js' %}"></script>
+{% endblock %}

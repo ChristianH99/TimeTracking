@@ -26,8 +26,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.accounts import sso, throttle
-from apps.accounts.forms import PreferencesForm
-from apps.accounts.models import Preferences
 
 log = logging.getLogger(__name__)
 
@@ -119,32 +117,3 @@ def logout_view(request):
         return redirect(reverse("oidc_logout"))
     auth_logout(request)
     return redirect(settings.LOGOUT_REDIRECT_URL)
-
-
-@login_required
-def preferences(request):
-    """One person's own settings — currently just how a duration is written.
-
-    Per person rather than per organisation: whether you read a working day as
-    7,5 h or as 7:30 h is a reading habit, not a policy. The roster, the hours
-    and the entitlements are agreed; this is not.
-
-    A GET does not create a row. ``Preferences.for_user`` hands back an unsaved
-    instance for somebody who has never opened this page, because taking
-    SQLite's one write lock to answer "no, you have not changed anything" is
-    the read-must-not-write rule broken for nothing.
-    """
-    current = Preferences.for_user(request.user)
-
-    if request.method == "POST":
-        form = PreferencesForm(request.POST, instance=current)
-        if form.is_valid():
-            saved = form.save(commit=False)
-            saved.user = request.user
-            saved.save()
-            messages.success(request, _("Your settings were saved."))
-            return redirect("accounts:preferences")
-    else:
-        form = PreferencesForm(instance=current)
-
-    return render(request, "accounts/preferences.html", {"form": form})

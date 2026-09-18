@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load static i18n %}
 {% block title %}{% translate "Working time" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Working time" %}{% endblock %}
+{% block page_title %}{% translate "Working time" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="rules-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Working time" %}</h1>
   <p class="page-lead">
     {% translate "The rules everything else in the app computes against. Changing one of these moves every employee’s figures at once, which is why this page is separate from the roster and why managing the roster does not open it." %}
   </p>
@@ -123,21 +122,25 @@
 
   {% comment %}Worked examples from the live rules. The resolution is not the
   obvious "over six hours, so thirty minutes" — see OrgSettings.required_break —
-  and a table of five days is the only way to show that it is doing what
-  somebody expects rather than asking them to trust it.{% endcomment %}
+  and a table of six days is the only way to show that it is doing what somebody
+  expects rather than asking them to trust it.{% endcomment %}
   <h2 class="form-section">{% translate "What that comes to" %}</h2>
   <table class="data-table compact">
     <thead>
       <tr>
-        <th scope="col">{% translate "Time at work" %}</th>
-        <th scope="col" class="numeric">{% translate "Break" %}</th>
+        <th scope="col">{% translate "The day" %}</th>
+        <th scope="col" class="numeric">{% translate "Time at work" %}</th>
+        <th scope="col" class="numeric">{% translate "Already taken" %}</th>
+        <th scope="col" class="numeric">{% translate "Deducted" %}</th>
         <th scope="col" class="numeric">{% translate "Counted as worked" %}</th>
       </tr>
     </thead>
     <tbody>
-      {% for gross, break_minutes, net in examples %}
+      {% for shape, gross, taken, break_minutes, net in examples %}
         <tr>
-          <td>{{ gross }}</td>
+          <td>{{ shape }}</td>
+          <td class="numeric">{{ gross }}</td>
+          <td class="numeric">{% if taken %}{{ taken }}&nbsp;{% translate "min" %}{% else %}<span class="hint">—</span>{% endif %}</td>
           <td class="numeric">{{ break_minutes }}&nbsp;{% translate "min" %}</td>
           <td class="numeric">{{ net }}</td>
         </tr>
@@ -145,7 +148,7 @@
     </tbody>
   </table>
   <p class="help">
-    {% translate "Note the middle rows: a day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier. That is what the law asks for, and reading the rules the other way costs somebody break they were entitled to." %}
+    {% translate "Three things this table is here to show. A day only a little over a tier gets only as much break as it takes to bring it back under, not the whole tier — reading the rules the other way costs somebody break they were entitled to. A break somebody already took counts: clocking out for half an hour and back in is half an hour off the day already. But it only counts if it broke the work up — the last row is six and a half hours worked straight through with the hour off afterwards, which is still six and a half hours without a break, and a pause under fifteen minutes is not a break at all." %}
   </p>
 {% endblock %}
 

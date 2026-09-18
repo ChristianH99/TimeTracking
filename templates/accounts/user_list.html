@@ -1,17 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "People" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "People" %}{% endblock %}
-{% block topbar_sub %}{% blocktranslate count n=active_count %}{{ n }} account can sign in{% plural %}{{ n }} accounts can sign in{% endblocktranslate %}{% endblock %}
+{% block page_title %}{% translate "People" %}{% endblock %}
+{% block page_subtitle %}{% blocktranslate count n=active_count %}{{ n }} account can sign in{% plural %}{{ n }} accounts can sign in{% endblocktranslate %}{% endblock %}
 
-{% block topbar_actions %}
-  <button type="button" class="topbar-help" data-help-open
-          aria-label="{% translate 'Help for this page' %}" title="{% translate 'Help for this page' %}">?</button>
-{% endblock %}
 
 {% block content %}
   <div class="list-toolbar">
-    <h1>{% translate "People" %}</h1>
     <a class="button" href="{% url 'accounts:user-add' %}">{% translate "Add an account" %}</a>
   </div>
 

@@ -191,6 +191,62 @@ class OrgSettings(models.Model):
         help_text=_("Used only when filling a week from the contracts, as the first draft."),
     )
 
+    # -- how long each kind of record is kept ----------------------------
+    #
+    # **Both directions.** "Delete when the period is up" is DSGVO Art. 5(1)(e)
+    # and is what people mean by a retention policy; "keep until the period is
+    # up" is the AO and the ArbZG, and an app with only the first destroys
+    # evidence its employer is required to hold. Keeping everything forever —
+    # which is what this app did — is the wrong answer to both at once.
+    #
+    # Five figures and not one, because the periods genuinely differ and a single
+    # number would have to be the longest of them, which is exactly the
+    # over-retention the DSGVO objects to. **Each is a ceiling with a statutory
+    # floor under it**: `apps/audit/retention.py` holds the floors, refuses to
+    # sweep inside one, and raises a figure set below one rather than obeying it.
+    # The defaults are generous, because over-retention is a conversation with a
+    # data protection officer and under-retention is one with the Zoll.
+    keep_working_time_years = models.PositiveSmallIntegerField(
+        _("keep working time for (years)"), default=10,
+        validators=[MinValueValidator(2), MaxValueValidator(30)],
+        help_text=_(
+            "Days, bookings and closed months. Two years is the statutory minimum "
+            "(§16 ArbZG, §17 MiLoG); the wage account they support is six, and "
+            "social insurance longer still."
+        ),
+    )
+    keep_absences_years = models.PositiveSmallIntegerField(
+        _("keep time off and sickness for (years)"), default=10,
+        validators=[MinValueValidator(3), MaxValueValidator(30)],
+        help_text=_("Leave, sickness and what was carried over."),
+    )
+    keep_roster_years = models.PositiveSmallIntegerField(
+        _("keep the roster for (years)"), default=2,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "What people were asked to work. No statute requires keeping a plan, "
+            "and it stops being useful once the timesheet beside it has gone."
+        ),
+    )
+    keep_audit_years = models.PositiveSmallIntegerField(
+        _("keep the audit trail for (years)"), default=10,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "It cannot be kept for less than the records it explains — a trail "
+            "that expires first leaves them unaccounted for. A shorter figure is "
+            "raised to the longest of the three above."
+        ),
+    )
+    keep_security_log_years = models.PositiveSmallIntegerField(
+        _("keep sign-ins for (years)"), default=1,
+        validators=[MinValueValidator(0), MaxValueValidator(30)],
+        help_text=_(
+            "Who signed in, who was refused. Art. 32 DSGVO wants the log to "
+            "exist and no statute says how long — the one period here where "
+            "longer is harder to defend rather than easier."
+        ),
+    )
+
     class Meta:
         verbose_name = _("working time settings")
         verbose_name_plural = _("working time settings")
@@ -239,32 +295,73 @@ class OrgSettings(models.Model):
 
     # -- breaks ----------------------------------------------------------
 
-    def required_break(self, gross_minutes, rules=None):
-        """The break a day of ``gross_minutes`` (clock-in to clock-out) needs.
+    def required_break(self, blocks, gaps=(), rules=None):
+        """What still has to come off a day, given how the day was actually shaped.
 
-        **The obvious implementation is wrong**, and wrong in the direction that
-        underpays a break. Reading the rules as "worked more than six hours, so
-        take thirty minutes" and applying them to the gross span gives a day of
-        6h05 a thirty-minute break — but the rule is about *working* time, and
-        6h05 minus thirty is 5h35, which is not over six hours at all. Applying
-        them to the net time instead is circular: the net time depends on the
-        break, which is what is being worked out.
+        ``blocks`` is the length of each unbroken stretch of work, in minutes,
+        in the order it happened; an ``int`` is taken as a single stretch.
+        ``gaps`` is the time between them, so ``len(gaps)`` is one less than
+        ``len(blocks)``. The **shape matters and the totals are not enough** —
+        which is the whole reason this does not simply take two numbers.
 
-        The way out is to read each rule as the constraint it actually is —
-        *working time must not exceed ``over_minutes``, and no more than
-        ``break_minutes`` of break is required to achieve that* — and take the
-        largest answer:
+        ----
 
-            required = max over rules of  min(break, max(0, gross - over))
+        **First: the obvious implementation is wrong**, and wrong in the
+        direction that underpays a break. Reading the rules as "worked over six
+        hours, so take thirty minutes" gives a day of 6h05 a thirty-minute break
+        — but the rule is about *working* time, and 6h05 minus thirty is 5h35,
+        which is not over six hours at all. Applying them to the net time
+        instead is circular: the net time depends on the break, which is what is
+        being worked out.
 
-        A day of 6h05 then needs 5 minutes, a day of 6h30 needs 30, a day of
-        8h05 needs 30 (its net 7h35 is already under the eight-hour tier), and a
-        day of 10h needs 45. Each of those is what a works council would write
-        down, and none of them falls out of the naive version.
+        The way out is to read each rule as the constraint it is: *either the
+        working time is inside the tier, or the total break reaches it.* Writing
+        D for what still has to come off, T for what was already taken and P for
+        the time at work, one tier is satisfied when
+
+            D >= P - over        (the working time drops inside the tier)
+            or  D >= break - T   (the total break reaches what the tier wants)
+
+        so the least D that satisfies it is the smaller of those two, floored at
+        nought, and the day's answer is the largest over the tiers.
+
+        **Second: a break somebody actually took is not deducted again.**
+        09:30–15:30 and 16:00–18:00 is eight hours at work with thirty minutes
+        off in the middle, which is precisely what §4 ArbZG asks of an
+        eight-hour day. Deducting another thirty charges them twice for a break
+        they took.
+
+        **Third — and this is what the two above miss — a break only counts if
+        it broke the work up.** §4 ArbZG has two sentences, not one: the day
+        needs thirty minutes in total *and* nobody may work "länger als sechs
+        Stunden hintereinander ohne Ruhepause". A day of 08:30–15:00 and then
+        16:00–17:00 has an hour off in it and still contains six and a half
+        hours worked straight through. Counting the later hour against the
+        earlier stretch lets a break taken *afterwards* pay for one that was
+        never taken — which is how adding an evening hour made the deduction
+        disappear.
+
+        So each stretch owes its own break as well:
+
+            inside  = sum over stretches of  max over rules of
+                          min(break, max(0, stretch - over))
+            overall = max over rules of
+                          min(max(0, gross - over), max(0, break - taken))
+            D       = max(inside, overall)
+
+        Both are "D must be at least this", so the larger of the two is the
+        least D that satisfies both.
+
+        **Fourth: a gap under fifteen minutes is not a break.** §4 lets the
+        break be split "in Zeitabschnitte von jeweils mindestens 15 Minuten", so
+        a five-minute pause is neither a Ruhepause nor an interruption: it does
+        not count towards the thirty, and the stretches either side of it are
+        one stretch for the purpose above. It is still not *worked* — somebody
+        who clocked out was not there — so it stays out of the gross either way.
 
         ``rules`` may be passed in by a caller that has already fetched them —
-        the week view resolves this for seven days and would otherwise run seven
-        identical queries.
+        the month view resolves this for thirty-one days and would otherwise run
+        thirty-one identical queries.
 
         **An empty table means the defaults, not "no breaks", and that is
         deliberate.** It is the one place this app overrides what the database
@@ -280,17 +377,35 @@ class OrgSettings(models.Model):
         is not a configuration anybody needs, and an escape hatch nobody needs
         is not worth the failure mode it opens.
         """
-        gross = max(0, int(gross_minutes))
+        if isinstance(blocks, int):
+            blocks = [blocks]
+        blocks = [max(0, int(block)) for block in blocks]
+        gaps = [max(0, int(gap)) for gap in gaps]
+
         if rules is None:
             rules = list(self.break_rules.all()) if self.is_stored else []
         if not rules:
             rules = [BreakRule(over_minutes=over, break_minutes=length)
                      for over, length in DEFAULT_BREAK_RULES]
-        return max(
-            (min(rule.break_minutes, max(0, gross - rule.over_minutes))
+
+        gross = sum(blocks)
+        taken = sum(gap for gap in gaps if gap >= MIN_BREAK_CHUNK)
+
+        inside = sum(
+            max(
+                (min(rule.break_minutes, max(0, stretch - rule.over_minutes))
+                 for rule in rules),
+                default=0,
+            )
+            for stretch in unbroken_stretches(blocks, gaps)
+        )
+        overall = max(
+            (min(max(0, gross - rule.over_minutes),
+                 max(0, rule.break_minutes - taken))
              for rule in rules),
             default=0,
         )
+        return max(inside, overall)
 
     # -- deadlines -------------------------------------------------------
 
@@ -387,11 +502,98 @@ def _month_day(year, month, day):
 
 
 # What a database with no BreakRule rows computes against, and what the settings
-# page offers to create. The German Arbeitszeitgesetz says 30 minutes over six
-# hours and 45 over nine; the second row here is eight rather than nine because
-# that is the house rule this app was built for, and it is stricter than the law
-# rather than looser — which is the only direction a default may err in.
-DEFAULT_BREAK_RULES = ((360, 30), (480, 45))
+# page offers to create. **The statute, exactly**: §4 ArbZG asks thirty minutes
+# of a day over six hours and forty-five of one over nine.
+#
+# The second row was eight hours rather than nine for a while, on the argument
+# that a default may only err towards the employee. It was changed back because
+# the argument does not survive contact with the page: a house that wants
+# forty-five minutes at eight hours can say so in one edit, whereas everybody
+# else was reading a timesheet whose figures did not match the law they had
+# looked up. A default that has to be explained is not a safe default.
+DEFAULT_BREAK_RULES = ((360, 30), (540, 45))
+
+# --------------------------------------------------------------------------
+# Regenerationstage
+# --------------------------------------------------------------------------
+#
+# **A preset, not a special case in the code.** Regenerationstage are an
+# ordinary ``SpecialLeaveType`` in the threshold mode with two rows in its
+# table; what follows is the numbers written down once so a kindergarten does
+# not have to derive them from the collective agreement with a form open. The
+# button that installs it creates the same rows anybody could type by hand, and
+# once created it is an editable type like any other — a house on a different
+# agreement changes it, and nothing in the app knows the difference.
+#
+# The rule (Nr. 1a of Anlage D.12 to the TVöD-V, § 3.2a TVöD-B): everybody in the
+# S-groups of the Sozial- und Erziehungsdienst gets **two Regenerationstage a
+# calendar year** on a five-day week, and fewer days a week reduces it in
+# proportion — with a rounding that is *not* the app's own: at least half a day
+# rounds up to a whole one and anything under a half is dropped. That gives
+#
+#     1 day a week → 0     2–3 days a week → 1     4 days or more → 2
+#
+# which is a step function, and a step function is exactly what the threshold
+# mode is. Running it as `pro_rata` instead would hand a three-day week 1.2 days
+# and then round it by the *house's* rounding setting, which is a different
+# rule that agrees with this one only by accident.
+#
+# **Two things the app does not work out, and they are in the note on purpose.**
+# The entitlement drops to one day for somebody who had fewer than four calendar
+# months of pay entitlement in the year, and the days must be taken by 31
+# December — carried to 30 September of the next year only where the employer's
+# own reasons stopped them being taken. Neither is modelled: the first is a step
+# this app's pro-rata weighting does not have, and the second is a carry-over
+# rule that exists here for annual leave and not for special types. Both are
+# reasons a manager sets the figure by hand, which is what `days_override` is
+# for — so the note says so at the point of granting rather than leaving
+# somebody to discover it from a payroll query.
+REGENERATION_NAME = "Regenerationstage"
+
+# ``min_days_per_week -> days``, the two rows of the table above. The most
+# generous row somebody clears is the one they get, so a week of one day matches
+# no row and gets nothing — which is the answer, not a gap.
+REGENERATION_THRESHOLDS = ((2, "1.0"), (4, "2.0"))
+
+REGENERATION_NOTE = _(
+    "Two days a calendar year on a five-day week (TVöD SuE, Anlage D.12 Nr. 1a); "
+    "fewer days a week gives fewer, rounded up from half a day. Set the days by "
+    "hand for anybody who has already taken some of them elsewhere this year, "
+    "who had less than four months of pay entitlement in it, or whose days were "
+    "carried past 31 December — the app does not work those three out."
+)
+
+# The shortest pause that is a break at all. §4 ArbZG lets the break be split
+# "in Zeitabschnitte von jeweils mindestens 15 Minuten", so anything shorter is
+# neither a Ruhepause nor an interruption of the work: it counts towards
+# nothing, and the stretches either side of it are one stretch.
+#
+# A constant rather than a setting. It is a number in a statute, and an
+# organisation that could edit it could only edit it *wrong* — the direction
+# that would help an employer is the direction the law does not allow.
+MIN_BREAK_CHUNK = 15
+
+
+def unbroken_stretches(blocks, gaps):
+    """``blocks`` merged across any gap too short to be a break.
+
+    Working four hours, pausing five minutes and working two and a half more is
+    six and a half hours *hintereinander* however it was clocked — the five
+    minutes did not interrupt anything. Merging them is what makes the stretch
+    owe its own break.
+    """
+    merged = []
+    for index, block in enumerate(blocks):
+        joined = (
+            index > 0
+            and index - 1 < len(gaps)
+            and gaps[index - 1] < MIN_BREAK_CHUNK
+        )
+        if joined and merged:
+            merged[-1] += block
+        else:
+            merged.append(block)
+    return merged
 
 
 class BreakRule(models.Model):
@@ -468,6 +670,14 @@ class SpecialLeaveType(models.Model):
     is_active = models.BooleanField(
         _("offered"), default=True,
         help_text=_("Switching this off keeps the leave already taken and stops it being granted to anybody new."),
+    )
+    note = models.CharField(
+        _("what this is"), max_length=300, blank=True,
+        help_text=_(
+            "Where the entitlement comes from, and anything about it the app does "
+            "not work out for itself. Shown to a manager beside the grant on "
+            "somebody’s contract — which is the moment they need to know it."
+        ),
     )
 
     class Meta:
