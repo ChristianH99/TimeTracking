@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Areas" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block topbar_title %}{% translate "Areas" %}{% endblock %}
+{% block topbar_sub %}{% translate "Rooms and groups on the roster" %}{% endblock %}
+
+{% block topbar_actions %}
+  <button type="submit" class="button button--small" form="areas-form">{% translate "Save" %}</button>
+{% endblock %}
+
+{% block content %}
+  <p><a href="{% url 'roster:plan' %}{% if week %}?week={{ week }}{% endif %}">&larr; {% translate "Back to the roster" %}</a></p>
+  <p class="help">{% translate "An area is somewhere people work — a room, a group, the garden. Any time range on the roster can be split into the areas it needs; the split then applies to every day of that week." %}</p>
+
+  <form method="post" id="areas-form" data-unsaved-guard>
+    {% csrf_token %}
+    <input type="hidden" name="week" value="{{ week }}">
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}
+      <ul class="messages" role="alert">
+        {% for error in formset.non_form_errors %}<li class="notice notice--error">{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <table class="data-table compact">
+      <thead>
+        <tr>
+          <th scope="col">{% translate "Name" %}</th>
+          <th scope="col">{% translate "Icon" %}</th>
+          <th scope="col">{% translate "In use" %}</th>
+          <th scope="col"><span class="sr-only">{% translate "Remove" %}</span></th>
+        </tr>
+      </thead>
+      <tbody data-rows="areas">
+        {% for form in formset.forms %}
+          {% include "roster/_area_row.html" with form=form %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not formset.forms %}<p class="help">{% translate "No areas yet." %}</p>{% endif %}
+
+    <template data-rows-template="areas">
+      {% include "roster/_area_row.html" with form=formset.empty_form %}
+    </template>
+    <button type="button" class="button button--secondary button--small" data-rows-add="areas">+ {% translate "Area" %}</button>
+
+    <div class="form-actions">
+      <button type="submit" class="button">{% translate "Save the areas" %}</button>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/simple_rows.js' %}"></script>
+{% endblock %}

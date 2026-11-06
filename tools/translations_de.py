@@ -335,25 +335,11 @@ SINGULAR = {
     # -- roster ----------------------------------------------------------
     "That day is not in the week being planned.": "Dieser Tag liegt nicht in der geplanten Woche.",
     "A shift needs a length.": "Eine Schicht braucht eine Dauer.",
-    "copy from the week beginning": "kopieren aus der Woche ab",
     "Shown on the card — “group 2”, “outing”, anything the shift needs saying about.":
         "Erscheint auf der Karte — „Gruppe 2“, „Ausflug“, was zur Schicht zu sagen ist.",
     "shift": "Schicht",
     "shifts": "Schichten",
     "The roster was saved.": "Der Dienstplan wurde gespeichert.",
-    "The roster was not saved — see the cards marked below.":
-        "Der Dienstplan wurde nicht gespeichert — siehe die markierten Karten unten.",
-    "That is not a date this app can read.": "Das ist kein Datum, das diese App lesen kann.",
-    "That is this week — copying it onto itself would double every shift.":
-        "Das ist diese Woche — sie auf sich selbst zu kopieren würde jede Schicht verdoppeln.",
-    "%(count)s shifts were copied from the week of %(from)s. They were added to what was already here, so anything that is now doubled can be dragged off.":
-        "%(count)s Schichten wurden aus der Woche ab %(from)s kopiert. Sie wurden zum Vorhandenen hinzugefügt; was jetzt doppelt ist, lässt sich wegziehen.",
-    "That week has no shifts to copy.": "In dieser Woche gibt es keine Schichten zum Kopieren.",
-    "%(count)s shifts were drafted from the contracts, starting at %(start)s. Days that already had somebody on them were left alone — drag the cards to where they belong.":
-        "%(count)s Schichten wurden aus den Verträgen entworfen, beginnend um %(start)s. Tage, an denen bereits jemand eingeteilt war, blieben unangetastet — ziehen Sie die Karten dorthin, wo sie hingehören.",
-    "Nothing to draft: everybody who works this week is already rostered.":
-        "Nichts zu entwerfen: alle, die diese Woche arbeiten, sind bereits eingeteilt.",
-    "The shift was removed.": "Die Schicht wurde entfernt.",
 
     # -- timesheets ------------------------------------------------------
     "This stretch has no length.": "Dieser Abschnitt hat keine Dauer.",
@@ -433,7 +419,6 @@ SINGULAR = {
     "Leave": "Urlaub",
     "Contract": "Vertrag",
     "Break": "Pause",
-    "Shift": "Schicht",
     "min": "Min.",
     "minutes": "Minuten",
     "h": "Std.",
@@ -451,7 +436,6 @@ SINGULAR = {
     "switched off": "abgeschaltet",
     "worked out": "berechnet",
     "added by hand": "von Hand ergänzt",
-    "asked for": "beantragt",
     "or": "oder",
     "Previous": "Zurück",
     "This week": "Diese Woche",

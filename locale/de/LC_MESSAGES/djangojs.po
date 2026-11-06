@@ -48,3 +48,21 @@ msgstr "läuft"
 #: .\static\js\timesheet_day.js:128
 msgid "This overlaps another stretch on the same day."
 msgstr "Das überschneidet sich mit einem anderen Abschnitt am selben Tag."
+
+msgid "Remove %s?"
+msgstr "%s entfernen?"
+
+msgid "People placed in it: %s. They are taken out with it."
+msgstr "Darin eingeteilte Personen: %s. Sie werden mit herausgenommen."
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "Times for %s"
+msgstr "Zeiten für %s"
+
+msgid "%(day)s, time range %(range)s. Enter the exact times this person works; the cell then shows only the time that differs."
+msgstr "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person ein; die Zelle zeigt dann nur die abweichende Zeit."
+
+msgid "The times need a length."
+msgstr "Die Zeiten brauchen eine Dauer."

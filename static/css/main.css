@@ -74,6 +74,15 @@
   --danger: #B3261E;
   --danger-bg: #FBE9E7;
 
+  /* Away — somebody on leave or off sick, on the roster grid. Red because
+     that is what the people planning the week asked for: it has to stop the
+     eye before a name is dragged into a cell. A token of its own rather than
+     --danger used directly, so that "away" and "destroys something" can part
+     company without hunting down every place that meant one and not the
+     other. Everywhere else sickness keeps --plum. */
+  --away: var(--danger);
+  --away-bg: var(--danger-bg);
+
   --shadow-sm: 0 1px 3px rgba(22,33,31,0.05), 0 2px 8px rgba(22,33,31,0.04);
   --shadow-md: 0 4px 12px rgba(22,33,31,0.08), 0 2px 6px rgba(22,33,31,0.05);
   --shadow-lg: 0 12px 32px rgba(22,33,31,0.12);
@@ -131,8 +140,8 @@
   --z-topbar: 10;
   --z-popover: 20;
   --z-menu: 40;
-  /* A shift card while it is being dragged across the roster. Above the columns
-     it is travelling over and above their drop highlights, below the scrim. */
+  /* A name while it is being dragged across the roster. Above the grid it is
+     travelling over and above the area pickers, below the scrim. */
   --z-dragging: 45;
   --z-scrim: 50;
   --z-sidebar: 60;
@@ -152,8 +161,8 @@
      scales above, and so adding a fourth is a decision rather than a habit:
 
        900px  the sidebar goes off-canvas behind the hamburger
-       700px  page padding steps down; the roster's seven columns become a
-              scrolling strip and the week table folds to a card per day
+       700px  page padding steps down; the roster grid scrolls sideways and
+              the week table folds to a card per day
        520px  the stat tiles and the day form go to one column
   */
 
@@ -1235,93 +1244,274 @@ textarea:focus-visible,
 
 /* ===== THE ROSTER =====
 
-   Seven columns, one per day, and a card per shift stacked inside the day it
-   falls on. The columns do not reflow to one at a narrow width: a week that is
-   not seven columns is not a week, and the comparison across days is the whole
-   reason somebody opens this page. It scrolls sideways instead — which is why
-   .roster-week is the thing carrying overflow-x, and why the page body never
-   is.
+   A grid: the week's time ranges down the side, Monday to Friday across the
+   top, and the people placed in each cell. The columns never reflow to one at
+   a narrow width — a week that is not five columns side by side is not a week,
+   and the comparison across days is the whole reason somebody opens this page.
+   It scrolls sideways instead, which is why .rgrid-scroll carries overflow-x
+   and the page body never does.
 */
 .roster { margin-top: var(--space-6); }
-.roster-week {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(11rem, 1fr));
-  gap: var(--space-4);
+.roster-notice p { margin: 0 0 var(--space-3); }
+.roster-notice p:last-child { margin-bottom: 0; }
+.roster-outside { margin: var(--space-3) 0 0; padding-left: var(--space-7); font-size: var(--text-sm); }
+
+.rgrid-scroll {
   overflow-x: auto;
   padding-bottom: var(--space-5);
-  /* Never shrink below the content: a grid column holding a card would
-     otherwise let the *page* scroll sideways, taking the topbar and sidebar
-     with it. The scrolling belongs here, where there is a scrollbar for it. */
+  /* Never shrink below the content: a column holding the grid would otherwise
+     let the *page* scroll sideways, taking the topbar and sidebar with it. */
   min-width: 0;
 }
-.roster-day {
-  display: flex; flex-direction: column; gap: var(--space-3);
+.rgrid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: 52rem;
   background: var(--paper);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--space-4);
-  min-height: 12rem;
-  min-width: 0;
-  transition: background var(--dur-3), border-color var(--dur-3);
 }
-.roster-day.is-today { border-color: var(--ember-light); }
-.roster-day.is-holiday { background: var(--gold-bg); }
-.roster-day.is-over { background: var(--pine-bg); border-color: var(--pine-light); }
-.roster-day-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
-.roster-day-name { font-family: "Manrope", sans-serif; font-weight: 800; color: var(--text-dark); font-size: var(--text-base); }
-.roster-day-date { font-size: var(--text-xs); color: var(--text-light); }
-.roster-cards { display: flex; flex-direction: column; gap: var(--space-3); flex: 1; min-height: var(--space-9); }
+.rgrid th, .rgrid td {
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  vertical-align: top;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+}
+.rgrid th:last-child, .rgrid td:last-child { border-right: none; }
+/* Headers here are names — days, rooms, a time — not the column labels the
+   app's other tables shout in capitals. */
+.rgrid th { text-transform: none; letter-spacing: normal; color: var(--text-dark); }
+.rgrid thead th {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+}
+.rgrid th.rgrid-corner { font-size: var(--text-xs); color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.rgrid-day { width: 17%; }
+.rgrid-day-name { display: block; font-family: "Manrope", sans-serif; font-weight: 800; color: var(--text-dark); font-size: var(--text-base); }
+.rgrid-day-date { font-size: var(--text-xs); color: var(--text-light); margin-right: var(--space-3); }
+.rgrid-day.is-today { background: var(--ember-bg); }
+.rgrid-day.is-holiday, .rgrid-cell.is-holiday { background: var(--gold-bg); }
 
-.roster-card {
+/* A new time range starts with a heavier line, so the areas inside one range
+   read as one block and the ranges read as rows. */
+.rgrid-row.is-first > * { border-top: 1px solid var(--border); }
+.rgrid tbody[data-grid-body] tr:first-child > * { border-top: none; }
+
+.rgrid-time { width: 9.5rem; background: var(--white); }
+.rgrid-area {
+  width: 8rem;
+  background: var(--white);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.rgrid-area .ricon { margin-right: var(--space-2); color: var(--pine-light); vertical-align: -3px; }
+
+.ricon { width: 1.1em; height: 1.1em; display: inline-block; flex: none; }
+
+/* The time range itself, editable in place: two time boxes and a row of
+   tools under them. */
+.rslot { display: flex; flex-direction: column; gap: var(--space-2); }
+.rslot-times { display: flex; align-items: center; gap: var(--space-2); }
+.rslot-times input[data-time-input] {
+  width: 3.9rem; max-width: 3.9rem;
+  padding: var(--space-2) var(--space-2);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.rslot-tools { display: flex; align-items: center; gap: var(--space-3); }
+.rslot.has-error .rslot-times input { border-color: var(--danger); }
+.rslot-areas { position: relative; font-size: var(--text-xs); }
+.rslot-areas summary {
+  cursor: pointer;
+  color: var(--text-light);
+  font-weight: 600;
+  list-style: none;
+  border-radius: var(--radius-xs);
+  padding: var(--space-1) var(--space-3);
+  transition: color var(--dur-3), background var(--dur-3);
+}
+.rslot-areas summary::-webkit-details-marker { display: none; }
+.rslot-areas summary::after { content: " \25BE"; }
+.rslot-areas summary:hover, .rslot-areas[open] summary { color: var(--ember); background: var(--ember-bg); }
+.rslot-areas-list {
+  position: absolute;
+  top: 100%; left: 0;
+  z-index: var(--z-popover);
+  min-width: 12rem;
+  display: flex; flex-direction: column; gap: var(--space-2);
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   padding: var(--space-4);
-  display: flex; flex-direction: column; gap: var(--space-3);
-  box-shadow: var(--shadow-sm);
-  cursor: grab;
+  margin-top: var(--space-2);
 }
-.roster-card.is-dragging { opacity: 0.4; cursor: grabbing; z-index: var(--z-dragging); }
-.roster-card.has-error { border-color: var(--danger); background: var(--danger-bg); }
-.roster-card.is-removed { opacity: 0.45; }
-.roster-card-grip { color: var(--text-muted); font-size: var(--text-xs); line-height: 1; text-align: center; }
-.roster-card-body { display: flex; flex-direction: column; gap: var(--space-3); }
-.roster-card select, .roster-card input { width: 100%; font-size: var(--text-sm); }
-.roster-times { display: flex; align-items: center; gap: var(--space-2); }
-.roster-dash { color: var(--text-light); }
-.roster-card-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.roster-delete { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-2xs); color: var(--text-light); }
+.rslot-area { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--text-dark); cursor: pointer; }
+.rslot-area .ricon { color: var(--pine-light); }
+.rslot-remove {
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted);
+  font-size: var(--text-lg); line-height: 1;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-xs);
+  transition: color var(--dur-3), background var(--dur-3);
+}
+.rslot-remove:hover { color: var(--danger); background: var(--danger-bg); }
 
+/* A cell: the names placed in it, then its text box. */
+.rgrid-cell { position: relative; min-width: 8.5rem; transition: background var(--dur-3); }
+.rgrid-cell.is-drop-target, .rgrid-pool-cell.is-drop-target { background: var(--pine-bg); box-shadow: inset 0 0 0 2px var(--pine-light); }
+.rcell-people { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rcell-people:not(:empty) { margin-bottom: var(--space-2); }
+
+/* The text box looks like text until it is used: a cell reading "Break" must
+   read as a word, not as a form. */
+.rnote input[data-cell-input] {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--text-dark);
+  border-radius: var(--radius-xs);
+  transition: border-color var(--dur-3), background var(--dur-3);
+}
+.rgrid-cell:hover .rnote input[data-cell-input] { border-color: var(--border-light); background: var(--white); }
+.rnote input[data-cell-input]:focus { border-color: var(--border); background: var(--white); font-style: normal; }
+
+/* A name in a cell. `touch-action: none` is what lets a finger drag it rather
+   than scroll the grid; everywhere else on the page a finger still scrolls. */
+.rchip, .rpool-chip {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-dark);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-4);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  white-space: nowrap;
+  transition: border-color var(--dur-3), background var(--dur-3), opacity var(--dur-3);
+}
+.rchip { box-shadow: var(--shadow-sm); padding-right: var(--space-2); }
+.rchip:hover { border-color: var(--pine-light); }
+.rchip-remove {
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted); font-size: var(--text-sm); line-height: 1;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+}
+.rchip-remove:hover { color: var(--danger); background: var(--danger-bg); }
+.rchip .field-error { display: none; }
+.rchip.is-dragging, .rpool-chip.is-dragging { opacity: 0.35; }
+
+/* Away: red, as the people planning the week asked for, on the list and in a
+   cell alike. A request nobody has decided yet is the same red with a dashed
+   edge — still something to plan around, not yet something certain. */
+.rchip.is-away, .rpool-chip.is-away { color: var(--away); background: var(--away-bg); border-color: var(--away); }
+.rchip.is-pending, .rpool-chip.is-pending { border-style: dashed; }
+/* No hours that day under the contract: lighter, and still placeable. */
+.rpool-chip.is-off { color: var(--text-light); background: var(--snow); border-style: dashed; font-weight: 500; }
+/* Somebody in two places at once. Amber, not red: red here already means
+   "away", and this is a statement about two cells, not about the person. */
+.rchip.is-clash { border-color: var(--amber); background: var(--amber-bg); }
+.rchip.has-error { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+
+.rdrag-ghost {
+  position: fixed; top: 0; left: 0;
+  z-index: var(--z-dragging);
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+  cursor: grabbing;
+}
+.roster.is-dragging, .roster.is-dragging * { cursor: grabbing; }
+
+/* Who could still be placed, per day. */
+.rgrid-pool > tr > * { background: var(--snow); border-top: 2px solid var(--border); border-bottom: none; }
+.rgrid th.rgrid-pool-head { font-size: var(--text-xs); color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.rgrid-legend { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); margin-top: var(--space-4); text-transform: none; letter-spacing: 0; }
+.rgrid-legend .rpool-chip { cursor: default; font-size: var(--text-2xs); touch-action: auto; }
+.rgrid-pool-cell .rpool-chip { margin: 0 var(--space-2) var(--space-2) 0; }
+
+/* The person suggestions under a cell's text box. Inside the cell, so the
+   stylesheet positions it against the cell and it scrolls with the grid. */
+.rsuggest {
+  position: absolute;
+  left: var(--space-2); right: var(--space-2);
+  top: 100%;
+  z-index: var(--z-popover);
+  min-width: 12rem;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+.rsuggest-option {
+  display: flex; justify-content: space-between; gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-sm);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+.rsuggest-option[aria-selected="true"] { background: var(--pine-bg); }
+.rsuggest-option.is-off { color: var(--text-light); }
+.rsuggest-option.is-away { color: var(--away); }
+.rsuggest-note { font-size: var(--text-xs); color: inherit; opacity: 0.8; }
+
+.rgrid-empty { color: var(--text-light); margin: var(--space-5) 0; }
+.roster-dash { color: var(--text-light); }
 .roster-add {
+  margin-top: var(--space-5);
   border: 1px dashed var(--border); background: transparent; color: var(--text-light);
-  border-radius: var(--radius-sm); padding: var(--space-4); cursor: pointer;
+  border-radius: var(--radius-sm); padding: var(--space-4) var(--space-6); cursor: pointer;
   font-size: var(--text-xs); font-weight: 600;
   transition: color var(--dur-3), border-color var(--dur-3);
 }
 .roster-add:hover { color: var(--ember); border-color: var(--ember-light); }
 
-/* Who is already away. A band rather than a card, and not draggable: it is
-   something to plan around, not something to move. */
-.roster-away {
-  border-left: 3px solid var(--text-muted);
-  background: var(--border-light);
-  border-radius: var(--radius-xs);
-  padding: var(--space-3) var(--space-4);
-  display: flex; flex-direction: column;
-  font-size: var(--text-2xs);
-}
-.roster-away--holiday, .roster-away--special { border-left-color: var(--success); background: var(--success-bg); }
-.roster-away--sick { border-left-color: var(--plum); background: var(--plum-bg); }
-.roster-away--closure { border-left-color: var(--gold-deep); background: var(--gold-bg); }
-.roster-away.is-pending { border-left-style: dashed; }
-.roster-away-name { font-weight: 700; color: var(--text-dark); }
-.roster-away-kind { color: var(--text-mid); }
+.roster-times-form { display: flex; flex-direction: column; min-height: 0; margin: 0; }
+.roster-times-fields { display: flex; gap: var(--space-6); }
+.roster-times-fields .field { margin: var(--space-4) 0; flex: 1; min-width: 0; }
+.roster-times-fields input[data-time-input] { max-width: 100%; }
 
-/* Where the cards live before render() sends them home. Off-screen rather than
-   `hidden`, because a hidden container makes its inputs unfocusable — and a
-   validation error inside one makes Save do nothing at all, with an
-   unfocusable-control warning in the console as the only clue. */
+/* Where the rows live before render() sends them home, and where a removed
+   one goes back to. Off-screen rather than `hidden`, because a hidden
+   container makes its inputs unfocusable — and a validation error inside one
+   makes Save do nothing at all, with an unfocusable-control warning in the
+   console as the only clue. */
 .roster-holder { position: absolute; left: -9999px; top: 0; width: 1px; overflow: hidden; }
+
+/* ===== THE AREAS ===== */
+.icon-choices { border: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.icon-choice { position: relative; cursor: pointer; }
+.icon-choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.icon-choice .ricon {
+  width: 2.25rem; height: 2.25rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-mid);
+  transition: border-color var(--dur-3), background var(--dur-3), color var(--dur-3);
+}
+.icon-choice:hover .ricon { border-color: var(--pine-light); }
+.icon-choice input:checked + .ricon { background: var(--pine-bg); border-color: var(--pine); color: var(--pine); }
+.icon-choice input:focus-visible + .ricon { outline: 2px solid var(--ember); outline-offset: 2px; }
 
 /* ===== THE TIMESHEET ===== */
 .timesheet-day { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
@@ -1548,10 +1738,9 @@ tr.is-off > * { color: var(--text-light); }
   .content { padding: var(--space-7); }
   th, td { padding: var(--space-4) var(--space-5); }
   .topbar-sub { display: none; }
-  /* The roster keeps its seven columns and scrolls. Reflowing a week to one
-     column is exactly the thing it exists not to do — the comparison across
-     days is why anybody opened it. */
-  .roster-week { grid-template-columns: repeat(7, 10rem); }
+  /* The roster keeps its five columns and scrolls (see .rgrid-scroll).
+     Reflowing a week to one column is exactly the thing it exists not to do —
+     the comparison across days is why anybody opened it. */
   /* The contract's seven boxes *do* reflow: they are seven independent numbers
      and nothing is being compared across them. */
   .week-fields { grid-template-columns: repeat(4, 1fr); }
@@ -1583,4 +1772,3 @@ input[data-time-input].is-unreadable {
   background: var(--amber-bg);
 }
 .week-field input[data-time-input] { max-width: 100%; }
-.roster-card input[data-time-input] { max-width: 100%; text-align: center; }

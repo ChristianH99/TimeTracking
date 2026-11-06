@@ -1,32 +1,36 @@
-"""The week planner.
+"""The week planner, and the areas it is drawn with.
 
-Seven columns, one per day, with a card for each shift stacked inside the day it
-falls on. Dragging a card to another column moves the shift; the card is the
-form row and the drag rewrites its hidden ``date``, so there is never a second
-copy of the week to keep in step (``apps/roster/forms.py`` says why that matters).
+The planner is a grid — the week's time slots down the side, Monday to Friday
+across the top — and the people placed in its cells. ``apps/roster/forms.py``
+says how the page is put together and ``apps/roster/models.py`` why a placement
+*is* a shift.
 
-Absences are drawn in the columns too, and they are **not** shifts — they are
-read-only bands showing who is already away. Without them the one mistake this
-page invites is rostering somebody who has an approved holiday, which nobody
-notices until the morning they do not arrive.
+Below the grid is everybody who could still be placed that day, and it is a
+*reading* of the placements rather than a list of its own: the browser works it
+out from the rows in the grid every time something moves, so it cannot say
+somebody is free who has just been dragged in.
+
+Who is away is part of that list, in red, rather than a band of its own. The
+one mistake this page invites is rostering somebody who has an approved
+holiday, which nobody notices until the morning they do not arrive.
 """
 
 import datetime as dt
 
 from django.contrib import messages
-from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect, render
+from django.db.models import ProtectedError
+from django.shortcuts import redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.decorators.http import require_POST
 
-from apps.absences.models import Absence, BankHoliday, RequestStatus
+from apps.absences.models import Absence, AbsenceKind, BankHoliday, RequestStatus
 from apps.employees.models import Employee
 from apps.employees.permissions import manager_required
-from apps.organisation.models import OrgSettings
-from apps.roster.forms import CopyWeekForm, ShiftFormSet, rosterable
-from apps.roster.models import Shift
-from apps.timesheets.hours import contracted_minutes
+from apps.roster.forms import AreaFormSet, WeekGrid, draft_from, employed_on
+from apps.roster.models import (
+    GRID_DAYS, Area, AreaIcon, PlannedWeek, Shift, TimeSlot,
+)
 from apps.timesheets.models import week_monday
 
 
@@ -47,228 +51,242 @@ def _monday_from(request):
 
 
 def _plan_url(monday):
-    """The planner, showing that week.
-
-    Built with ``reverse`` rather than by slicing ``request.path``. The slicing
-    version worked and was one route rename away from redirecting to a 404 —
-    and the routes it sliced are at three different depths, so each of the three
-    had its own magic number.
-    """
     return f"{reverse('roster:plan')}?week={monday.isoformat()}"
+
+
+def _absences(days):
+    """``{(employee_id, date): absence}`` for the days shown.
+
+    Everything not declined or withdrawn — a pending request is exactly the
+    thing a manager wants to see *while* rostering, because deciding it and
+    planning around it are the same act. Drawn differently on the page, so the
+    two are never confused.
+    """
+    found = {}
+    rows = (
+        Absence.objects
+        .filter(start_date__lte=days[-1], end_date__gte=days[0])
+        .exclude(status__in=(RequestStatus.REJECTED, RequestStatus.WITHDRAWN))
+        .select_related("special_type")
+    )
+    for absence in rows:
+        for day in days:
+            if absence.start_date <= day <= absence.end_date:
+                found.setdefault((absence.employee_id, day), absence)
+    return found
+
+
+def _is_pending(absence):
+    """A request nobody has decided. Sickness is never that: it is stated, not
+    asked for (``Absence.credits_hours`` says why), so a reported sick day is
+    away from the moment it is reported."""
+    return absence.status == RequestStatus.REQUESTED and absence.kind != AbsenceKind.SICK
+
+
+def _absence_label(absence):
+    if absence.kind == AbsenceKind.SPECIAL and absence.special_type:
+        label = absence.special_type.name
+    else:
+        label = absence.get_kind_display()
+    if absence.is_half_day:
+        label = _("%(kind)s, half day") % {"kind": label}
+    if _is_pending(absence):
+        label = _("%(kind)s, asked for") % {"kind": label}
+    return label
+
+
+def _display_names(people):
+    """What a name chip says: the first name, unless two people share it.
+
+    A cell is narrow and is read across a room, so "Anna" rather than "Anna
+    Berger" — but two Annas on one grid is a grid nobody can read, so those
+    two get an initial each.
+    """
+    counts = {}
+    for person in people:
+        counts[person.first_name] = counts.get(person.first_name, 0) + 1
+    names = {}
+    for person in people:
+        if counts[person.first_name] > 1 and person.last_name:
+            names[person.pk] = f"{person.first_name} {person.last_name[0]}."
+        else:
+            names[person.pk] = person.first_name or person.full_name
+    return names
+
+
+def _people_data(days, grid):
+    """Everybody the grid may show, and what each day is for them.
+
+    Anybody employed on at least one of the days, plus anybody already placed
+    in the week (who may have left since) so that every chip on the page has a
+    name to show. Per day: ``on`` (the contract gives hours), ``off`` (it does
+    not — shown lighter, still placeable), ``away`` (an absence, in red) or
+    absent from the entry altogether when they are not employed that day.
+    """
+    placed = {
+        form.instance.employee_id for form in grid.places.forms if form.instance.pk
+    }
+    people = [
+        person for person in Employee.objects.order_by("first_name", "last_name")
+        if person.pk in placed
+        or (person.is_active and any(employed_on(person, day) for day in days))
+    ]
+    names = _display_names(people)
+    away = _absences(days)
+    data = []
+    for person in people:
+        states = {}
+        for day in days:
+            if not (person.is_active and employed_on(person, day)):
+                continue
+            absence = away.get((person.pk, day))
+            if absence is not None:
+                states[day.isoformat()] = {
+                    "state": "away", "label": _absence_label(absence),
+                    "pending": _is_pending(absence),
+                }
+            elif person.works_on(day):
+                states[day.isoformat()] = {"state": "on"}
+            else:
+                states[day.isoformat()] = {"state": "off"}
+        data.append({
+            "id": person.pk, "name": names[person.pk], "full": person.full_name,
+            "days": states,
+        })
+    return data
+
+
+def _unavailable(days):
+    """The test ``draft_from`` uses to leave a copied placement out.
+
+    Not employed, away (decided or reported — not merely asked for, since a
+    request may yet be declined), or a public holiday.
+    """
+    away = _absences(days)
+    holidays = BankHoliday.dates_between(days[0], days[-1])
+
+    def unavailable(employee, day):
+        if day in holidays:
+            return True
+        if not (employee.is_active and employed_on(employee, day)):
+            return True
+        absence = away.get((employee.pk, day))
+        return absence is not None and not _is_pending(absence)
+
+    return unavailable
 
 
 @manager_required
 def plan(request):
     monday = _monday_from(request)
-    days = [monday + dt.timedelta(days=offset) for offset in range(7)]
-    people = rosterable()
+    days = [monday + dt.timedelta(days=offset) for offset in range(GRID_DAYS)]
+    draft_source = None
+    left_out = 0
 
     if request.method == "POST":
-        formset = ShiftFormSet(
-            request.POST,
-            queryset=Shift.objects.filter(date__gte=days[0], date__lte=days[-1]),
-            week_dates=set(days), employees=people,
-        )
-        if formset.is_valid():
-            formset.save()
+        grid = WeekGrid(monday, data=request.POST)
+        if grid.is_valid():
+            grid.save()
             messages.success(request, _("The roster was saved."))
             return redirect(_plan_url(monday))
-        messages.error(request, _("The roster was not saved — see the cards marked below."))
+        messages.error(request, _("The roster was not saved — see the entries marked below."))
     else:
-        formset = ShiftFormSet(
-            queryset=Shift.objects.filter(date__gte=days[0], date__lte=days[-1])
-            .select_related("employee"),
-            week_dates=set(days), employees=people,
+        draft = None
+        is_planned = (
+            PlannedWeek.objects.filter(week=monday).exists()
+            or TimeSlot.objects.filter(week=monday).exists()
         )
-
-    # The forms, arranged into the seven columns the page draws. A form belongs
-    # to the day its *bound* date says, not the day its instance was saved on —
-    # otherwise a card that failed validation after being dragged springs back
-    # to where it came from while the error message talks about the new day.
-    columns = {day: [] for day in days}
-    for form in formset.forms:
-        day = _day_of(form, days)
-        columns[day].append(form)
+        if not is_planned and not request.GET.get("empty"):
+            draft_source = TimeSlot.last_planned_before(monday)
+            if draft_source:
+                draft, left_out = draft_from(draft_source, monday, _unavailable(days))
+        grid = WeekGrid(monday, draft=draft)
 
     holidays = {
         row.date: row.name
         for row in BankHoliday.objects.filter(date__gte=days[0], date__lte=days[-1])
     }
-    away = _absences_by_day(days)
+    # Shifts the grid cannot draw: on a weekend, or written before the grid
+    # existed and never given a slot. They are still shifts and the timesheet
+    # still reads them, so the page says they are there.
+    outside = Shift.objects.filter(
+        date__gte=monday, date__lte=monday + dt.timedelta(days=6),
+    ).exclude(slot__week=monday, date__in=days).select_related("employee")
+
+    areas = list(Area.objects.all())
+    page_data = {
+        "days": [day.isoformat() for day in days],
+        "holidays": [day.isoformat() for day in holidays],
+        "people": _people_data(days, grid),
+        "areas": {
+            str(area.pk): {"name": area.name, "icon": area.icon, "active": area.is_active}
+            for area in areas
+        },
+        "sprite": static("icons/areas.svg"),
+        "placementErrors": grid.placement_errors,
+    }
 
     return render(request, "roster/plan.html", {
-        "formset": formset,
+        "grid": grid,
         "monday": monday,
-        "days": days,
-        "columns": [
-            {
-                "date": day,
-                "forms": columns[day],
-                "holiday": holidays.get(day),
-                "away": away.get(day, []),
-                "is_today": day == dt.date.today(),
-            }
+        "days": [
+            {"date": day, "holiday": holidays.get(day), "is_today": day == dt.date.today()}
             for day in days
         ],
-        "employees": people,
+        "last_day": days[-1],
+        "areas": areas,
+        "outside": list(outside),
+        "draft_source": draft_source,
+        "left_out": left_out,
+        "page_data": page_data,
         "previous_week": monday - dt.timedelta(days=7),
         "next_week": monday + dt.timedelta(days=7),
         "this_week": week_monday(dt.date.today()),
-        "copy_form": CopyWeekForm(initial={"source_monday": monday - dt.timedelta(days=7)}),
-        "settings": OrgSettings.current(),
     })
 
 
-def _day_of(form, days):
-    """Which column a form belongs in.
-
-    Bound data first (what the browser last said), then the saved instance, then
-    the first day of the week as a last resort. The fallback is not decoration:
-    a row whose date failed to parse has to render *somewhere*, or the card
-    carrying the error message disappears from the page that is supposed to be
-    showing it.
-    """
-    if form.is_bound:
-        raw = form.data.get(form.add_prefix("date"))
-        try:
-            day = dt.date.fromisoformat(raw)
-        except (TypeError, ValueError):
-            day = None
-        if day in days:
-            return day
-    if form.instance and form.instance.date in days:
-        return form.instance.date
-    return days[0]
-
-
-def _absences_by_day(days):
-    """``{date: [(employee, absence), …]}`` for the week.
-
-    Approved and pending both, drawn differently on the page: a pending request
-    is exactly the thing a manager wants to see *while* rostering, because
-    deciding it and planning around it are the same act. One query for the week
-    rather than one per day.
-    """
-    rows = (
-        Absence.objects
-        .filter(start_date__lte=days[-1], end_date__gte=days[0])
-        .filter(Q(status=RequestStatus.APPROVED) | Q(status=RequestStatus.REQUESTED))
-        .select_related("employee", "special_type")
-    )
-    by_day = {}
-    for absence in rows:
-        for day in days:
-            if absence.start_date <= day <= absence.end_date and absence.employee.works_on(day):
-                by_day.setdefault(day, []).append(absence)
-    return by_day
-
-
 @manager_required
-@require_POST
-def copy_week(request):
-    """Copy another week's shifts onto this one.
+def areas(request):
+    """Name the areas the grid can be split into, and give each an icon.
 
-    Adds rather than replaces, and the button says so. See
-    ``Shift.copy_week`` for why: replacing is the tidier implementation and
-    would silently discard a week somebody had already adjusted.
+    Deleting one that any week has used is refused and the message names the
+    reversible operation instead — the same rule as for employees and leave
+    types: the destructive version exists for the row created by a typo ten
+    seconds ago and nothing else.
     """
-    monday = _monday_from(request)
-    form = CopyWeekForm(request.POST)
-    if not form.is_valid():
-        messages.error(request, _("That is not a date this app can read."))
-        return redirect(_plan_url(monday))
-
-    source = form.cleaned_data["source_monday"]
-    if source == monday:
-        messages.error(request, _("That is this week — copying it onto itself would double every shift."))
-        return redirect(_plan_url(monday))
-
-    copied = Shift.copy_week(source, monday)
-    if copied:
-        messages.success(request, _(
-            "%(count)s shifts were copied from the week of %(from)s. They were added "
-            "to what was already here, so anything that is now doubled can be dragged off."
-        ) % {"count": copied, "from": source.strftime("%d.%m.%Y")})
-    else:
-        messages.info(request, _("That week has no shifts to copy."))
-    return redirect(_plan_url(monday))
-
-
-@manager_required
-@require_POST
-def fill_from_pattern(request):
-    """Draft a week from everybody's contracted hours.
-
-    The first thing a manager does on an empty roster, and the largest single
-    cost this app can take off them. It is explicitly a **draft**: a contract
-    says how long somebody works and never when, so the start time comes from
-    the one setting that holds it and every card is then dragged into place.
-
-    The end is start + contracted hours **+ the break that length of day
-    requires**, because the contract's hours are working time and a shift is
-    clock-in to clock-out. Without that, everybody rostered for a 7.5-hour
-    contract would be down 45 minutes a day the moment they took the break they
-    are legally required to take — which is the sort of arithmetic error that
-    turns up in a payroll audit rather than on the page.
-
-    Skips days somebody is already rostered on, so pressing it twice does not
-    double the week.
-    """
-    monday = _monday_from(request)
-    days = [monday + dt.timedelta(days=offset) for offset in range(7)]
-    settings = OrgSettings.current()
-    rules = list(settings.break_rules.all()) if settings.is_stored else None
-
-    already = set(
-        Shift.objects.filter(date__gte=days[0], date__lte=days[-1])
-        .values_list("employee_id", "date")
-    )
-    holidays = BankHoliday.dates_between(days[0], days[-1])
-
-    created = []
-    for employee in Employee.objects.filter(is_active=True):
-        for day in days:
-            if (employee.id, day) in already or day in holidays:
-                continue
-            if not employee.works_on(day):
-                continue
-            working = contracted_minutes(
-                employee.hours_on_weekday(day.weekday(), on=day)
-            )
-            span = working + settings.required_break(working, rules=rules)
-            start = settings.day_start
-            end_minutes = (start.hour * 60 + start.minute + span) % (24 * 60)
-            created.append(Shift(
-                employee=employee, date=day, start=start,
-                end=dt.time(end_minutes // 60, end_minutes % 60),
+    queryset = Area.objects.all()
+    if request.method == "POST":
+        formset = AreaFormSet(request.POST, queryset=queryset, prefix="area")
+        if formset.is_valid():
+            refused = []
+            instances = formset.save(commit=False)
+            for area in formset.deleted_objects:
+                try:
+                    if area.is_used:
+                        raise ProtectedError("used", [area])
+                    area.delete()
+                except ProtectedError:
+                    refused.append(area.name)
+            for index, area in enumerate(instances):
+                if area.position == 0 and not area.pk:
+                    area.position = Area.objects.count() + index + 1
+                area.save()
+            if refused:
+                messages.warning(request, _(
+                    "%(names)s has been used in the roster and was kept. Untick “in use” "
+                    "instead: that stops it being offered and keeps every week it was used in."
+                ) % {"names": ", ".join(refused)})
+            else:
+                messages.success(request, _("The areas were saved."))
+            return redirect(reverse("roster:areas") + (
+                f"?week={request.POST['week']}" if request.POST.get("week") else ""
             ))
-    Shift.objects.bulk_create(created)
-
-    if created:
-        messages.success(request, _(
-            "%(count)s shifts were drafted from the contracts, starting at %(start)s. "
-            "Days that already had somebody on them were left alone — drag the cards "
-            "to where they belong."
-        ) % {"count": len(created), "start": settings.day_start.strftime("%H:%M")})
     else:
-        messages.info(request, _(
-            "Nothing to draft: everybody who works this week is already rostered."
-        ))
-    return redirect(_plan_url(monday))
+        formset = AreaFormSet(queryset=queryset, prefix="area")
 
-
-@manager_required
-@require_POST
-def shift_delete(request, pk):
-    """Remove one shift outright.
-
-    Beside the formset's own DELETE box rather than instead of it: the box is
-    how several are removed in one save, and this is the single-card gesture
-    from the card's own menu. Both exist because the formset's version needs a
-    save afterwards and somebody deleting one card does not expect to have to.
-    """
-    shift = get_object_or_404(Shift, pk=pk)
-    week = week_monday(shift.date)
-    shift.delete()
-    messages.success(request, _("The shift was removed."))
-    return redirect(_plan_url(week))
+    return render(request, "roster/areas.html", {
+        "formset": formset,
+        "icons": AreaIcon.choices,
+        "sprite": static("icons/areas.svg"),
+        "week": request.GET.get("week", ""),
+    })

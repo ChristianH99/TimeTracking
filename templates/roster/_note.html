@@ -1,0 +1,8 @@
+{% load i18n %}{% comment %}The text box in a cell. It holds the cell's text ("Break") and is also
+where a name is typed to place somebody — the suggestions come from
+roster_plan.js and picking one takes the typed name back out of the text.{% endcomment %}
+<div class="rnote" data-note>
+  {{ form.id }}{{ form.cell }}
+  {{ form.text }}
+  {% for error in form.text.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+</div>

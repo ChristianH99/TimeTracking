@@ -38,7 +38,9 @@ from apps.organisation.models import (
     DEFAULT_BREAK_RULES, AssignmentMode, BreakRule, Land, OrgSettings,
     SpecialLeaveThreshold, SpecialLeaveType,
 )
-from apps.roster.models import Shift
+from apps.roster.models import (
+    Area, AreaIcon, CellNote, PlannedWeek, Shift, TimeSlot, planned_spans,
+)
 from apps.timesheets.models import DayRecord, EntrySource, WorkSegment, week_monday
 
 PASSWORD = "timetracking-dev-pass"
@@ -215,33 +217,72 @@ class Command(BaseCommand):
     # -- the week --------------------------------------------------------
 
     def _roster(self, people, monday):
-        if Shift.objects.filter(date__gte=monday).exists():
+        """The week as a grid: an early slot, the morning in two groups, lunch,
+        the afternoon in three areas, and a late slot.
+
+        Deliberately not tidy. Cem works a split day on the Monday (morning,
+        then the late slot) because that is a kindergarten's commonest shape;
+        Dilan starts at 07:30 inside the 07:00 slot, which is the case the
+        "(07:30)" on a name exists for; and Eva is on the grid only on her two
+        days. A seed where everybody fills every slot hides the list of people
+        not yet placed, which is half the page.
+        """
+        if TimeSlot.objects.filter(week=monday).exists() or PlannedWeek.objects.filter(week=monday).exists():
             return
+        sun, _ = Area.objects.get_or_create(name="Sonnengruppe", defaults={"icon": AreaIcon.SUN, "position": 1})
+        moon, _ = Area.objects.get_or_create(name="Mondgruppe", defaults={"icon": AreaIcon.MOON, "position": 2})
+        garden, _ = Area.objects.get_or_create(name="Garten", defaults={"icon": AreaIcon.TREE, "position": 3})
+
+        def slot(start, end, *areas):
+            row = TimeSlot.objects.create(week=monday, start=start, end=end)
+            row.areas.set(areas)
+            return row
+
+        early = slot(dt.time(7, 0), dt.time(8, 0))
+        morning = slot(dt.time(8, 0), dt.time(12, 0), sun, moon)
+        lunch = slot(dt.time(12, 0), dt.time(12, 30))
+        afternoon = slot(dt.time(12, 30), dt.time(15, 0), sun, moon, garden)
+        late = slot(dt.time(15, 0), dt.time(17, 0))
+
         shifts = []
-        for employee in people.values():
-            for offset in range(7):
-                day = monday + dt.timedelta(days=offset)
+        notes = []
+        for offset in range(5):
+            day = monday + dt.timedelta(days=offset)
+            notes.append(CellNote(slot=lunch, date=day, text="Mittagspause"))
+
+            def put(name, row, area=None, start=None, end=None):
+                employee = people[name]
                 if not employee.works_on(day):
-                    continue
-                hours = float(employee.hours_on_weekday(day.weekday(), on=day))
-                # A split shift for Cem on the Monday, because a kindergarten's
-                # commonest shape is in for the morning and back for the late
-                # afternoon — and a seed of single blocks hides that a day can
-                # be two rows.
-                if employee.first_name == "Cem" and day.weekday() == 0:
-                    shifts.append(Shift(employee=employee, date=day,
-                                        start=dt.time(7, 30), end=dt.time(11, 30),
-                                        note="Gruppe 1"))
-                    shifts.append(Shift(employee=employee, date=day,
-                                        start=dt.time(14, 0), end=dt.time(18, 0),
-                                        note="Spätdienst"))
-                    continue
-                span = int(hours * 60) + 30
-                end = (7 * 60 + 30 + span) % (24 * 60)
-                shifts.append(Shift(employee=employee, date=day,
-                                    start=dt.time(7, 30),
-                                    end=dt.time(end // 60, end % 60)))
+                    return
+                shifts.append(Shift(
+                    employee=employee, date=day, slot=row, area=area,
+                    start=start or row.start, end=end or row.end,
+                ))
+
+            if offset == 0:
+                # Cem's split day: in for the morning, back for the late slot.
+                put("cem", early)
+                put("cem", morning, sun)
+                put("cem", late)
+            else:
+                put("cem", early)
+                put("cem", morning, sun)
+                put("cem", lunch)
+                put("cem", afternoon, garden)
+            put("anna", morning, moon)
+            put("anna", lunch)
+            put("anna", afternoon, moon)
+            put("anna", late, end=dt.time(16, 30))
+            put("ben", morning, sun)
+            put("ben", lunch)
+            put("ben", afternoon, sun)
+            put("dilan", early, start=dt.time(7, 30))
+            put("dilan", morning, moon, end=dt.time(11, 30))
+            put("eva", afternoon, garden)
+            put("eva", late)
         Shift.objects.bulk_create(shifts)
+        CellNote.objects.bulk_create(notes)
+        PlannedWeek.objects.get_or_create(week=monday)
 
     def _timesheets(self, people, monday, settings):
         """Three states on purpose: confirmed as rostered, entered and
@@ -253,7 +294,7 @@ class Command(BaseCommand):
             if DayRecord.objects.filter(employee=anna, date=day).exists():
                 continue
             DayRecord.from_shifts(
-                anna, day, list(Shift.objects.filter(employee=anna, date=day)),
+                anna, day, planned_spans(anna, day, day).get(day, []),
                 by=anna.user, settings=settings, rules=rules,
             )
 

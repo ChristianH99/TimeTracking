@@ -328,24 +328,8 @@ PAGES = {
         "Beachten Sie die mittleren Zeilen: ein Tag, der nur wenig über einer Stufe liegt, bekommt nur so viel Pause, wie ihn wieder darunter bringt, nicht die ganze Stufe. Das verlangt das Gesetz, und die Regeln andersherum zu lesen kostet jemanden Pause, die ihm zustand.",
 
     # -- the roster --------------------------------------------------------
-    "Draft this week from the contracts?": "Diese Woche aus den Verträgen entwerfen?",
-    "Everybody who works a day this week and is not already rostered on it gets a shift starting at %(start)s, as long as their contract says. Days that already have somebody on them are left alone. It is a first draft — drag the cards where they belong.":
-        "Alle, die diese Woche an einem Tag arbeiten und dort noch nicht eingeteilt sind, bekommen eine Schicht ab %(start)s, so lang wie ihr Vertrag es vorsieht. Tage, an denen bereits jemand eingeteilt ist, bleiben unangetastet. Es ist ein erster Entwurf — ziehen Sie die Karten dorthin, wo sie hingehören.",
-    "Draft the week": "Woche entwerfen",
-    "Fill from contracts": "Aus Verträgen füllen",
-    "Copy that week here": "Diese Woche hierher kopieren",
-    "Move to the previous day": "Auf den vorherigen Tag verschieben",
-    "Move to the next day": "Auf den nächsten Tag verschieben",
     "Save the roster": "Dienstplan speichern",
     "Planning the week": "Die Woche planen",
-    "Each column is a day. A card is one person’s shift on that day, and somebody can have more than one — a split shift is two cards.":
-        "Jede Spalte ist ein Tag. Eine Karte ist die Schicht einer Person an diesem Tag, und es können mehrere sein — ein geteilter Dienst sind zwei Karten.",
-    "Drag a card to another column to move the shift, or use the ‹ and › buttons on it. Nothing is written until you press Save.":
-        "Ziehen Sie eine Karte in eine andere Spalte, um die Schicht zu verschieben, oder benutzen Sie die Schaltflächen ‹ und › darauf. Geschrieben wird nichts, bis Sie speichern.",
-    "“Fill from contracts” drafts a whole week from everybody’s contracted hours, starting at the time set under Working time. It adds the break the day needs on top, because a contract counts working time and a shift is clock-in to clock-out.":
-        "„Aus Verträgen füllen“ entwirft eine ganze Woche aus den vertraglichen Stunden aller, beginnend zu der unter „Arbeitszeit“ gesetzten Uhrzeit. Die für den Tag nötige Pause wird obendrauf gerechnet, denn ein Vertrag zählt Arbeitszeit und eine Schicht geht von Kommen bis Gehen.",
-    "The pale bands are people who are already away. A band marked “asked for” is a request nobody has decided yet — deciding it and planning around it are the same job.":
-        "Die blassen Balken sind Personen, die bereits abwesend sind. Ein mit „beantragt“ markierter Balken ist ein noch nicht entschiedener Antrag — ihn zu entscheiden und um ihn herum zu planen ist dieselbe Aufgabe.",
 
     # -- the day form ------------------------------------------------------
     "Hours for this day": "Stunden für diesen Tag",
@@ -472,6 +456,139 @@ LATER = {
 
 PAGES.update(LATER)
 
+# -- the roster grid -----------------------------------------------------
+#
+# "Zeitraum" for a time slot (it is a range of the clock, and "Zeitfenster"
+# reads as a delivery slot), "Bereich" for an area. Both are what a Kita
+# calls them on the paper plan this page replaces.
+ROSTER_GRID = {
+    # the icons
+    "Star": "Stern",
+    "Moon": "Mond",
+    "Sun": "Sonne",
+    "Tree": "Baum",
+    "Lunch plate": "Teller",
+    "Heart": "Herz",
+    "Flower": "Blume",
+    "Cloud": "Wolke",
+    "House": "Haus",
+    "Book": "Buch",
+    "Music": "Musik",
+    "Ball": "Ball",
+    "Leaf": "Blatt",
+    "Fish": "Fisch",
+    "Apple": "Apfel",
+    "Palette": "Malpalette",
+
+    # models
+    "icon": "Symbol",
+    "position": "Position",
+    "in use": "in Gebrauch",
+    "Switching this off keeps every week it was used in and stops it being offered.":
+        "Ausgeschaltet bleibt jede Woche erhalten, in der der Bereich vorkam; er wird nur nicht mehr angeboten.",
+    "area": "Bereich",
+    "areas": "Bereiche",
+    "week": "Woche",
+    "The Monday of the week.": "Der Montag der Woche.",
+    "time slot": "Zeitraum",
+    "time slots": "Zeiträume",
+    "A week starts on a Monday.": "Eine Woche beginnt an einem Montag.",
+    "A time range needs a length.": "Ein Zeitraum braucht eine Dauer.",
+    "saved": "gespeichert",
+    "planned week": "geplante Woche",
+    "planned weeks": "geplante Wochen",
+    "text": "Text",
+    "cell text": "Zellentext",
+    "cell texts": "Zellentexte",
+
+    # forms
+    "Areas": "Bereiche",
+    "Text": "Text",
+    "Some entries could not be read — they are marked below.":
+        "Einige Angaben konnten nicht gelesen werden — sie sind unten markiert.",
+    "A new time range arrived without a name the page could use.":
+        "Ein neuer Zeitraum kam ohne einen Namen an, mit dem die Seite etwas anfangen kann.",
+    "Two time ranges arrived under the same name.":
+        "Zwei Zeiträume kamen unter demselben Namen an.",
+    "That is not a cell on this page.": "Das ist keine Zelle auf dieser Seite.",
+    "That time range is not on this page.": "Dieser Zeitraum ist nicht auf dieser Seite.",
+    "That area is not part of this time range.": "Dieser Bereich gehört nicht zu diesem Zeitraum.",
+    "That time range is not split into areas.": "Dieser Zeitraum ist nicht in Bereiche aufgeteilt.",
+    "%(name)s is not employed on that day.": "%(name)s ist an diesem Tag nicht beschäftigt.",
+    "%(name)s’s times need a length.": "Die Zeiten von %(name)s brauchen eine Dauer.",
+    "%(name)s is in two places at once on %(day)s at %(time)s.":
+        "%(name)s ist am %(day)s um %(time)s an zwei Stellen gleichzeitig eingeteilt.",
+
+    # views
+    "%(kind)s, half day": "%(kind)s, halber Tag",
+    "%(kind)s, asked for": "%(kind)s, beantragt",
+    "The roster was not saved — see the entries marked below.":
+        "Der Dienstplan wurde nicht gespeichert — siehe die markierten Einträge unten.",
+    "%(names)s has been used in the roster and was kept. Untick “in use” instead: that stops it being offered and keeps every week it was used in.":
+        "%(names)s kommt im Dienstplan vor und wurde behalten. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten.",
+    "The areas were saved.": "Die Bereiche wurden gespeichert.",
+
+    # the planner
+    "This week has not been planned yet, so it has been filled in from the week of %(week)s. Nothing is saved until you press Save.":
+        "Diese Woche ist noch nicht geplant und wurde deshalb aus der Woche ab %(week)s übernommen. Gespeichert wird erst, wenn Sie auf Speichern drücken.",
+    "Start with an empty week instead": "Stattdessen mit einer leeren Woche beginnen",
+    "These shifts are not drawn on the grid — they fall on a weekend or were planned before the grid existed. They still count on the timesheet.":
+        "Diese Schichten erscheinen nicht im Raster — sie liegen am Wochenende oder wurden vor dem Raster geplant. Auf dem Stundenzettel zählen sie trotzdem.",
+    "Time": "Zeit",
+    "Not placed yet": "Noch nicht eingeteilt",
+    "works that day": "arbeitet an dem Tag",
+    "no hours that day": "an dem Tag keine Stunden",
+    "This week has no time ranges yet. Add the first one below.":
+        "Diese Woche hat noch keine Zeiträume. Legen Sie unten den ersten an.",
+    "Time range": "Zeitraum",
+    "Apply": "Übernehmen",
+    "Use the time range": "Zeiten des Zeitraums verwenden",
+    "No areas yet.": "Noch keine Bereiche.",
+    "Remove this time range": "Diesen Zeitraum entfernen",
+    "Take out of this cell": "Aus dieser Zelle nehmen",
+    "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells.":
+        "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf.",
+    "Below the grid is everybody who has not been placed on that day yet. People whose contract has no hours that day are lighter, and people who are away are red — both can still be placed when needed. Not everybody has to be.":
+        "Unter dem Raster steht, wer an dem Tag noch nicht eingeteilt ist. Wer laut Vertrag an dem Tag keine Stunden hat, ist heller dargestellt, wer abwesend ist, rot — beide lassen sich bei Bedarf trotzdem einteilen. Es muss nicht jede Person eingeteilt werden.",
+    "Drag a name into a cell to place them, between cells to move them, or back to the list to take them out. Hold Ctrl while dropping to copy instead of move. You can also type in a cell: pick a name from the suggestions to place that person, or just leave the text — “Break”, for instance — and it is shown in the cell.":
+        "Ziehen Sie einen Namen in eine Zelle, um die Person einzuteilen, zwischen Zellen, um sie zu verschieben, oder zurück in die Liste, um sie herauszunehmen. Mit gedrückter Strg-Taste beim Loslassen wird kopiert statt verschoben. Sie können auch in eine Zelle tippen: Wählen Sie einen Namen aus den Vorschlägen, um die Person einzuteilen, oder lassen Sie den Text einfach stehen — etwa „Pause“ — dann erscheint er in der Zelle.",
+    "If somebody works different times from the range, right-click their name (or press and hold it on a touch screen, or press Enter on it) and enter the exact times. The cell then shows only the time that differs: “Anna (07:30)” starts at 07:30, “Anna (–07:45)” leaves at 07:45.":
+        "Arbeitet jemand zu anderen Zeiten als der Zeitraum, klicken Sie mit der rechten Maustaste auf den Namen (auf einem Touchscreen lange drücken, oder Enter auf dem Namen) und geben Sie die genauen Zeiten ein. Die Zelle zeigt dann nur die abweichende Zeit: „Anna (07:30)“ beginnt um 07:30, „Anna (–07:45)“ geht um 07:45.",
+    "A week nobody has planned yet starts as a copy of the last one that was. Nothing is written until you press Save.":
+        "Eine noch nicht geplante Woche beginnt als Kopie der zuletzt geplanten. Geschrieben wird nichts, bis Sie speichern.",
+
+    # the areas page
+    "Rooms and groups on the roster": "Räume und Gruppen im Dienstplan",
+    "Back to the roster": "Zurück zum Dienstplan",
+    "An area is somewhere people work — a room, a group, the garden. Any time range on the roster can be split into the areas it needs; the split then applies to every day of that week.":
+        "Ein Bereich ist ein Ort, an dem gearbeitet wird — ein Raum, eine Gruppe, der Garten. Jeder Zeitraum im Dienstplan lässt sich in die Bereiche aufteilen, die er braucht; die Aufteilung gilt dann für jeden Tag dieser Woche.",
+    "Icon": "Symbol",
+    "In use": "In Gebrauch",
+    "Area": "Bereich",
+    "Save the areas": "Bereiche speichern",
+}
+
+ROSTER_GRID_PLURALS = {
+    "One placement was left out because the person is away, not employed or it is a public holiday.": (
+        "Eine Einteilung wurde weggelassen, weil die Person abwesend oder nicht beschäftigt ist oder Feiertag ist.",
+        "%(count)s Einteilungen wurden weggelassen, weil die Person abwesend oder nicht beschäftigt ist oder Feiertag ist.",
+    ),
+}
+
+ROSTER_GRID_JAVASCRIPT = {
+    "Remove %s?": "%s entfernen?",
+    "People placed in it: %s. They are taken out with it.":
+        "Darin eingeteilte Personen: %s. Sie werden mit herausgenommen.",
+    "Remove": "Entfernen",
+    "Times for %s": "Zeiten für %s",
+    "%(day)s, time range %(range)s. Enter the exact times this person works; the cell then shows only the time that differs.":
+        "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person ein; die Zelle zeigt dann nur die abweichende Zeit.",
+    "The times need a length.": "Die Zeiten brauchen eine Dauer.",
+}
+
+PAGES.update(ROSTER_GRID)
+PLURALS.update(ROSTER_GRID_PLURALS)
+
 # The djangojs catalogue — the strings the browser says for itself.
 JAVASCRIPT = {
     "That is not a time this app can read. Try 8:30, 8,5 or 830.":
@@ -484,3 +601,5 @@ JAVASCRIPT = {
     "Copied": "Kopiert",
     "Press Ctrl-C": "Strg-C drücken",
 }
+
+JAVASCRIPT.update(ROSTER_GRID_JAVASCRIPT)

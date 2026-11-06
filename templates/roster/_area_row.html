@@ -1,0 +1,28 @@
+{% load i18n static %}<tr data-row>
+  <td>
+    {{ form.id }}
+    <label class="sr-only" for="{{ form.name.id_for_label }}">{% translate "Name" %}</label>
+    {{ form.name }}
+    {% for error in form.name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+  </td>
+  <td>
+    {% comment %}The icons as radio buttons drawn as the pictures themselves, all
+    out of the one sprite the roster uses.{% endcomment %}
+    <fieldset class="icon-choices">
+      <legend class="sr-only">{% translate "Icon" %}</legend>
+      {% for radio in form.icon %}
+        <label class="icon-choice" title="{{ radio.choice_label }}">
+          {{ radio.tag }}
+          <svg class="ricon" aria-hidden="true" focusable="false"><use href="{% static 'icons/areas.svg' %}#{{ radio.data.value }}"></use></svg>
+          <span class="sr-only">{{ radio.choice_label }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+    {% for error in form.icon.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+  </td>
+  <td><label class="sr-only" for="{{ form.is_active.id_for_label }}">{% translate "In use" %}</label>{{ form.is_active }}</td>
+  <td>
+    <label class="sr-only">{{ form.DELETE }} {% translate "Remove" %}</label>
+    <button type="button" class="link-button" data-row-remove>{% translate "Remove" %}</button>
+  </td>
+</tr>

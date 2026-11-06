@@ -13,7 +13,5 @@ urlpatterns = [
     # resolved url_name and a POST that resolved to nothing would leave the
     # Team section unmarked on the page somebody just saved.
     path("save/", views.plan, name="save"),
-    path("copy/", views.copy_week, name="copy-week"),
-    path("fill/", views.fill_from_pattern, name="fill-from-pattern"),
-    path("<int:pk>/delete/", views.shift_delete, name="shift-delete"),
+    path("areas/", views.areas, name="areas"),
 ]

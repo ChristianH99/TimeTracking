@@ -1,0 +1,12 @@
+{% load i18n %}{% comment %}One person in one cell — a Shift. Everything that says where it is lives
+in the hidden `cell` input, and a drag rewrites that one input. The label is
+written by roster_plan.js from the name and whichever times differ from the
+slot's.{% endcomment %}
+<span class="rchip{% if form.errors %} has-error{% endif %}" data-placement tabindex="0">
+  {{ form.id }}{{ form.employee }}{{ form.cell }}{{ form.custom_start }}{{ form.custom_end }}
+  <label class="sr-only">{{ form.DELETE }} {% translate "Remove" %}</label>
+  <span class="rchip-name" data-chip-label></span>
+  <button type="button" class="rchip-remove" data-chip-remove tabindex="-1"
+          aria-label="{% translate 'Take out of this cell' %}" title="{% translate 'Take out of this cell' %}">×</button>
+  {% for field in form %}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}{% endfor %}
+</span>

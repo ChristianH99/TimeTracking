@@ -72,7 +72,8 @@ let `pytest` build its own database.
 ## Commands
 
 ```
-uv run pytest                                     # ~610 tests, ~220 s
+uv run pytest                                     # ~750 tests, ~10 min
+uv run --with playwright pytest apps/roster/test_browser.py   # the planner, in Edge
 
 uv run python manage.py close_leave_year 2025 --notice 2025-11-15
 uv run python manage.py close_leave_year 2025 --expire
@@ -156,9 +157,9 @@ Each of these is here because breaking it produces a page that still renders.
   is how a removed row comes back wearing "This field is required".
 - **A hidden container makes its inputs unfocusable**, and a validation error
   inside one makes Save do nothing at all with an unfocusable-control warning in
-  the console as the only clue. The roster's card holder is moved off-screen by
-  CSS rather than given `hidden`, and a removed roster card is dimmed rather than
-  hidden, for this reason.
+  the console as the only clue. The roster's row holder is moved off-screen by
+  CSS rather than given `hidden`, and a removed placement goes back into it with
+  its DELETE ticked rather than being hidden or dropped, for this reason.
 - **Django's `{# #}` is single-line only** — its lexer matches without DOTALL,
   so a comment that wraps is rendered onto the page. Use `{% comment %}`.
 - **`_("…")` inside an f-string is never extracted.** Bind it to a name first.
@@ -272,17 +273,46 @@ Each of these is here because breaking it produces a page that still renders.
 - **`own_or_manager` checks `user_id is not None` before comparing.** With both
   sides null a bare `==` is True, which would hand every not-yet-signed-in
   employee's timesheet to anybody with an account.
-- **A roster card is a form row, and dragging it moves the row.** The cards are
-  rendered once into an off-screen holder and *moved* into the column their
-  hidden `date` names; a drop rewrites that one input. There is never a second
-  representation of the week — no array, no JSON payload — because two
-  representations of one thing is the bug where the picture and the saved roster
-  disagree, and the first edit to disagree looks like a save that did not take.
-- **The hidden date is validated server-side against the week being edited.** It
-  is whatever the browser sent, so a page that trusted it would let a bug in the
-  drag handler write a shift into next March from a form that says it is editing
-  this week — and the page would look completely correct, the row simply would
-  not be on it.
+- **The roster is a grid, and a name in a cell is a `Shift`.** Rows are the
+  week's `TimeSlot`s (time ranges, edited per week, optionally split into
+  `Area`s), columns Monday to Friday. Each person placed in a cell is one
+  `Shift` carrying `slot` and `area`, with `start`/`end` always the times they
+  are expected — the slot's, unless the manager set their own. There is no
+  separate placements table generating shifts: two stored representations of
+  the plan is two chances to disagree, and the wrong one would be the one the
+  timesheet reads.
+- **The timesheet reads joined stretches, never raw shifts.** Somebody in the
+  07:00–07:15, 07:15–08:00 and 08:00–12:00 slots was asked to work 07:00–12:00;
+  comparing their single honest entry against three shifts would mark every
+  such day "different from the roster". `roster.models.planned_spans` is the one
+  door, and joins only where one shift ends exactly where the next begins — a
+  gap stays a gap.
+- **A placement is a form row, and dragging it moves the row.** Slots,
+  placements and cell texts are rendered once into an off-screen holder;
+  `roster_plan.js` builds the grid from the slot rows and *moves* each placement
+  and text into the cell its hidden `cell` input (`<slot>|<date>|<area>`) names.
+  A drop rewrites that one input. There is never a second representation of the
+  week — no array, no JSON payload. The list of people "not placed yet" under
+  the grid is derived from the rows on every change and stored nowhere.
+- **A new slot is referred to by a browser key until it is saved.** `new-N`, so
+  a range can be added and filled before the first Save; `WeekGrid.save` swaps
+  the key for the row. `SlotForm.slot_key` is a `cached_property` for a reason:
+  read again after the save it would answer with the new pk, and every placement
+  pointing at `new-1` would miss — which is a test, because it happened.
+- **The cell key is validated server-side against the week being edited.** It is
+  whatever the browser sent: the slot must be on the page, the date one of the
+  five shown, the area one the slot is split into. A page that trusted it would
+  let a bug in the drag handler write a shift into next March from a form that
+  says it is editing this week. Somebody in two places at once (overlapping
+  spans on one date — touching slots are fine) is refused too.
+- **A copied week is rendered, never written, until Save.** An unplanned week
+  opens pre-filled from the last planned one (`draft_from`) as *initial* data on
+  a GET. The POST is built from the posted rows alone and never with `initial`:
+  an extra row posted back equal to its initial is read by Django as empty and
+  skipped, so a draft validated against its own initial saves nothing.
+  `PlannedWeek` records that a week was saved, so a week cleared on purpose is
+  not filled in again. Absent, non-employed and holiday placements are left out
+  of the copy.
 - **Editing a day's hours withdraws its confirmation.** Otherwise the record
   says somebody agreed to figures they have never seen, which is exactly the
   claim a timesheet exists to be able to make honestly.
@@ -494,7 +524,7 @@ Each of these is here because breaking it produces a page that still renders.
 
 ## Tests
 
-~610 cases. The value is concentrated in the ones that **discover their own
+~750 cases. The value is concentrated in the ones that **discover their own
 targets**, so a page added next month is covered the day it lands:
 
 - `config/tests.py` walks the URLconf (the sidebar registry and the open list
@@ -592,20 +622,25 @@ recognises them as decided rather than missed.
   converting. A configurable first day would mean every seven-long list in the
   codebase knowing which rotation it is in, for a business that will never change
   the answer.
-- **The roster's seven columns never reflow to one.** At a narrow width the week
-  scrolls sideways instead. A week that is not seven columns is not a week, and
-  the comparison across days is the whole reason anybody opens the page. The
+- **The roster's five columns never reflow to one.** At a narrow width the grid
+  scrolls sideways inside `.rgrid-scroll` instead. A week that is not its days
+  side by side is not a week, and the comparison across days is the whole reason
+  anybody opens the page. The
   contract's seven hour boxes *do* reflow, because they are seven independent
   numbers and nothing is compared across them.
-- **Copying a week adds rather than replaces**, and the button says so.
-  Replacing is the tidier implementation and would silently discard a fortnight
-  somebody had already adjusted; adding leaves a visible duplicate that takes one
-  drag to fix.
-- **"Fill from contracts" adds the break on top of the contracted hours.** A
-  contract counts working time and a shift is clock-in to clock-out, so without
-  it everybody rostered against a 7.5-hour contract would be down 45 minutes a
-  day the moment they took the break they are legally required to take — an
-  arithmetic error that turns up in a payroll audit rather than on the page.
+- **A week is copied only into a week nobody has planned.** There is no "copy
+  that week here" over an existing grid and no "fill from contracts" any more:
+  the grid replaced both, and a copy on top of a planned week is exactly the
+  duplicate the old "adds rather than replaces" rule existed to make survivable.
+- **Removing an area from a slot moves its people, it does not drop them.** They
+  go to the slot's first remaining cell that day — a visible name in the wrong
+  room takes one drag to fix; a name that silently vanished is noticed the
+  morning nobody is in the room. Text in a removed area is dropped, because it
+  is already off the page.
+- **Away is red on the roster, and only there.** `--away` (currently `--danger`'s
+  value) is a token of its own because the people planning the week asked for
+  red, and "away" and "destroys something" must be able to part company.
+  Sickness stays `--plum` everywhere else.
 - **A closure materialises absence rows rather than being consulted at read
   time.** So the balance page shows it beside the days somebody chose, in one
   list with no second code path — and somebody who joins in September does not
@@ -660,7 +695,13 @@ recognises them as decided rather than missed.
   flow keeps that between the doctor, the insurer and payroll, which is where it
   belongs. The same argument applies to SGB IX disability leave: naming a leave
   type after it makes the grant list a record of somebody's disability status.
-- **Both a drag and arrow keys move a roster card.** A drag has no keyboard
-  equivalent and cannot be offered to a screen reader at all, so the `‹` and `›`
-  buttons are not a courtesy — they are the only way half a team can use the
-  page.
+- **Everything a drag does on the roster can be done from the keyboard.** Typing
+  a name in a cell places that person (the suggestions are a listbox with arrows
+  and Enter); Delete on a focused name takes it out; Enter on it, or the
+  context-menu key, opens its own times. A drag cannot be offered to a screen
+  reader at all, so these are not a courtesy.
+- **The roster drags with pointer events, not HTML drag-and-drop.** The tablet in
+  the staff room is the case: HTML drag-and-drop does not start from a touch on
+  most of them, and where it does it starts from a long press — the gesture the
+  page needs for somebody's own times. Names carry `touch-action: none` so a
+  finger drags them; everywhere else a finger still scrolls.

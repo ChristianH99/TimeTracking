@@ -1,0 +1,30 @@
+{% load i18n %}{% comment %}One time range: the row header of the grid. roster_plan.js moves it into the
+first cell of its row and rebuilds the row around it whenever its times or
+areas change.{% endcomment %}
+<div class="rslot{% if form.errors %} has-error{% endif %}" data-slot>
+  {{ form.id }}{{ form.key }}
+  <div class="rslot-times">
+    <label class="sr-only" for="{{ form.start.id_for_label }}">{% translate "From" %}</label>
+    {{ form.start }}
+    <span class="roster-dash" aria-hidden="true">–</span>
+    <label class="sr-only" for="{{ form.end.id_for_label }}">{% translate "To" %}</label>
+    {{ form.end }}
+  </div>
+  <div class="rslot-tools">
+    <details class="rslot-areas" data-slot-areas>
+      <summary>{% translate "Areas" %}</summary>
+      <div class="rslot-areas-list">
+        {% for box in form.areas %}
+          <label class="rslot-area" data-area-choice="{{ box.data.value }}">{{ box.tag }} <span>{{ box.choice_label }}</span></label>
+        {% empty %}
+          <p class="help">{% translate "No areas yet." %}</p>
+        {% endfor %}
+      </div>
+    </details>
+    <label class="sr-only">{{ form.DELETE }} {% translate "Remove this time range" %}</label>
+    <button type="button" class="icon-button rslot-remove" data-slot-remove
+            aria-label="{% translate 'Remove this time range' %}" title="{% translate 'Remove this time range' %}">×</button>
+  </div>
+  {% for field in form %}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}{% endfor %}
+  {% for error in form.non_field_errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+</div>

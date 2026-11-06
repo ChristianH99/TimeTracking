@@ -1306,10 +1306,6 @@ msgstr "Dieser Tag liegt nicht in der geplanten Woche."
 msgid "A shift needs a length."
 msgstr "Eine Schicht braucht eine Dauer."
 
-#: .\apps\roster\forms.py:115
-msgid "copy from the week beginning"
-msgstr "kopieren aus der Woche ab"
-
 #: .\apps\roster\models.py:70
 msgid "Shown on the card — “group 2”, “outing”, anything the shift needs saying about."
 msgstr "Erscheint auf der Karte — „Gruppe 2“, „Ausflug“, was zur Schicht zu sagen ist."
@@ -1325,40 +1321,6 @@ msgstr "Schichten"
 #: .\apps\roster\views.py:74
 msgid "The roster was saved."
 msgstr "Der Dienstplan wurde gespeichert."
-
-#: .\apps\roster\views.py:76
-msgid "The roster was not saved — see the cards marked below."
-msgstr "Der Dienstplan wurde nicht gespeichert — siehe die markierten Karten unten."
-
-#: .\apps\roster\views.py:178
-msgid "That is not a date this app can read."
-msgstr "Das ist kein Datum, das diese App lesen kann."
-
-#: .\apps\roster\views.py:183
-msgid "That is this week — copying it onto itself would double every shift."
-msgstr "Das ist diese Woche — sie auf sich selbst zu kopieren würde jede Schicht verdoppeln."
-
-#: .\apps\roster\views.py:189
-#, python-format
-msgid "%(count)s shifts were copied from the week of %(from)s. They were added to what was already here, so anything that is now doubled can be dragged off."
-msgstr "%(count)s Schichten wurden aus der Woche ab %(from)s kopiert. Sie wurden zum Vorhandenen hinzugefügt; was jetzt doppelt ist, lässt sich wegziehen."
-
-#: .\apps\roster\views.py:193
-msgid "That week has no shifts to copy."
-msgstr "In dieser Woche gibt es keine Schichten zum Kopieren."
-
-#: .\apps\roster\views.py:249
-#, python-format
-msgid "%(count)s shifts were drafted from the contracts, starting at %(start)s. Days that already had somebody on them were left alone — drag the cards to where they belong."
-msgstr "%(count)s Schichten wurden aus den Verträgen entworfen, beginnend um %(start)s. Tage, an denen bereits jemand eingeteilt war, blieben unangetastet — ziehen Sie die Karten dorthin, wo sie hingehören."
-
-#: .\apps\roster\views.py:255
-msgid "Nothing to draft: everybody who works this week is already rostered."
-msgstr "Nichts zu entwerfen: alle, die diese Woche arbeiten, sind bereits eingeteilt."
-
-#: .\apps\roster\views.py:273
-msgid "The shift was removed."
-msgstr "Die Schicht wurde entfernt."
 
 #: .\apps\timesheets\clocking.py:123
 msgid "A shift is already running. Stop that one before starting another."
@@ -3250,46 +3212,9 @@ msgstr "Diese Woche"
 msgid "Next"
 msgstr "Weiter"
 
-#: .\templates\roster\plan.html:25
-msgid "Draft this week from the contracts?"
-msgstr "Diese Woche aus den Verträgen entwerfen?"
-
-#: .\templates\roster\plan.html:26
-#, python-format
-msgid "Everybody who works a day this week and is not already rostered on it gets a shift starting at %(start)s, as long as their contract says. Days that already have somebody on them are left alone. It is a first draft — drag the cards where they belong."
-msgstr "Alle, die diese Woche an einem Tag arbeiten und dort noch nicht eingeteilt sind, bekommen eine Schicht ab %(start)s, so lang wie ihr Vertrag es vorsieht. Tage, an denen bereits jemand eingeteilt ist, bleiben unangetastet. Es ist ein erster Entwurf — ziehen Sie die Karten dorthin, wo sie hingehören."
-
-#: .\templates\roster\plan.html:27
-msgid "Draft the week"
-msgstr "Woche entwerfen"
-
-#: .\templates\roster\plan.html:30
-msgid "Fill from contracts"
-msgstr "Aus Verträgen füllen"
-
-#: .\templates\roster\plan.html:37
-msgid "Copy that week here"
-msgstr "Diese Woche hierher kopieren"
-
-#: .\templates\roster\plan.html:79
-msgid "asked for"
-msgstr "beantragt"
-
-#: .\templates\roster\plan.html:87
-msgid "Shift"
-msgstr "Schicht"
-
 #: .\templates\roster\plan.html:122 .\templates\timesheets\day.html:131
 msgid "Note"
 msgstr "Anmerkung"
-
-#: .\templates\roster\plan.html:135 .\templates\roster\plan.html:167
-msgid "Move to the previous day"
-msgstr "Auf den vorherigen Tag verschieben"
-
-#: .\templates\roster\plan.html:137 .\templates\roster\plan.html:169
-msgid "Move to the next day"
-msgstr "Auf den nächsten Tag verschieben"
 
 #: .\templates\roster\plan.html:179
 msgid "Save the roster"
@@ -3298,22 +3223,6 @@ msgstr "Dienstplan speichern"
 #: .\templates\roster\plan.html:189
 msgid "Planning the week"
 msgstr "Die Woche planen"
-
-#: .\templates\roster\plan.html:191
-msgid "Each column is a day. A card is one person’s shift on that day, and somebody can have more than one — a split shift is two cards."
-msgstr "Jede Spalte ist ein Tag. Eine Karte ist die Schicht einer Person an diesem Tag, und es können mehrere sein — ein geteilter Dienst sind zwei Karten."
-
-#: .\templates\roster\plan.html:192
-msgid "Drag a card to another column to move the shift, or use the ‹ and › buttons on it. Nothing is written until you press Save."
-msgstr "Ziehen Sie eine Karte in eine andere Spalte, um die Schicht zu verschieben, oder benutzen Sie die Schaltflächen ‹ und › darauf. Geschrieben wird nichts, bis Sie speichern."
-
-#: .\templates\roster\plan.html:193
-msgid "“Fill from contracts” drafts a whole week from everybody’s contracted hours, starting at the time set under Working time. It adds the break the day needs on top, because a contract counts working time and a shift is clock-in to clock-out."
-msgstr "„Aus Verträgen füllen“ entwirft eine ganze Woche aus den vertraglichen Stunden aller, beginnend zu der unter „Arbeitszeit“ gesetzten Uhrzeit. Die für den Tag nötige Pause wird obendrauf gerechnet, denn ein Vertrag zählt Arbeitszeit und eine Schicht geht von Kommen bis Gehen."
-
-#: .\templates\roster\plan.html:194
-msgid "The pale bands are people who are already away. A band marked “asked for” is a request nobody has decided yet — deciding it and planning around it are the same job."
-msgstr "Die blassen Balken sind Personen, die bereits abwesend sind. Ein mit „beantragt“ markierter Balken ist ein noch nicht entschiedener Antrag — ihn zu entscheiden und um ihn herum zu planen ist dieselbe Aufgabe."
 
 #: .\templates\timesheets\day.html:12
 msgid "Hours for this day"
@@ -3643,3 +3552,238 @@ msgstr "Ein Feiertag, ein Urlaubstag oder ein Krankheitstag wird mit den Sollstu
 #~ msgid "A week that contains a holiday or a sick day shows fewer hours worked than contracted, with the reason named on the row. This app reports hours; it does not add absence back as time worked."
 #~ msgstr "Eine Woche mit einem Urlaubs- oder Krankheitstag weist weniger gearbeitete als vertragliche Stunden aus, mit dem Grund in der jeweiligen Zeile. Diese App weist Stunden nach; sie rechnet Abwesenheit nicht als Arbeitszeit zurück."
 
+msgid "Areas"
+msgstr "Bereiche"
+
+msgid "Rooms and groups on the roster"
+msgstr "Räume und Gruppen im Dienstplan"
+
+msgid "Back to the roster"
+msgstr "Zurück zum Dienstplan"
+
+msgid "An area is somewhere people work — a room, a group, the garden. Any time range on the roster can be split into the areas it needs; the split then applies to every day of that week."
+msgstr "Ein Bereich ist ein Ort, an dem gearbeitet wird — ein Raum, eine Gruppe, der Garten. Jeder Zeitraum im Dienstplan lässt sich in die Bereiche aufteilen, die er braucht; die Aufteilung gilt dann für jeden Tag dieser Woche."
+
+msgid "Icon"
+msgstr "Symbol"
+
+msgid "In use"
+msgstr "In Gebrauch"
+
+msgid "No areas yet."
+msgstr "Noch keine Bereiche."
+
+msgid "Area"
+msgstr "Bereich"
+
+msgid "Save the areas"
+msgstr "Bereiche speichern"
+
+msgid "Start with an empty week instead"
+msgstr "Stattdessen mit einer leeren Woche beginnen"
+
+msgid "These shifts are not drawn on the grid — they fall on a weekend or were planned before the grid existed. They still count on the timesheet."
+msgstr "Diese Schichten erscheinen nicht im Raster — sie liegen am Wochenende oder wurden vor dem Raster geplant. Auf dem Stundenzettel zählen sie trotzdem."
+
+msgid "Time"
+msgstr "Zeit"
+
+msgid "Not placed yet"
+msgstr "Noch nicht eingeteilt"
+
+msgid "works that day"
+msgstr "arbeitet an dem Tag"
+
+msgid "no hours that day"
+msgstr "an dem Tag keine Stunden"
+
+msgid "This week has no time ranges yet. Add the first one below."
+msgstr "Diese Woche hat noch keine Zeiträume. Legen Sie unten den ersten an."
+
+msgid "Time range"
+msgstr "Zeitraum"
+
+msgid "Apply"
+msgstr "Übernehmen"
+
+msgid "Use the time range"
+msgstr "Zeiten des Zeitraums verwenden"
+
+msgid "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells."
+msgstr "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf."
+
+msgid "Below the grid is everybody who has not been placed on that day yet. People whose contract has no hours that day are lighter, and people who are away are red — both can still be placed when needed. Not everybody has to be."
+msgstr "Unter dem Raster steht, wer an dem Tag noch nicht eingeteilt ist. Wer laut Vertrag an dem Tag keine Stunden hat, ist heller dargestellt, wer abwesend ist, rot — beide lassen sich bei Bedarf trotzdem einteilen. Es muss nicht jede Person eingeteilt werden."
+
+msgid "Drag a name into a cell to place them, between cells to move them, or back to the list to take them out. Hold Ctrl while dropping to copy instead of move. You can also type in a cell: pick a name from the suggestions to place that person, or just leave the text — “Break”, for instance — and it is shown in the cell."
+msgstr "Ziehen Sie einen Namen in eine Zelle, um die Person einzuteilen, zwischen Zellen, um sie zu verschieben, oder zurück in die Liste, um sie herauszunehmen. Mit gedrückter Strg-Taste beim Loslassen wird kopiert statt verschoben. Sie können auch in eine Zelle tippen: Wählen Sie einen Namen aus den Vorschlägen, um die Person einzuteilen, oder lassen Sie den Text einfach stehen — etwa „Pause“ — dann erscheint er in der Zelle."
+
+msgid "If somebody works different times from the range, right-click their name (or press and hold it on a touch screen, or press Enter on it) and enter the exact times. The cell then shows only the time that differs: “Anna (07:30)” starts at 07:30, “Anna (–07:45)” leaves at 07:45."
+msgstr "Arbeitet jemand zu anderen Zeiten als der Zeitraum, klicken Sie mit der rechten Maustaste auf den Namen (auf einem Touchscreen lange drücken, oder Enter auf dem Namen) und geben Sie die genauen Zeiten ein. Die Zelle zeigt dann nur die abweichende Zeit: „Anna (07:30)“ beginnt um 07:30, „Anna (–07:45)“ geht um 07:45."
+
+msgid "A week nobody has planned yet starts as a copy of the last one that was. Nothing is written until you press Save."
+msgstr "Eine noch nicht geplante Woche beginnt als Kopie der zuletzt geplanten. Geschrieben wird nichts, bis Sie speichern."
+
+msgid "This week has not been planned yet, so it has been filled in from the week of %(week)s. Nothing is saved until you press Save."
+msgstr "Diese Woche ist noch nicht geplant und wurde deshalb aus der Woche ab %(week)s übernommen. Gespeichert wird erst, wenn Sie auf Speichern drücken."
+
+msgid "One placement was left out because the person is away, not employed or it is a public holiday."
+msgid_plural "%(count)s placements were left out because the person is away, not employed or it is a public holiday."
+msgstr[0] "Eine Einteilung wurde weggelassen, weil die Person abwesend oder nicht beschäftigt ist oder Feiertag ist."
+msgstr[1] "%(count)s Einteilungen wurden weggelassen, weil die Person abwesend oder nicht beschäftigt ist oder Feiertag ist."
+
+msgid "Take out of this cell"
+msgstr "Aus dieser Zelle nehmen"
+
+msgid "Remove this time range"
+msgstr "Diesen Zeitraum entfernen"
+
+msgid "A time range needs a length."
+msgstr "Ein Zeitraum braucht eine Dauer."
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Some entries could not be read — they are marked below."
+msgstr "Einige Angaben konnten nicht gelesen werden — sie sind unten markiert."
+
+msgid "A new time range arrived without a name the page could use."
+msgstr "Ein neuer Zeitraum kam ohne einen Namen an, mit dem die Seite etwas anfangen kann."
+
+msgid "Two time ranges arrived under the same name."
+msgstr "Zwei Zeiträume kamen unter demselben Namen an."
+
+msgid "That is not a cell on this page."
+msgstr "Das ist keine Zelle auf dieser Seite."
+
+msgid "That time range is not on this page."
+msgstr "Dieser Zeitraum ist nicht auf dieser Seite."
+
+msgid "That area is not part of this time range."
+msgstr "Dieser Bereich gehört nicht zu diesem Zeitraum."
+
+msgid "That time range is not split into areas."
+msgstr "Dieser Zeitraum ist nicht in Bereiche aufgeteilt."
+
+msgid "%(name)s is not employed on that day."
+msgstr "%(name)s ist an diesem Tag nicht beschäftigt."
+
+msgid "%(name)s’s times need a length."
+msgstr "Die Zeiten von %(name)s brauchen eine Dauer."
+
+msgid "%(name)s is in two places at once on %(day)s at %(time)s."
+msgstr "%(name)s ist am %(day)s um %(time)s an zwei Stellen gleichzeitig eingeteilt."
+
+msgid "Star"
+msgstr "Stern"
+
+msgid "Moon"
+msgstr "Mond"
+
+msgid "Sun"
+msgstr "Sonne"
+
+msgid "Tree"
+msgstr "Baum"
+
+msgid "Lunch plate"
+msgstr "Teller"
+
+msgid "Heart"
+msgstr "Herz"
+
+msgid "Flower"
+msgstr "Blume"
+
+msgid "Cloud"
+msgstr "Wolke"
+
+msgid "House"
+msgstr "Haus"
+
+msgid "Book"
+msgstr "Buch"
+
+msgid "Music"
+msgstr "Musik"
+
+msgid "Ball"
+msgstr "Ball"
+
+msgid "Leaf"
+msgstr "Blatt"
+
+msgid "Fish"
+msgstr "Fisch"
+
+msgid "Apple"
+msgstr "Apfel"
+
+msgid "Palette"
+msgstr "Malpalette"
+
+msgid "icon"
+msgstr "Symbol"
+
+msgid "position"
+msgstr "Position"
+
+msgid "in use"
+msgstr "in Gebrauch"
+
+msgid "Switching this off keeps every week it was used in and stops it being offered."
+msgstr "Ausgeschaltet bleibt jede Woche erhalten, in der der Bereich vorkam; er wird nur nicht mehr angeboten."
+
+msgid "area"
+msgstr "Bereich"
+
+msgid "areas"
+msgstr "Bereiche"
+
+msgid "week"
+msgstr "Woche"
+
+msgid "The Monday of the week."
+msgstr "Der Montag der Woche."
+
+msgid "time slot"
+msgstr "Zeitraum"
+
+msgid "time slots"
+msgstr "Zeiträume"
+
+msgid "A week starts on a Monday."
+msgstr "Eine Woche beginnt an einem Montag."
+
+msgid "saved"
+msgstr "gespeichert"
+
+msgid "planned week"
+msgstr "geplante Woche"
+
+msgid "planned weeks"
+msgstr "geplante Wochen"
+
+msgid "text"
+msgstr "Text"
+
+msgid "cell text"
+msgstr "Zellentext"
+
+msgid "cell texts"
+msgstr "Zellentexte"
+
+msgid "%(kind)s, half day"
+msgstr "%(kind)s, halber Tag"
+
+msgid "%(kind)s, asked for"
+msgstr "%(kind)s, beantragt"
+
+msgid "The roster was not saved — see the entries marked below."
+msgstr "Der Dienstplan wurde nicht gespeichert — siehe die markierten Einträge unten."
+
+msgid "%(names)s has been used in the roster and was kept. Untick “in use” instead: that stops it being offered and keeps every week it was used in."
+msgstr "%(names)s kommt im Dienstplan vor und wurde behalten. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten."
+
+msgid "The areas were saved."
+msgstr "Die Bereiche wurden gespeichert."

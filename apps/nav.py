@@ -44,7 +44,7 @@ ITEMS = {
     # to prevent. apps/timesheets/urls.py says why the route is duplicated.
     "team.roster": {
         ("roster", name)
-        for name in ("plan", "save", "copy-week", "shift-delete", "fill-from-pattern")
+        for name in ("plan", "save", "areas")
     },
     "team.timesheets": {
         ("timesheets", name)

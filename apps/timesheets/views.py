@@ -23,7 +23,7 @@ from apps.absences.models import Absence, BankHoliday, Balance, RequestStatus
 from apps.employees.models import Employee
 from apps.employees.permissions import manager_required, own_or_manager
 from apps.organisation.models import OrgSettings
-from apps.roster.models import Shift
+from apps.roster.models import planned_spans
 from apps.timesheets import clocking
 from apps.timesheets.balance import hours_balance
 from apps.timesheets.forms import DayForm, SegmentFormSet
@@ -65,9 +65,10 @@ def build_week(employee, monday, settings=None):
     rules = list(settings.break_rules.all()) if settings.is_stored else None
     days = [monday + dt.timedelta(days=offset) for offset in range(7)]
 
-    shifts = {}
-    for shift in Shift.objects.filter(employee=employee, date__gte=days[0], date__lte=days[-1]):
-        shifts.setdefault(shift.date, []).append(shift)
+    # Joined into stretches: somebody in three consecutive slots of the grid
+    # was asked to work one stretch, and comparing their single honest entry
+    # against three would mark every such day "different from the roster".
+    shifts = planned_spans(employee, days[0], days[-1])
 
     records = {
         record.date: record
@@ -375,7 +376,7 @@ def day(request, pk, date):
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
     record = DayRecord.objects.filter(employee=employee, date=the_date).first()
-    shifts = list(Shift.objects.filter(employee=employee, date=the_date))
+    shifts = planned_spans(employee, the_date, the_date).get(the_date, [])
 
     if request.method == "POST":
         instance = record or DayRecord(employee=employee, date=the_date)
@@ -491,7 +492,7 @@ def confirm_day(request, pk, date):
 
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
-    shifts = list(Shift.objects.filter(employee=employee, date=the_date))
+    shifts = planned_spans(employee, the_date, the_date).get(the_date, [])
 
     if not shifts:
         messages.error(request, _(
@@ -530,9 +531,10 @@ def confirm_week(request):
     settings = OrgSettings.current()
     rules = list(settings.break_rules.all()) if settings.is_stored else None
 
-    shifts = {}
-    for shift in Shift.objects.filter(employee=employee, date__gte=days[0], date__lte=days[-1]):
-        shifts.setdefault(shift.date, []).append(shift)
+    # Joined into stretches: somebody in three consecutive slots of the grid
+    # was asked to work one stretch, and comparing their single honest entry
+    # against three would mark every such day "different from the roster".
+    shifts = planned_spans(employee, days[0], days[-1])
     existing = set(
         DayRecord.objects.filter(employee=employee, date__gte=days[0], date__lte=days[-1])
         .values_list("date", flat=True)
