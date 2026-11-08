@@ -14,7 +14,7 @@ import pytest
 from apps.absences.carryover import LeaveCarryOver, expire_due
 from apps.absences.models import Absence, AbsenceKind, Balance, RequestStatus
 from apps.timesheets.hours import contracted_minutes
-from apps.timesheets.views import build_week
+from conftest import week_of
 
 
 # --------------------------------------------------------------------------
@@ -96,7 +96,7 @@ class TestAbsenceCreditsHours:
             start_date=monday, end_date=monday,
             status=RequestStatus.APPROVED,
         )
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         row = week["rows"][0]
         assert row["credited_minutes"] == contracted_minutes(Decimal("8"))
         assert row["worked_minutes"] is None, "nobody worked it, and the row says so"
@@ -112,7 +112,7 @@ class TestAbsenceCreditsHours:
             start_date=monday, end_date=monday,
             is_half_day=True, status=RequestStatus.APPROVED,
         )
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         assert week["rows"][0]["credited_minutes"] == contracted_minutes(Decimal("4"))
 
     def test_time_off_in_lieu_credits_nothing(self, org, anna, monday):
@@ -125,7 +125,7 @@ class TestAbsenceCreditsHours:
             start_date=monday, end_date=monday,
             status=RequestStatus.APPROVED,
         )
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         row = week["rows"][0]
         assert row["credited_minutes"] == 0
         # A full contracted day of shortfall, with nothing credited against it.
@@ -142,7 +142,7 @@ class TestAbsenceCreditsHours:
             start_date=monday, end_date=monday,
             status=RequestStatus.REQUESTED,
         )
-        assert build_week(anna, monday)["rows"][0]["credited_minutes"] == 0
+        assert week_of(anna, monday)["rows"][0]["credited_minutes"] == 0
 
     @pytest.mark.parametrize("status", [
         RequestStatus.REQUESTED, RequestStatus.REJECTED, RequestStatus.WITHDRAWN,
@@ -159,7 +159,7 @@ class TestAbsenceCreditsHours:
             employee=anna, kind=AbsenceKind.SICK,
             start_date=monday, end_date=monday, status=status,
         )
-        assert build_week(anna, monday)["rows"][0]["credited_minutes"] == 0
+        assert week_of(anna, monday)["rows"][0]["credited_minutes"] == 0
 
     def test_an_absence_waiting_to_be_cancelled_still_counts(self, org, anna, monday):
         """Asking is not the same as being granted it. The day is still booked
@@ -170,7 +170,7 @@ class TestAbsenceCreditsHours:
             start_date=monday, end_date=monday,
             status=RequestStatus.CANCELLING,
         )
-        assert build_week(anna, monday)["rows"][0]["credited_minutes"] == (
+        assert week_of(anna, monday)["rows"][0]["credited_minutes"] == (
             contracted_minutes(Decimal("8"))
         )
 
@@ -260,8 +260,8 @@ class TestChangingTheHours:
         later = monday + dt.timedelta(days=90)
         anna.set_hours([4, 4, 4, 4, 4, 0, 0], valid_from=later)
 
-        before = build_week(anna, monday)
-        after = build_week(anna, later - dt.timedelta(days=later.weekday()) + dt.timedelta(days=7))
+        before = week_of(anna, monday)
+        after = week_of(anna, later - dt.timedelta(days=later.weekday()) + dt.timedelta(days=7))
         assert before["contracted_total"] == contracted_minutes(Decimal("40"))
         assert after["contracted_total"] == contracted_minutes(Decimal("20"))
 

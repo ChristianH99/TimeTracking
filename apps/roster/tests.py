@@ -209,11 +209,11 @@ class TestTheTimesheetReadsStretches:
         assert [(s.start, s.end) for s in record.segments.all()] == [(T(7, 0), T(12, 0))]
 
     def test_one_honest_entry_matches_the_roster(self, org, anna, monday, three_slots):
-        from apps.timesheets.views import build_week
+        from conftest import week_of
 
         record = DayRecord.objects.create(employee=anna, date=monday)
         record.segments.create(position=0, start=T(7, 0), end=T(12, 0))
-        row = build_week(anna, monday)["rows"][0]
+        row = week_of(anna, monday)["rows"][0]
         assert row["planned_minutes"] == 300
         assert not row["differs_from_roster"]
 

@@ -163,24 +163,6 @@ class TestNoDoorIsLeftOpen:
         assert response.status_code == 302
         assert not DayRecord.objects.filter(employee=anna).exists()
 
-    def test_confirming_a_week_skips_the_locked_days(self, org, anna, client, manager):
-        """Skipped rather than refused. This is a bulk gesture over a week that
-        may be half closed, and refusing the whole thing because one day of it
-        is locked would leave nothing to press."""
-        monday = dt.date(2025, 9, 1)
-        for offset in range(2):
-            Shift.objects.create(
-                employee=anna, date=monday + dt.timedelta(days=offset),
-                start=dt.time(8), end=dt.time(16),
-            )
-        DayLock.lock(anna, [monday], by=manager.user)
-
-        client.post("/timesheet/confirm-week/", {"week": monday.isoformat()})
-        assert not DayRecord.objects.filter(employee=anna, date=monday).exists()
-        assert DayRecord.objects.filter(
-            employee=anna, date=monday + dt.timedelta(days=1),
-        ).exists()
-
     def test_clocking_in_is_refused(self, org, anna, client, manager):
         """Rare — it means somebody closed the month that is still running — but
         Start writes a record like anything else."""

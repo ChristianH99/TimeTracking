@@ -261,3 +261,23 @@ def monday(db):
     """A Monday well clear of any real public holiday, so a test that counts
     working days is not quietly changed by the calendar it happens to run on."""
     return dt.date(2026, 3, 2)
+
+
+def week_of(employee, monday, settings=None):
+    """Seven days from ``monday``, as the month draws them, with three totals.
+
+    What the tests that used to call ``build_week`` ask about, now that no page
+    shows a week of anybody's hours. The rows are ``views.day_rows`` — the very
+    rows ``build_month`` is made of — and every total is a sum of the rows' own
+    figures rather than a formula written again here: ``difference`` is the sum
+    of each day's ``saldo``, which is the figure the balance must agree with.
+    """
+    from apps.timesheets.views import day_rows
+
+    rows = day_rows(employee, monday, monday + dt.timedelta(days=6), settings)
+    return {
+        "rows": rows,
+        "contracted_total": sum(row["contracted_minutes"] for row in rows),
+        "credited_total": sum(row["credited_minutes"] for row in rows),
+        "difference": sum(row["saldo"] or 0 for row in rows),
+    }

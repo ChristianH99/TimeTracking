@@ -378,13 +378,6 @@ SINGULAR = {
     "There is nothing rostered on that day, so there is nothing to confirm. Enter the hours instead.":
         "An diesem Tag ist nichts eingeteilt, es gibt also nichts zu bestätigen. Tragen Sie die Stunden ein.",
     "%(date)s was confirmed: %(hours)s worked.": "%(date)s wurde bestätigt: %(hours)s gearbeitet.",
-    "%(confirmed)s days were confirmed. %(skipped)s already had hours entered and were left exactly as they are.":
-        "%(confirmed)s Tage wurden bestätigt. Bei %(skipped)s waren bereits Stunden eingetragen; sie blieben unverändert.",
-    "%(confirmed)s days were confirmed.": "%(confirmed)s Tage wurden bestätigt.",
-    "Every rostered day this week already has hours entered, so nothing was changed.":
-        "An jedem eingeteilten Tag dieser Woche sind bereits Stunden eingetragen; es wurde nichts geändert.",
-    "There is nothing rostered this week to confirm.":
-        "Diese Woche ist nichts eingeteilt, das bestätigt werden könnte.",
 
     # -- languages and the shell ----------------------------------------
     "German": "Deutsch",
@@ -442,8 +435,6 @@ SINGULAR = {
     "never": "nie",
     "left": "ausgeschieden",
     "manager": "Leitung",
-    "confirmed": "bestätigt",
-    "not confirmed": "nicht bestätigt",
     "differs": "abweichend",
     "not yet": "noch nicht",
     "no contract": "kein Vertrag",
@@ -457,8 +448,6 @@ SINGULAR = {
     "Next": "Weiter",
 
     "Worked": "Gearbeitet",
-    "Rostered": "Eingeteilt",
-    "Contracted": "Vertraglich",
 
     "Approve": "Genehmigen",
     "Decline": "Ablehnen",

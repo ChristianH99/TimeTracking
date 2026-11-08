@@ -15,7 +15,7 @@ import pytest
 
 from apps.roster.models import Shift, minutes_between
 from apps.timesheets.hours import clock, contracted_minutes, hhmm
-from apps.timesheets.models import DayRecord, EntrySource, WorkSegment, week_monday
+from apps.timesheets.models import DayRecord, EntrySource, WorkSegment
 
 
 @pytest.fixture
@@ -173,32 +173,39 @@ class TestEditingWithdrawsTheConfirmation:
         assert not record.is_confirmed
 
 
-class TestConfirmingAWholeWeek:
-    def test_it_skips_days_somebody_has_already_entered(self, org, anna, client, monday):
-        """The one thing this button must never do is overwrite a correction.
-        A day entered by hand is left exactly as it is, and the message says how
-        many were skipped."""
-        for offset in range(2):
-            Shift.objects.create(employee=anna, date=monday + dt.timedelta(days=offset),
-                                 start=dt.time(8, 0), end=dt.time(16, 30))
-        typed = DayRecord.objects.create(employee=anna, date=monday, note="stayed late")
-        WorkSegment.objects.create(day=typed, start=dt.time(8, 0), end=dt.time(19, 0))
+class TestTheMonthIsTheMainView:
+    """The start page no longer shows a week: somebody with a timesheet lands on
+    their month, and the page itself is left for accounts that have none."""
 
-        client.post("/timesheet/confirm-week/", {"week": monday.isoformat()})
+    def test_somebody_with_a_timesheet_lands_on_their_month(self, org, anna, client):
+        response = client.get("/")
+        assert response.status_code == 302
+        assert response["Location"] == "/timesheet/"
 
-        typed.refresh_from_db()
-        assert typed.note == "stayed late"
-        assert typed.gross_minutes == 660
-        assert not typed.is_confirmed
+    def test_so_does_a_manager(self, org, manager, manager_client):
+        response = manager_client.get("/")
+        assert response.status_code == 302
+        assert response["Location"] == "/timesheet/"
 
-    def test_it_does_not_confirm_days_in_the_future(self, org, anna, client, monday):
-        """Confirming a day that has not happened is a statement nobody is in a
-        position to make."""
-        future = week_monday(dt.date.today()) + dt.timedelta(days=30)
-        Shift.objects.create(employee=anna, date=future,
-                             start=dt.time(8, 0), end=dt.time(16, 30))
-        client.post("/timesheet/confirm-week/", {"week": future.isoformat()})
-        assert not DayRecord.objects.filter(employee=anna, date=future).exists()
+    def test_an_account_without_a_contract_is_told_so(self, org, client):
+        response = client.get("/")
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "You have no contract in this app yet" in body
+        assert "This week" not in body
+
+    def test_a_superuser_without_a_contract_still_sees_what_is_waiting(self, org, anna):
+        from django.contrib.auth.models import User
+        from django.test import Client
+
+        root = User.objects.create_superuser("root", password="pw")
+        browser = Client()
+        browser.force_login(root)
+        body = browser.get("/").content.decode()
+        assert "For you to deal with" in body
+
+    def test_there_is_no_week_to_confirm_any_more(self, org, anna, client, monday):
+        assert client.post("/timesheet/confirm-week/", {"week": monday.isoformat()}).status_code == 404
 
 
 class TestWhoMaySeeWhoseTime:
@@ -484,14 +491,14 @@ class TestTimeOffInLieu:
         """The whole reason it needs no overtime account: a day with no hours
         entered already reads as minus the contracted hours, flagged or not."""
         from apps.absences.models import Absence, AbsenceKind, RequestStatus
-        from apps.timesheets.views import build_week
+        from conftest import week_of
 
         Absence.objects.create(
             employee=anna, kind=AbsenceKind.OVERTIME,
             start_date=monday, end_date=monday,
             status=RequestStatus.APPROVED,
         )
-        week = build_week(anna, monday, org)
+        week = week_of(anna, monday, org)
         row = week["rows"][0]
         assert row["absence"].kind == AbsenceKind.OVERTIME
         assert row["worked_minutes"] is None

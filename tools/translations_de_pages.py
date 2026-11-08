@@ -415,23 +415,11 @@ PAGES = {
     "You have no contract in this app yet": "Zu Ihrem Konto gehört noch kein Vertrag",
     "That is normal for an account that administers the app rather than working shifts. If you should have a timesheet, ask whoever manages the roster to add you as an employee — they can link this account to you on the Employees page.":
         "Das ist normal für ein Konto, das die App verwaltet und keine Schichten arbeitet. Falls Sie einen Stundenzettel haben sollten, bitten Sie die Person, die den Dienstplan führt, Sie anzulegen — sie kann dieses Konto unter „Mitarbeitende“ mit Ihnen verknüpfen.",
-    "Open my timesheet": "Meinen Stundenzettel öffnen",
-    "Worked so far": "Bisher gearbeitet",
-    "Leave days left": "Resturlaub",
-    "Days waiting for approval": "Tage, die auf Genehmigung warten",
-    "You were rostered on these days and have not said what you worked. If it was exactly as planned, one press confirms them all.":
-        "An diesen Tagen waren Sie eingeteilt und haben noch nicht gesagt, was Sie gearbeitet haben. War es genau wie geplant, bestätigt ein Druck alle auf einmal.",
-    "Confirm the rostered days?": "Die eingeteilten Tage bestätigen?",
-    "Every day you were rostered this week and have not answered for is recorded as worked exactly as planned. Days you have already entered hours on are left exactly as they are.":
-        "Jeder Tag dieser Woche, an dem Sie eingeteilt waren und für den Sie noch nichts eingetragen haben, wird als genau wie geplant gearbeitet erfasst. Tage, an denen Sie bereits Stunden eingetragen haben, bleiben unverändert.",
-    "Confirm them": "Bestätigen",
-    "waiting for you": "wartet auf Sie",
     "For you to deal with": "Für Sie zu erledigen",
     "Open the roster": "Dienstplan öffnen",
     "Decide them": "Entscheiden",
     "Nothing is waiting.": "Es wartet nichts.",
     "Hours nobody has confirmed": "Stunden, die niemand bestätigt hat",
-    "See the team’s week": "Die Woche des Teams ansehen",
     "Everything from the last fortnight is confirmed.":
         "Alles aus den letzten zwei Wochen ist bestätigt.",
 
@@ -629,9 +617,6 @@ PLURALS = {
         "%(counter)s Person hat noch kein Konto. Das ist normal — die Verknüpfung entsteht bei der ersten Anmeldung von selbst, anhand ihres Anmeldenamens.",
         "%(counter)s Personen haben noch kein Konto. Das ist normal — die Verknüpfung entsteht bei der ersten Anmeldung von selbst, anhand ihres Anmeldenamens.",
     ),
-    "%(counter)s day is waiting for you": (
-        "%(counter)s Tag wartet auf Sie", "%(counter)s Tage warten auf Sie",
-    ),
     "%(counter)s day": ("%(counter)s Tag", "%(counter)s Tage"),
     "%(counter)s more booking — open the day to see it": (
         "%(counter)s weitere Buchung — Tag öffnen, um sie zu sehen",
@@ -804,6 +789,7 @@ ROSTER_GRID = {
     "No areas yet.": "Noch keine Bereiche.",
     "Remove this time range": "Diesen Zeitraum entfernen",
     "Take out of this cell": "Aus dieser Zelle nehmen",
+    "See the team": "Zum Team",
     "Edit this area": "Diesen Bereich bearbeiten",
     "New area": "Neuer Bereich",
     "Areas are saved straight away and shared by every week. Switching one off stops it being offered and keeps every week it was used in.":

@@ -28,8 +28,9 @@ years is two queries and about seven hundred iterations of pure arithmetic.
 ``WorkSegment.minutes`` returns zero until Stop is pressed, so a balance
 refreshed mid-shift does not creep upwards while somebody watches it.
 
-The one invariant worth stating: **over any single week, the change in this
-balance equals that week's ``difference`` in ``build_week``.** They are two
+The one invariant worth stating: **over any run of days, the change in this
+balance equals the sum of those days' ``saldo`` as the month draws them**
+(``views.day_rows``, the rows ``build_month`` is made of). They are two
 readings of one thing and a test holds them to it. If they ever drift, it will
 be because one of them learned about a new kind of credited day and the other
 did not.
@@ -99,7 +100,7 @@ def hours_balance(employee, until=None, settings=None):
         record = records.get(day)
         absence = next((a for a in absences if a.start_date <= day <= a.end_date), None)
 
-        # The same three branches as `build_week`, deliberately in the same
+        # The same three branches as `_day_row`, deliberately in the same
         # order: an absence credits what it credits, a public holiday credits
         # the whole day, and anything else credits nothing.
         given = 0

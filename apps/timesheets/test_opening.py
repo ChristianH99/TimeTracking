@@ -22,7 +22,7 @@ from apps.timesheets.balance import hours_balance
 from apps.timesheets.fields import SignedDurationField
 from apps.timesheets.hours import contracted_minutes
 from apps.timesheets.models import DayRecord, WorkSegment
-from apps.timesheets.views import build_week
+from conftest import week_of
 
 
 def _worked(employee, day, start, end):
@@ -227,7 +227,7 @@ class TestTheTwoFiguresAgree:
             status=RequestStatus.REQUESTED,
         )
 
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         running = hours_balance(anna, until=monday + dt.timedelta(days=6))
 
         assert running["movement"] == week["difference"], (
@@ -254,7 +254,7 @@ class TestTheTwoFiguresAgree:
         )
         _worked(anna, monday, 8, 12)
 
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         running = hours_balance(anna, until=monday + dt.timedelta(days=6))
         assert running["movement"] == week["difference"]
 
@@ -266,6 +266,6 @@ class TestTheTwoFiguresAgree:
         anna.save()
         anna.set_hours([4, 4, 4, 4, 4, 0, 0], valid_from=monday + dt.timedelta(days=3))
 
-        week = build_week(anna, monday)
+        week = week_of(anna, monday)
         running = hours_balance(anna, until=monday + dt.timedelta(days=6))
         assert running["movement"] == week["difference"]

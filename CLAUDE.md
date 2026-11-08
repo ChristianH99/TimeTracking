@@ -337,9 +337,9 @@ Each of these is here because breaking it produces a page that still renders.
   third moves the running total on every row below it and all six figures in the
   footer, so a reply carrying only the edited row would leave the column stale,
   and the alternative is repeating the prefix sum, the break rules and the
-  credited-hours branches in JavaScript. `build_month` and `build_week` are two
-  windows onto one `_day_row`, so the timesheet, the start page and the team
-  overview cannot say different things about one Tuesday.
+  credited-hours branches in JavaScript. `build_month` and `day_rows` are two
+  windows onto one `_day_row`, so the timesheet, the team overview and anything
+  else that reads a day cannot say different things about one Tuesday.
 - **The grid never changes shape.** `table-layout: fixed` with a width on every
   column, a height on every cell, and **four bookings shown per day** with the
   rest behind a `+n` that opens the pop-up (`BOOKINGS_SHOWN`, and the template
@@ -416,8 +416,8 @@ Each of these is here because breaking it produces a page that still renders.
   it is the segment with a null `end`, which is what a running shift always was.
 - **The saldo is actual minus supposed, and the running column carries
   forward.** Positive is green, negative red, nought black. The other sign would
-  disagree with `build_week`'s `difference`, with `hours_balance`, and with every
-  figure on the start page — one page saying +0:30 while another says −0:30 about
+  disagree with `hours_balance` and with the team overview's figure — one page
+  saying +0:30 while another says −0:30 about
   the same Tuesday is not a presentation choice. The running column starts from
   what the person carried *into* the month, so its last row is their balance to
   date and the same number `hours_balance` gives.
@@ -1002,12 +1002,17 @@ Each of these is here because breaking it produces a page that still renders.
 - **Editing a day's hours withdraws its confirmation.** Otherwise the record
   says somebody agreed to figures they have never seen, which is exactly the
   claim a timesheet exists to be able to make honestly.
-- **"Confirm the week" skips days that already have a record.** The one thing
-  that button must never do is overwrite a correction somebody made by hand. It
-  is on the *start page* now rather than on the timesheet: the month is where
-  hours are entered, and "have I confirmed" is a question the start page exists
-  to ask. Saving the month does not confirm — it withdraws confirmation on any
-  day whose hours changed, and a comment is not hours.
+- **The month is the main view, and nothing shows a week of anybody's hours.**
+  `/` sends anybody with a timesheet straight to their month; what is left of
+  the start page is for an account with no contract (an administrator, a
+  superuser), which still needs telling so and, if it may manage, what is
+  waiting. The week table, its totals and "confirm the week" went with the old
+  start page: a week of the same hours beside the month was a second reading of
+  one thing, and the month already takes a rostered day in one tap (the ✓
+  beside its rostered times). **The roster is the one page that is a week**,
+  because a plan is made a week at a time. Saving the month does not confirm —
+  it withdraws confirmation on any day whose hours changed, and a comment is
+  not hours.
 - **`DayRecord.from_shifts` calls `refresh_from_db()` before applying the break
   rules.** `apply_break_rules` reads the segments through a cached relation, and
   on a record whose segments were just `bulk_create`d that cache is empty —
@@ -1153,7 +1158,7 @@ Each of these is here because breaking it produces a page that still renders.
   see the next rule.
 - **Every other absence credits the contracted hours; time off in lieu does
   not.** `Absence.credits_hours` and `Absence.credited_minutes`, read by
-  `build_week`. A sick day is paid as though it had been worked (§3 EFZG) and so
+  `_day_row`. A sick day is paid as though it had been worked (§3 EFZG) and so
   is a day of leave (§11 BUrlG), so both hand back the contracted minutes and
   the week comes out level with the reason named on the row. **This reverses the
   original "absence is not added back" decision**, and the reversal is not a
@@ -1450,7 +1455,7 @@ recognises them as decided rather than missed.
   contract change that moves the entitlement underneath it. Each of those is a
   chance for the figure and the absences to disagree, and when they do the number
   on the page is wrong with nothing on the page to show it.
-- **One `build_week`, one `Balance`, used by both the employee's page and the
+- **One `_day_row`, one `Balance`, used by both the employee's page and the
   manager's.** A figure that reads differently depending on who is looking at it
   is the single most damaging bug this app could have, and two implementations is
   how it happens.

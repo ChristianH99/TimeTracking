@@ -1,8 +1,8 @@
 """The timesheet: what you were rostered, what you say you worked, and the month.
 
-**One row builder, three pages.** ``_day_row`` is the whole of what a date is
-worth to this person, and ``build_month`` (the timesheet), ``build_week`` (the
-start page and the team overview) are two windows onto the same function. A
+**One row builder.** ``_day_row`` is the whole of what a date is worth to this
+person, and ``build_month`` (the timesheet) and ``day_rows`` (a few dates, for
+whoever needs fewer than a month) are two windows onto the same function. A
 manager and an employee looking at one day and seeing different figures is the
 single most damaging bug this app could have, and two implementations is how it
 happens — so there is one, and the windows differ only in which dates they ask
@@ -44,7 +44,7 @@ from apps.timesheets.forms import DayForm, SegmentFormSet
 from apps.timesheets.hours import contracted_minutes
 from apps.timesheets.templatetags.hours import hhmm, hhmm_signed
 from apps.timesheets.models import (
-    DayLock, DayRecord, EntrySource, assert_unlocked, week_monday,
+    DayLock, DayRecord, EntrySource, assert_unlocked,
 )
 from apps.timesheets.zones import local_today, zone_for
 
@@ -77,15 +77,6 @@ def _refuse_future(request, employee, date, back):
         messages.error(request, FUTURE_MESSAGE % {"date": date.strftime("%d.%m.%Y")})
         return redirect(back)
     return None
-
-
-def _monday_from(request):
-    raw = request.GET.get("week") or request.POST.get("week")
-    try:
-        day = dt.date.fromisoformat(raw)
-    except (TypeError, ValueError):
-        day = dt.date.today()
-    return week_monday(day)
 
 
 # --------------------------------------------------------------------------
@@ -421,63 +412,19 @@ def _rows_for(employee, days, settings=None, rules=None):
 # The week — the start page and the team overview
 # --------------------------------------------------------------------------
 
-def build_week(employee, monday, settings=None):
-    """Everything one person's week is: seven rows, and the totals under them.
+def day_rows(employee, first, last, settings=None):
+    """One row per date from ``first`` to ``last``, exactly as the month draws them.
 
-    Kept after the timesheet went monthly, because two pages still ask the week
-    question and it is a different question: the start page asks "what does this
-    week still want from me", and the team overview asks it of everybody at
-    once. Both are built from ``_day_row``, so neither can drift from the month.
+    What is left of the old ``build_week`` now that nothing shows a week of anybody's
+    hours — the timesheet is the month, the team page is an overview, and the
+    roster is the one page in the app that is a week. Kept as a door of its own
+    for the callers that want a few days rather than a month: they get the very
+    rows ``build_month`` is made of, from the same ``_day_row``, so neither can
+    say something different about one Tuesday.
     """
-    days = [monday + dt.timedelta(days=offset) for offset in range(7)]
-    settings, rules, rows = _rows_for(employee, days, settings)
-
-    worked_total = sum(row["worked_minutes"] or 0 for row in rows)
-    credited_total = sum(row["credited_minutes"] for row in rows)
-    contracted_total = sum(row["contracted_minutes"] for row in rows)
-    return {
-        "employee": employee,
-        "monday": monday,
-        "sunday": days[-1],
-        "rows": rows,
-        "worked_total": worked_total,
-        "planned_total": sum(row["planned_minutes"] for row in rows),
-        "contracted_total": contracted_total,
-        "credited_total": credited_total,
-        "counted_total": worked_total + credited_total,
-        # Worked *plus what an absence credits*, minus contracted.
-        #
-        # This reverses an earlier decision and the reversal is the point: the
-        # first version added nothing back, so a fortnight's sickness showed as
-        # eighty hours of shortfall — a debt the employee does not owe and that
-        # German law says outright they do not (§3 EFZG for illness, §11 BUrlG
-        # for leave). Reporting it was not a conservative simplification; it was
-        # a wrong figure in the direction that costs the employee.
-        #
-        # What is *not* credited is time off in lieu, and that is what keeps the
-        # overtime mechanism working: the shortfall on such a day is the whole
-        # of how overtime is drawn down.
-        "difference": worked_total + credited_total - contracted_total,
-        "unconfirmed": sum(
-            1 for row in rows if row["record"] and not row["record"].is_confirmed
-        ),
-        "awaiting": sum(1 for row in rows if row["awaiting"]),
-        "previous_week": monday - dt.timedelta(days=7),
-        "next_week": monday + dt.timedelta(days=7),
-        "this_week": week_monday(dt.date.today()),
-        "today": dt.date.today(),
-        "settings": settings,
-        # Which of the two buttons to draw, and since when. Read from the
-        # database rather than from the rows above, because a stretch started
-        # last night is still running this morning and is not on this week at all
-        # once the week rolls over.
-        "clock": clocking.state_for(employee),
-        # Everything owed, up to the end of the week being looked at. This is
-        # where an opening balance carried in from a previous contract becomes
-        # visible — without it the figure would be stored and never shown, which
-        # is a figure nobody can check.
-        "running": hours_balance(employee, until=days[-1], settings=settings),
-    }
+    days = [first + dt.timedelta(days=offset) for offset in range((last - first).days + 1)]
+    _settings, _rules, rows = _rows_for(employee, days, settings)
+    return rows
 
 
 # --------------------------------------------------------------------------
@@ -700,24 +647,21 @@ def build_month(employee, first, settings=None):
 
 @login_required
 def home(request):
-    """The start page: this week, and whatever is asking to be dealt with.
+    """The start page: the month, for anybody who has a timesheet.
 
-    Deliberately not a dashboard of statistics. The two questions somebody opens
-    this app with are "have I confirmed my hours" and — for a manager — "is
-    anybody waiting on me", and a page of totals answers neither.
+    The month is the app's main view, and a start page that put a *week* of the
+    same hours beside it was a second reading of one thing that the person then
+    had to reconcile with the first. So somebody with a contract goes straight
+    to their month. What is left here is for an account with no timesheet — an
+    administrator, or a superuser rescuing an installation — which still has
+    things to be told: that it has no contract, and, if it may manage, what is
+    waiting.
     """
     employee = Employee.for_user(request.user)
-    context = {"employee": employee}
-
     if employee is not None:
-        monday = week_monday(dt.date.today())
-        week = build_week(employee, monday)
-        context["week"] = week
-        context["balance"] = Balance(employee, dt.date.today().year)
-        context["running"] = week["running"]
+        return redirect("timesheets:mine")
 
-    if request.user.is_authenticated and context.get("employee") is None:
-        context["no_contract"] = True
+    context = {"no_contract": True}
 
     from apps.employees.permissions import is_manager as _is_manager
 
@@ -1101,7 +1045,6 @@ def day(request, pk, date):
         "settings": settings,
         "locked": locked,
         "today": dt.date.today(),
-        "week": week_monday(the_date),
         # The break table, so the page can answer while somebody is typing
         # rather than only on save. The browser gets the *rules*, not a computed
         # answer, and applies the same formula — which is the only version that
@@ -1187,66 +1130,6 @@ def confirm_day(request, pk, date):
         "hours": _hours_label(record.worked_minutes, request.user),
     })
     return redirect(_month_url(request, employee, the_date))
-
-
-@login_required
-@require_POST
-def confirm_week(request):
-    """Confirm every rostered day of a week that has nothing entered yet.
-
-    **Only the days with no record.** A day somebody has already entered by hand
-    is left alone, because overwriting it with the rostered times would silently
-    discard the correction they made — which is the one thing this button must
-    never do. The message says how many were skipped and why.
-    """
-    employee = Employee.for_user(request.user)
-    if employee is None:
-        return render(request, "absences/no_contract.html")
-
-    monday = _monday_from(request)
-    days = [monday + dt.timedelta(days=offset) for offset in range(7)]
-    today = dt.date.today()
-    settings = OrgSettings.current()
-    rules = list(settings.break_rules.all()) if settings.is_stored else None
-
-    shifts = planned_spans(employee, days[0], days[-1])
-    existing = set(
-        DayRecord.objects.filter(employee=employee, date__gte=days[0], date__lte=days[-1])
-        .values_list("date", flat=True)
-    )
-
-    # Skipped rather than refused. This button is a bulk gesture over a week
-    # that may be half closed, and refusing the whole thing because one day of
-    # it is locked would leave nothing to press.
-    locked = DayLock.dates_between(employee, days[0], days[-1])
-
-    confirmed = skipped = 0
-    for day_date in days:
-        if day_date > today or day_date not in shifts:
-            continue
-        if day_date in existing or day_date in locked:
-            skipped += 1
-            continue
-        DayRecord.from_shifts(
-            employee, day_date, shifts[day_date], by=request.user,
-            settings=settings, rules=rules,
-        )
-        confirmed += 1
-
-    if confirmed and skipped:
-        messages.success(request, _(
-            "%(confirmed)s days were confirmed. %(skipped)s already had hours entered "
-            "and were left exactly as they are."
-        ) % {"confirmed": confirmed, "skipped": skipped})
-    elif confirmed:
-        messages.success(request, _("%(confirmed)s days were confirmed.") % {"confirmed": confirmed})
-    elif skipped:
-        messages.info(request, _(
-            "Every rostered day this week already has hours entered, so nothing was changed."
-        ))
-    else:
-        messages.info(request, _("There is nothing rostered this week to confirm."))
-    return redirect(f"{reverse('timesheets:mine')}?month={monday.strftime('%Y-%m')}")
 
 
 # --------------------------------------------------------------------------

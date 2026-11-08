@@ -30,7 +30,7 @@ ITEMS = {
     # which is where confirming and manual entry both happen.
     "mine.timesheet": {
         ("timesheets", name)
-        for name in ("mine", "save-day", "set-status", "confirm-week", "day",
+        for name in ("mine", "save-day", "set-status", "day",
                      "confirm-day", "clock")
     },
     "mine.absences": {

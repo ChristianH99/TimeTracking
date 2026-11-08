@@ -144,13 +144,13 @@ class TestConfirmingARunningDay:
         attention pill on every shift the moment somebody pressed Start —
         training everybody to ignore the one pill that matters."""
         from apps.roster.models import Shift
-        from apps.timesheets.views import build_week
+        from conftest import week_of
 
         Shift.objects.create(employee=anna, date=monday,
                              start=dt.time(8), end=dt.time(16))
         clocking.start(anna, by=anna.user, now=_at(monday, 8))
 
-        row = build_week(anna, monday)["rows"][0]
+        row = week_of(anna, monday)["rows"][0]
         assert row["is_running"]
         assert not row["differs_from_roster"]
 

@@ -33,7 +33,6 @@ urlpatterns = [
     # not the JSON the rest of the page uses: a status changes what the whole
     # month is worth, and a reload is both simpler and certainly right.
     path("timesheet/status/<str:date>/", views.set_status_mine, name="set-status"),
-    path("timesheet/confirm-week/", views.confirm_week, name="confirm-week"),
     # A copy of your own records. `apps/timesheets/export.py` says why this
     # exists at all after "no in-app export" was a standing decision: the June
     # 2026 ArbZG draft gives an employee the right to obtain one, and DSGVO

@@ -19,9 +19,10 @@ password as the way back in. German by default, English from the topbar globe.
   Start when you arrive and Stop when you leave, and the current time in your own
   clock goes onto the timesheet. Nothing is rounded. A shift started at 22:00 is
   still yours to stop at 02:00, and it lands on the day it began.
-- **Confirm the week in one press.** Most days are exactly what was rostered, so
-  the normal case needs no typing at all. The manual form is for the days that
-  are not.
+- **The month is the timesheet**, and the page the app opens on: a row per
+  day with what was rostered, what was worked and the running balance down the
+  side. Most days are exactly what was rostered, so the ✓ beside the rostered
+  times takes them in one tap; the manual form is for the days that are not.
 - **Enter a day by hand** — as many stretches of work as it takes. A split shift
   is two rows; the gap between them is not a break you enter, it is simply time
   you were not there. Two stretches that overlap are refused before the page can
@@ -75,9 +76,9 @@ password as the way back in. German by default, English from the topbar globe.
   around it are the same job.
 - **A new week starts as a copy of the last one planned**, leaving out whoever
   is away, and is not written until it is saved.
-- **See the team's week at a glance** — one row per person, one cell per day,
-  coloured by what state it is in and outlined when the hours entered are not
-  the hours rostered.
+- **See where the team stands** — one row per person with the leave they
+  have left and the hours they are up or down; open a name for the month
+  behind the figure.
 - **Decide requests** with that person's balance printed beside each one.
 - **Keep the contracts**: which days somebody works and how long each one is,
   what that entitles them to, and which special leave they have been granted.
