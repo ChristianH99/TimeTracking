@@ -1,15 +1,24 @@
 {% extends "base.html" %}
 {% load static i18n hours %}
 {% block title %}{{ date|date:"d.m.Y" }} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{{ date|date:"l, d.m.Y" }}{% endblock %}
-{% block topbar_sub %}{% if not is_own %}{{ employee.full_name }}{% endif %}{% endblock %}
+{% block page_title %}{{ date|date:"l, d.m.Y" }}{% endblock %}
+{% block page_subtitle %}{% translate "Hours for this day" %}{% if not is_own %} · {{ employee.full_name }}{% endif %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="day-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Hours for this day" %}</h1>
+
+  {% if date > today %}
+    {% comment %}Said before the form rather than after the Save. A booking is a
+    record of when somebody was demonstrably at work and nobody has been at work
+    tomorrow — but a *status* can be set for a future day, which is where this
+    sends them.{% endcomment %}
+    <p class="notice notice--info">
+      {% blocktranslate with date=date|date:"d.m.Y" %}{{ date }} has not happened yet, so there are no hours to record for it. Time off and sickness can be booked in advance from the timesheet's status column.{% endblocktranslate %}
+    </p>
+  {% endif %}
 
   {% if shifts %}
     <div class="card card--quiet rostered">
@@ -19,7 +28,7 @@
           <span class="timesheet-span">{{ shift.start|time:"H:i" }}–{{ shift.end|time:"H:i" }}</span>
           {% if shift.note %}<span class="hint">{{ shift.note }}</span>{% endif %}
         {% endfor %}
-        <span class="rostered-total">{{ planned_minutes|hours:hours_style }}&nbsp;{% translate "h" %}</span>
+        <span class="rostered-total">{{ planned_minutes|hhmm }}&nbsp;{% translate "h" %}</span>
       </p>
       {% if not record %}
         {% comment %}The one-tap path, offered here as well as on the week: this
@@ -125,6 +134,22 @@
       </dl>
     </div>
 
+    <h2 class="form-section">{% translate "Correction" %}</h2>
+    <p class="help">{% translate "Time that belongs on this day and was never read off a clock — a forgotten going, a drive to a second site, an afternoon that was paid. It is added after the break, so it can never push the day over a break threshold and deduct a break nobody took. A minus takes time off." %}</p>
+    <div class="field-grid">
+      <div class="field">
+        <label for="{{ form.correction_minutes.id_for_label }}">{{ form.correction_minutes.label }}</label>
+        {{ form.correction_minutes }}
+        <span class="help">{{ form.correction_minutes.help_text }}</span>
+        {% for error in form.correction_minutes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.correction_reason.id_for_label }}">{{ form.correction_reason.label }}</label>
+        {{ form.correction_reason }}
+        {% for error in form.correction_reason.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
     <h2 class="form-section">{% translate "Note" %}</h2>
     <label class="sr-only" for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
     {{ form.note }}
@@ -138,7 +163,7 @@
 
     <div class="form-actions">
       <button type="submit" class="button">{% translate "Save the day" %}</button>
-      <a class="link-button" href="{% if is_own %}{% url 'timesheets:mine' %}?week={{ week|date:'Y-m-d' }}{% else %}{% url 'timesheets:employee' employee.pk %}?week={{ week|date:'Y-m-d' }}{% endif %}">{% translate "Back to the week" %}</a>
+      <a class="link-button" href="{% if is_own %}{% url 'timesheets:mine' %}?month={{ date|date:'Y-m' }}{% else %}{% url 'timesheets:employee' employee.pk %}?month={{ date|date:'Y-m' }}{% endif %}">{% translate "Back to the timesheet" %}</a>
     </div>
   </form>
 

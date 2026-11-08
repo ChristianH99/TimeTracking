@@ -11,10 +11,19 @@ app_name = "organisation"
 
 urlpatterns = [
     path("", views.settings_view, name="settings"),
+    # How long each kind of record is kept. Its own page rather than five more
+    # boxes on the rules above, because it answers a different question to a
+    # different person — this is what the app *keeps*, and it is read by whoever
+    # answers a data protection request.
+    path("retention/", views.retention_view, name="retention"),
     path("breaks/defaults/", views.install_default_break_rules, name="break-rules"),
 
     path("leave-types/", views.leave_types, name="leave-types"),
     path("leave-types/new/", views.leave_type_form, name="leave-type-add"),
+    # The one type this app ships the numbers for. `views.install_regeneration_days`
+    # says why a preset rather than a special case in the code.
+    path("leave-types/regeneration/", views.install_regeneration_days,
+         name="leave-type-regeneration"),
     path("leave-types/<int:pk>/", views.leave_type_form, name="leave-type-edit"),
     path("leave-types/<int:pk>/delete/", views.leave_type_delete, name="leave-type-delete"),
 

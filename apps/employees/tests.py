@@ -356,3 +356,64 @@ def test_the_team_timesheet_routes_refuse_an_ordinary_employee(client, db, org, 
             f"timesheets:{name} answered {response.status_code} to an ordinary "
             "employee asking about somebody else"
         )
+
+
+class TestEveryPageOfSomebodysContractRenders:
+    """A sweep rather than three named assertions, and it is here because of a
+    real crash: the contract page named a figure in its template that its view
+    never put in the context, and ``hhmm_signed`` was handed the empty string a
+    missing variable resolves to. The page answered 500 — for *every* employee,
+    on the one page a manager opens to fix anything at all — and nothing in the
+    suite noticed, because nothing asked these three routes to render.
+
+    So what is checked is the cheapest possible thing and the one that was
+    missing: that they come back at all. The figures on them are pinned
+    elsewhere, by tests that can see what the numbers ought to be; this is the
+    smoke alarm.
+    """
+
+    ROUTES = ("edit", "leave", "contract-change")
+
+    def test_they_all_answer_a_manager(self, manager_client, anna, org):
+        for name in self.ROUTES:
+            url = reverse(f"employees:{name}", args=[anna.pk])
+            response = manager_client.get(url)
+            assert response.status_code == 200, (
+                f"employees:{name} answered {response.status_code}"
+            )
+
+    def test_including_for_somebody_with_a_contract_history(
+        self, manager_client, anna, org,
+    ):
+        """The branch the page has most of: two periods, a preview weighted
+        across them, and a balance that spans both."""
+        import datetime as dt
+        from decimal import Decimal
+
+        anna.set_hours(
+            [Decimal("6")] * 5 + [Decimal("0"), Decimal("0")],
+            valid_from=dt.date(2026, 3, 16),
+        )
+        for name in self.ROUTES:
+            url = reverse(f"employees:{name}", args=[anna.pk])
+            assert manager_client.get(url).status_code == 200
+
+
+def test_the_people_list_says_which_username_is_which(manager_client, anna, org):
+    """The two columns that both held a name, and the row where they differ.
+
+    ``Employee.username`` is the directory name a token is matched against;
+    ``user.get_username`` is the account that actually signed in. For almost
+    everybody they are the same string, which is what made the old page print
+    it twice five columns apart with nothing to say why — and it is the row
+    where they *differ* that the column exists for, so that is what is pinned
+    here rather than the layout.
+    """
+    body = manager_client.get(reverse("employees:list")).content.decode()
+
+    assert anna.username in body                 # the contract's name
+    assert anna.user.get_username() in body      # the account's, which differs
+    assert anna.username != anna.user.get_username(), (
+        "the fixture no longer distinguishes the two names, so this test would "
+        "pass without checking anything"
+    )

@@ -312,9 +312,25 @@ class ContractChangeForm(forms.ModelForm):
 
 
 class SpecialLeaveGrantForm(forms.ModelForm):
+    """One granted type, and — only if the days are typed over — why.
+
+    The reason is enforced in ``SpecialLeaveGrant.clean`` as well as here, the
+    same way ``correction_reason`` is: a figure somebody typed over a computed
+    one and the computed one are the same number and mean entirely different
+    things to whoever has to account for the entitlement a year later. "One
+    Regenerationstag instead of two" is either a mistake or the fact that they
+    took the other one at their last job, and a bare ``1.0`` cannot say which.
+    """
+
     class Meta:
         model = SpecialLeaveGrant
-        fields = ["leave_type", "days_override"]
+        fields = ["leave_type", "days_override", "override_reason"]
+        widgets = {
+            "override_reason": forms.TextInput(attrs={
+                "maxlength": 200,
+                "placeholder": _("e.g. one day already taken at a previous employer"),
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{{ employee.full_name }} – {% translate "Leave" %}{% endblock %}
-{% block topbar_title %}{{ employee.full_name }}{% endblock %}
-{% block topbar_sub %}{% translate "Leave" %} {{ year }}{% endblock %}
+{% block page_title %}{{ employee.full_name }}{% endblock %}
+{% block page_subtitle %}{% translate "Leave" %} {{ year }}{% endblock %}
 
 {% block content %}
   <div class="list-toolbar">
-    <h1>{% translate "Leave balance" %}</h1>
     <form method="get" class="inline-form">
       <label class="sr-only" for="year-select">{% translate "Year" %}</label>
       <select id="year-select" name="year">

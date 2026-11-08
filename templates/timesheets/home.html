@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% load i18n hours %}
 {% block title %}{% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Start" %}{% endblock %}
+{% block page_title %}{% blocktranslate with name=user.first_name|default:user.get_username %}Hello {{ name }}{% endblocktranslate %}{% endblock %}
 
 {% block content %}
-  <h1>{% blocktranslate with name=user.first_name|default:user.get_username %}Hello {{ name }}{% endblocktranslate %}</h1>
 
   {% if no_contract %}
     {% comment %}A real state, not an error: an administrator with an account
@@ -24,11 +23,11 @@
 
     <div class="stat-row">
       <div class="stat">
-        <span class="stat-value">{{ week.worked_total|hours:hours_style }}</span>
+        <span class="stat-value">{{ week.worked_total|hhmm }}</span>
         <span class="stat-label">{% translate "Worked so far" %}</span>
       </div>
       <div class="stat">
-        <span class="stat-value">{{ week.contracted_total|hours:hours_style }}</span>
+        <span class="stat-value">{{ week.contracted_total|hhmm }}</span>
         <span class="stat-label">{% translate "Contracted" %}</span>
       </div>
       <div class="stat">
@@ -82,7 +81,7 @@
               {% empty %}<span class="hint">—</span>{% endfor %}
             </td>
             <td class="numeric">
-              {% if row.record %}{{ row.worked_minutes|hours:hours_style }}{% else %}<span class="hint">—</span>{% endif %}
+              {% if row.record %}{{ row.worked_minutes|hhmm }}{% else %}<span class="hint">—</span>{% endif %}
             </td>
             <td>
               {% if row.absence %}

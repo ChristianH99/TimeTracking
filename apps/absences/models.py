@@ -55,8 +55,31 @@ class AbsenceKind(models.TextChoices):
 class RequestStatus(models.TextChoices):
     REQUESTED = "requested", _("Waiting for approval")
     APPROVED = "approved", _("Approved")
+    # **An approved absence somebody has asked to have taken off again.** It is
+    # still in force — it credits its hours and it still costs the leave — until
+    # a manager agrees to remove it, which is the whole reason it is a status of
+    # its own rather than a straight withdrawal. An employee who could withdraw
+    # an approved absence unilaterally could take back a day the roster was
+    # already built around; one who cannot ask at all has to find their manager
+    # by other means and the app has no record that they tried.
+    CANCELLING = "cancelling", _("Cancellation requested")
     REJECTED = "rejected", _("Declined")
     WITHDRAWN = "withdrawn", _("Withdrawn")
+
+
+# The two statuses under which an absence actually counts. A cancellation that
+# has been *asked for* changes nothing until it is granted — the day is still
+# booked, the hours are still credited and the leave is still spent — so every
+# question of the form "does this absence count" asks for this pair and not for
+# APPROVED alone. Written once because the four places that ask are four chances
+# to forget the second half, and forgetting it hands somebody their leave back
+# the moment they ask to cancel it.
+IN_FORCE = frozenset({RequestStatus.APPROVED, RequestStatus.CANCELLING})
+
+# Everything a manager has still to answer. A cancellation is a decision like
+# any other and belongs on the same list — one waiting on somebody's desk is
+# exactly as unfinished as a request nobody has looked at.
+UNDECIDED = frozenset({RequestStatus.REQUESTED, RequestStatus.CANCELLING})
 
 
 # The kinds that come off a leave balance. Sickness does not, and neither does a
@@ -149,6 +172,20 @@ class BankHoliday(models.Model):
             if day not in kept
         ]
         cls.objects.bulk_create(rows)
+        # One entry for the year, not thirteen for the days. `BankHoliday` is in
+        # the audit registry's `BY_HAND` set for the same reason `DayLock` is:
+        # what somebody did was regenerate a year, and a public holiday moving
+        # changes what every absence in that year credited — so it needs to be
+        # in the trail, and it needs to be readable as one act.
+        from apps.audit.models import AuditAction
+        from apps.audit.recording import record
+
+        record(
+            AuditAction.CHANGED,
+            subject="absences.BankHoliday",
+            subject_date=first,
+            note=f"{year} ({land}): +{len(rows)} / -{removed}",
+        )
         return len(rows), removed
 
 
@@ -324,8 +361,12 @@ class Absence(models.Model):
         shows "pending" as a separate figure rather than folding it into what is
         left. Somebody whose request is refused must not find that they have
         already spent the days.
+
+        An absence somebody has asked to *cancel* still costs the leave. The
+        days come back when the manager agrees, not when the asking starts —
+        otherwise the balance would move on a press nobody had answered yet.
         """
-        if self.status != RequestStatus.APPROVED:
+        if self.status not in IN_FORCE:
             return False
         if self.kind in (AbsenceKind.SICK, AbsenceKind.OVERTIME):
             return False
@@ -415,25 +456,25 @@ class Absence(models.Model):
           would cancel the draw-down and leave the app inventing a second set of
           figures to disagree with the first.
 
-        A request still waiting credits nothing — it has not happened yet, and
-        crediting it would let a request that is later declined take hours off a
-        timesheet retrospectively.
+        **Nothing credits until it is approved, sickness included.** That is a
+        deliberate reversal of an earlier decision, which credited a reported
+        sick day immediately on the argument that illness is a fact rather than
+        a permission. It is one absence type behaving unlike every other, and
+        the cost of that was paid twice over: the timesheet had to say two
+        different things about what a pending pill meant, and a report entered
+        against the wrong dates credited hours until somebody noticed. One rule
+        for every kind is worth more than the days between reporting an illness
+        and a manager pressing the button — and it makes that button matter,
+        which is the point of asking for it.
 
-        **Sickness is the exception, and it is the important one.** A sick day
-        counts from the moment it is reported and not from the moment a manager
-        gets round to acknowledging it. Illness is a fact, not a permission (see
-        ``SickForm``), and an app that withheld the credit until a button was
-        pressed would show a fortnight's flu as eighty hours of shortfall for as
-        long as the manager was on holiday — a debt §3 EFZG says outright the
-        employee does not owe. The only thing that stops the credit is the
-        employer positively refusing to accept it, which is a real and rare act
-        with a note attached to it.
+        **The consequence is real and is the price of the rule**: a fortnight's
+        flu shows as a shortfall for as long as it takes a manager to answer.
+        `docs/COMPLIANCE.md` records that under §3 EFZG, because the figure a
+        timesheet shows in the meantime is not a debt the employee owes.
         """
         if self.kind == AbsenceKind.OVERTIME:
             return False
-        if self.kind == AbsenceKind.SICK:
-            return self.status != RequestStatus.REJECTED
-        return self.status == RequestStatus.APPROVED
+        return self.status in IN_FORCE
 
     def credited_minutes(self, day, contracted_minutes_for_day):
         """Contracted minutes this absence hands back for that one date.
@@ -453,20 +494,56 @@ class Absence(models.Model):
 
     @property
     def is_decidable(self):
-        return self.status == RequestStatus.REQUESTED
+        """Anything still waiting on a manager — a request, or a cancellation."""
+        return self.status in UNDECIDED
+
+    @property
+    def is_cancelling(self):
+        return self.status == RequestStatus.CANCELLING
+
+    def _record_decision(self, status, by, note):
+        self.status = status
+        self.decided_at = timezone.now()
+        self.decided_by = by
+        self.decision_note = note
+        self.save(update_fields=["status", "decided_at", "decided_by", "decision_note"])
 
     def decide(self, approved, by, note=""):
-        """Approve or decline, recording who and when.
+        """Approve or decline a request, recording who and when.
 
         Records the decider even for an approval, because "who agreed to this"
         is the question asked months later when a balance is disputed, and it is
         unanswerable from a status column alone.
         """
-        self.status = RequestStatus.APPROVED if approved else RequestStatus.REJECTED
-        self.decided_at = timezone.now()
-        self.decided_by = by
-        self.decision_note = note
-        self.save(update_fields=["status", "decided_at", "decided_by", "decision_note"])
+        self._record_decision(
+            RequestStatus.APPROVED if approved else RequestStatus.REJECTED, by, note,
+        )
+
+    def decide_cancellation(self, agreed, by, note=""):
+        """Answer a request to take an approved absence off again.
+
+        Agreeing withdraws it; refusing puts it back exactly as it was, which is
+        why refusing is ``APPROVED`` and not a state of its own — an absence
+        whose cancellation was declined is an ordinary approved absence, and
+        inventing "approved, but somebody once asked to cancel it" would be a
+        state nothing else in the app knows how to read.
+
+        Withdrawn rather than deleted, the same as every other route out: the
+        record still says the conversation happened.
+        """
+        self._record_decision(
+            RequestStatus.WITHDRAWN if agreed else RequestStatus.APPROVED, by, note,
+        )
+
+    def cancel(self, by):
+        """Take it off outright — a manager acting rather than answering.
+
+        The employee's own route is to *ask* (``CANCELLING``); this is the other
+        end of it, for a manager who would only be answering their own request a
+        press later. It still records who, because "who took this off" is the
+        same question as "who agreed to it" and is asked in the same argument.
+        """
+        self._record_decision(RequestStatus.WITHDRAWN, by, self.decision_note)
 
 
 def year_bounds(year):
@@ -551,6 +628,7 @@ class Balance:
         self.taken = Decimal("0")
         self.pending = Decimal("0")
         self.sick_days = Decimal("0")
+        self.pending_sick_days = Decimal("0")
         self.overtime_days = Decimal("0")
         self.pending_overtime_days = Decimal("0")
         self.special_taken = {}
@@ -558,26 +636,28 @@ class Balance:
         for absence in absences:
             days = absence.working_days(holiday_dates)
             if absence.kind == AbsenceKind.SICK:
-                # Counted from the moment it is reported, not from the moment a
-                # manager acknowledges it. See `SickForm`: an employer does not
-                # *grant* illness, so a sick day that is still waiting to be
-                # acknowledged has still happened, and leaving it out would show
-                # the week as unexplained absence until somebody pressed a
-                # button.
-                if absence.status != RequestStatus.REJECTED:
+                # Counted once it has been agreed, the same as everything else.
+                # A day still waiting is counted into `pending_sick_days` so the
+                # page can say it was reported without claiming it as taken —
+                # sickness is asked for now, and the figure must not move before
+                # somebody answers. See `Absence.credits_hours` for the reversal
+                # this belongs to.
+                if absence.status in IN_FORCE:
                     self.sick_days += days
+                elif absence.status == RequestStatus.REQUESTED:
+                    self.pending_sick_days += days
                 continue
             if absence.kind == AbsenceKind.OVERTIME:
                 # Counted so the page can say how much was taken, and counted
                 # into `pending` while it waits so a manager sees it is asked
                 # for — but never into `taken`, which is the leave figure.
-                if absence.status == RequestStatus.APPROVED:
+                if absence.status in IN_FORCE:
                     self.overtime_days += days
                 elif absence.status == RequestStatus.REQUESTED:
                     self.pending_overtime_days += days
                 continue
             if absence.kind == AbsenceKind.SPECIAL:
-                if absence.status == RequestStatus.APPROVED:
+                if absence.status in IN_FORCE:
                     key = absence.special_type_id
                     self.special_taken[key] = self.special_taken.get(key, Decimal("0")) + days
                 continue

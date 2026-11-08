@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Export" %} – {% translate "Time Tracking" %}{% endblock %}
+{% block page_title %}{% translate "Export" %}{% endblock %}
+{% block page_subtitle %}{% translate "hand the records over" %}{% endblock %}
+
+{% block content %}
+  {% comment %}**The page says who asks for this and why**, because it is the one
+  page here that is not used in the ordinary week. Somebody opens it because an
+  inspector is standing at the desk or an employee has asked for their copy, and
+  in both of those moments the useful thing is to be told the app knows about the
+  situation.{% endcomment %}
+  <p class="help">
+    {% translate "A copy of the working time records, for whoever has asked for one. The spreadsheet is what a tax or social-insurance auditor wants — it can be sorted and filtered, which a printout cannot. The PDF is what a person wants: an employee’s own copy, or the sheet handed across a desk. Every export is recorded in the audit trail, including who asked for it." %}
+  </p>
+
+  {% comment %}**One form, one action, and two submit buttons that differ only in
+  the value they send.** The obvious version points each button at its own route
+  with `formaction` and needs a script to fill the employee's id into the path;
+  this needs none, so the page works before anything has loaded — the same choice
+  the month picker makes.
+
+  A GET, because it asks for a file and changes nothing. That also means the
+  resulting link can be bookmarked, mailed to a colleague, or pasted into a
+  ticket, which for "the records for these dates" is worth having.{% endcomment %}
+  <form method="get" action="{% url 'timesheets:export-run' %}" class="export-form">
+    <div class="field-grid">
+      <div class="field">
+        <label for="export-employee">{% translate "Person" %}</label>
+        <select name="employee" id="export-employee">
+          {% comment %}Everybody first, because an inspector's question is
+          usually about several people at once.{% endcomment %}
+          <option value="">{% translate "Everybody (spreadsheet only)" %}</option>
+          {% for person in people %}
+            <option value="{{ person.pk }}"{% if chosen == person.pk %} selected{% endif %}>{{ person.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="export-from">{% translate "From" %}</label>
+        <input type="date" name="from" id="export-from" required
+               value="{{ default_from|date:'Y-m-d' }}">
+      </div>
+
+      <div class="field">
+        <label for="export-to">{% translate "To" %}</label>
+        <input type="date" name="to" id="export-to" required
+               value="{{ default_to|date:'Y-m-d' }}">
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" name="format" value="csv" class="button">
+        {% translate "Spreadsheet (CSV)" %}
+      </button>
+      <button type="submit" name="format" value="pdf" class="button button--secondary">
+        {% translate "Printable (PDF)" %}
+      </button>
+    </div>
+
+    {% comment %}Why the PDF is one person at a time, said where the choice is
+    made rather than in a help panel nobody opens. A PDF of eleven people is
+    eleven documents, and stapling them together makes a thing that cannot be
+    handed to any one of them. Asking for one anyway is answered by the view with
+    a message rather than by a disabled button — a control that refuses without
+    saying why is worse than one that explains.{% endcomment %}
+    <p class="hint">
+      {% translate "A printable sheet is one person at a time. The spreadsheet can hold everybody at once." %}
+    </p>
+  </form>
+
+  <p class="help">
+    {% translate "Both files are built from exactly the figures the timesheet shows, so a printed sheet cannot disagree with the screen it came from. Durations are written hh:mm; the spreadsheet repeats every total as decimal hours in a column of its own, so nobody has to convert." %}
+  </p>
+{% endblock %}

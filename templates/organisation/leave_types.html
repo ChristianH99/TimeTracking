@@ -1,14 +1,32 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Special leave" %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% translate "Special leave" %}{% endblock %}
+{% block page_title %}{% translate "Special leave" %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
+  {% comment %}**The one type the app ships the numbers for.** Regenerationstage
+  are an ordinary threshold type with two rows in its table — nothing in the code
+  knows about them once they exist — but deriving `2 → 1, 4 → 2` from a
+  collective agreement with this form open is how a house ends up reaching for
+  the pro-rata mode instead, which is the obvious choice and gives different
+  numbers on every part-time contract.
+
+  Gone once it is there, rather than left to refuse: an offer whose only
+  possible outcome is "that already exists" is worse than no offer, and it is
+  the same rule the Time off page's Sonderurlaub button follows.{% endcomment %}
+  {% if not has_regeneration %}
+    <form method="post" action="{% url 'organisation:leave-type-regeneration' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="button button--secondary button--small"
+              title="{% translate 'Two days a calendar year on a five-day week, fewer on fewer days — the table the TVöD gives for the Sozial- und Erziehungsdienst.' %}">
+        {% blocktranslate with name=regeneration_name %}Add {{ name }}{% endblocktranslate %}
+      </button>
+    </form>
+  {% endif %}
   <a class="button button--small" href="{% url 'organisation:leave-type-add' %}">{% translate "New type" %}</a>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Special leave" %}</h1>
   <p class="page-lead">
     {% translate "Leave that is not the annual entitlement — a long-service day, a day for a child’s first school morning, whatever the agreement here says. Defining a type does not give it to anybody: it is granted on each employee’s contract, which is what makes it possible to offer it to some people and not others." %}
   </p>
@@ -36,6 +54,11 @@
           <th scope="row">
             {{ row.type.name }}
             {% if not row.type.is_active %}<span class="pill pill--off">{% translate "not offered" %}</span>{% endif %}
+            {% comment %}What the type is, and anything about it the app does not
+            work out for itself. Under the name rather than in a column of its
+            own: it is a sentence, and a sentence in a table of numbers is a
+            column that makes every other one narrow.{% endcomment %}
+            {% if row.type.note %}<span class="people-sub">{{ row.type.note }}</span>{% endif %}
           </th>
           <td>
             {{ row.type.get_mode_display }}

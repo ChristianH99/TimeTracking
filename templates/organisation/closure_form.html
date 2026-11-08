@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% if closure %}{{ closure.name }}{% else %}{% translate "New closure" %}{% endif %} – {% translate "Time Tracking" %}{% endblock %}
-{% block topbar_title %}{% if closure %}{{ closure.name }}{% else %}{% translate "New closure" %}{% endif %}{% endblock %}
+{% block page_title %}{% if closure %}{{ closure.name }}{% else %}{% translate "New closure" %}{% endif %}{% endblock %}
 
-{% block topbar_actions %}
+{% block page_actions %}
   <button type="submit" class="button button--small" form="closure-form">{% translate "Save" %}</button>
 {% endblock %}
 
 {% block content %}
-  <h1>{% translate "Closure" %}</h1>
   <p class="page-lead">
     {% translate "Saving this writes an absence for everybody currently employed, and re-saving it moves them rather than adding a second set. Somebody who joins afterwards does not get one — a closure they were not here for is not theirs." %}
   </p>

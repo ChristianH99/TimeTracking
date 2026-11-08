@@ -257,12 +257,21 @@ window.modalController = function modalController(modal, options) {
   });
 })();
 
-// Page help: any [data-help-open] button opens the page's [data-help-modal].
+/* Page help: the "?" in the topbar opens the page's [data-help-modal].
+ *
+ * The button is in base.html on every page and rendered `hidden`, and this is
+ * what reveals it — on the pages that turn out to have a help modal, and only
+ * those. The server cannot tell: whether a page has help is whether it filled
+ * in a template block, which is not a question the topbar can ask while it is
+ * being rendered. Doing it here also means the button is never a control that
+ * does nothing, which is what it would be with script off.
+ */
 (function () {
   const openers = document.querySelectorAll("[data-help-open]");
   const modal = document.querySelector("[data-help-modal]");
   if (!openers.length || !modal) return;
   const controller = window.modalController(modal);
+  openers.forEach((btn) => { btn.hidden = false; });
   openers.forEach((btn) => btn.addEventListener("click", controller.open));
   modal.addEventListener("click", (event) => {
     if (event.target.closest("[data-help-close]")) controller.close();
@@ -382,6 +391,66 @@ window.modalController = function modalController(modal, options) {
     close.addEventListener("click", () => notice.remove());
     notice.appendChild(close);
   });
+})();
+
+/* The topbar clock, ticking.
+ *
+ * Two numbers move on their own: the time of day beside Start, and how long a
+ * running shift has been going. Both were rendered once and then sat there
+ * being wrong until the next navigation — which on a page somebody leaves open
+ * all morning is most of the morning.
+ *
+ * **It costs one timer and two text writes a minute.** No request, no layout
+ * beyond the two spans, nothing fetched and nothing stored. That is the whole
+ * budget for it; if it ever wants more than that it should go instead.
+ *
+ * **Ticked forward from the server's figure, not read off the browser's clock.**
+ * `new Date()` is a *second* clock, and it is the wrong one for the colleague
+ * whose `Employee.time_zone` is filled in — their browser may be anywhere. The
+ * page is handed the employee's own wall clock as minutes since midnight and
+ * this adds the real time that has passed since the page loaded, which is right
+ * in every zone and across the two nights the clocks move.
+ *
+ * The elapsed figure is `minutes_so_far`, which apps/timesheets/models.py is
+ * explicit is "a number to look at" and is never stored or summed. Watching it
+ * count is exactly what it is for; nothing on the timesheet moves.
+ */
+(function () {
+  const now = document.querySelector("[data-clock-now]");
+  const elapsed = document.querySelector("[data-clock-elapsed]");
+  if (!now && !elapsed) return;
+
+  const loadedAt = Date.now();
+  const startNow = now ? parseInt(now.dataset.clockNow, 10) : 0;
+  const startElapsed = elapsed ? parseInt(elapsed.dataset.clockElapsed, 10) : 0;
+
+  // hh:mm, written here rather than borrowed from hours.js: that file is loaded
+  // by the pages that need it and not by the shell, and pulling it onto every
+  // page in the app to format two numbers is the wrong trade. (Naming its
+  // global in this comment would also make config/tests.py insist every page
+  // load it — the check greps the source, and rightly does not try to tell a
+  // comment from code.)
+  const pad = (value) => String(value).padStart(2, "0");
+
+  function tick() {
+    const passed = Math.floor((Date.now() - loadedAt) / 60000);
+    if (now) {
+      // Wrapped at midnight: a page left open overnight rolls to 00:00 rather
+      // than reaching 24:37.
+      const minutes = (startNow + passed) % (24 * 60);
+      now.textContent = pad(Math.floor(minutes / 60)) + ":" + pad(minutes % 60);
+    }
+    if (elapsed) {
+      const minutes = startElapsed + passed;
+      elapsed.textContent = pad(Math.floor(minutes / 60)) + ":" + pad(minutes % 60);
+    }
+  }
+
+  // Every fifteen seconds rather than every minute: the display only changes
+  // once a minute, but a timer aligned to page load would otherwise show each
+  // new minute up to sixty seconds late, which is exactly when somebody is
+  // looking at it to decide whether to press Stop.
+  window.setInterval(tick, 15000);
 })();
 
 /* The Settings disclosure in the sidebar footer.

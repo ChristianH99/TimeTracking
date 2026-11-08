@@ -27,6 +27,14 @@ dependencies = [
     # because this app imports it directly — a transitive dependency is one
     # somebody else may drop in a minor release.
     "cryptography>=42.0",
+    # The printed timesheet (apps/timesheets/export.py). Pure Python with its
+    # own fonts, so the container needs no system libraries — which is why it is
+    # this and not WeasyPrint, whose Pango/Cairo stack would roughly double the
+    # image and add a class of "works here, not there" failure to a deployment
+    # nobody watches. A PDF is not a nicety here: it is the copy an employee may
+    # demand under the ArbZG draft and the sheet an FKS inspector is handed, and
+    # neither of those is a CSV.
+    "reportlab>=4.0",
 ]
 
 # Deliberately *not* a dependency: anything that ships a table of German public

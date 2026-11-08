@@ -145,6 +145,11 @@ INSTALLED_APPS = [
     'apps.roster',
     'apps.absences',
     'apps.timesheets',
+    # What changed, who changed it, and what it was before. Listed last because
+    # it imports from everything else — its registry names every model in the
+    # project — and because its signal handlers must be connected after the
+    # models they watch have been loaded.
+    'apps.audit',
 ]
 
 # Send the Content-Security-Policy as Report-Only (nothing blocked, violations
@@ -168,6 +173,12 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Puts request.user where a model signal can reach it, so an audit entry can
+    # say who made the change. **Directly below AuthenticationMiddleware**,
+    # which is where request.user comes from: above it, every entry in the app
+    # would be attributed to "system" — a trail that looks complete and names
+    # nobody. apps/audit/actor.py says why it is a thread-local at all.
+    'apps.audit.actor.AuditActorMiddleware',
     # Refreshes the OIDC access token in the background and signs the user out
     # once the provider says the session is over. Must sit after
     # AuthenticationMiddleware, which is where request.user comes from.
@@ -205,6 +216,11 @@ TEMPLATES = [
                 # sidebar's Team section is drawn from it, and so is every
                 # "is this my own timesheet or somebody else's" question.
                 'apps.employees.context.who',
+                # Start and Stop. In the topbar rather than on the timesheet,
+                # because clocking in is a fact about the person and not about
+                # the page they happen to be looking at — see
+                # apps/timesheets/context.py.
+                'apps.timesheets.context.clock',
             ],
         },
     },
