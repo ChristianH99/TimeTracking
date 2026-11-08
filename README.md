@@ -64,10 +64,17 @@ password as the way back in. German by default, English from the topbar globe.
 
 **For a manager**
 
-- **Plan the week by dragging cards** between seven day columns. People who are
-  already away are drawn in the columns too, including requests nobody has
-  decided yet — because deciding one and planning around it are the same job.
-- **Draft a whole week from the contracts**, or copy last week onto this one.
+- **Plan the week on a grid**: the week's time ranges down the side, Monday to
+  Friday across, and a range split into rooms or groups shown by their icons.
+  Drag a name into a cell or type it there, add text such as "Pause", and give
+  somebody their own times with a right click or a long press — the cell then
+  shows only what differs, "Anna (07:30)".
+- **See who is still free.** Under the grid, everybody not yet placed that day:
+  lighter if their contract has no hours that day, red if they are away —
+  including requests nobody has decided yet, because deciding one and planning
+  around it are the same job.
+- **A new week starts as a copy of the last one planned**, leaving out whoever
+  is away, and is not written until it is saved.
 - **See the team's week at a glance** — one row per person, one cell per day,
   coloured by what state it is in and outlined when the hours entered are not
   the hours rostered.
@@ -146,7 +153,7 @@ apps/
   accounts/       sign-in, the SSO connection, account management, preferences
   organisation/   the rules: break tiers, entitlement, Bundesland, leave types
   employees/      contracts, the account link, who manages the roster
-  roster/         shifts and the week planner
+  roster/         the week grid: time slots, areas, shifts
   absences/       holiday, special leave, sickness, closures, public holidays
   timesheets/     day records, the week, the start page, hour formatting
   nav.py          which sidebar entry a resolved URL marks

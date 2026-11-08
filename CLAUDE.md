@@ -102,8 +102,13 @@ valid `.po` that the completeness check reads as *empty*. Writing the file
 programmatically means neither has anywhere to occur. A new string is added to
 one of the two tables, not to the `.po`.
 
-GNU gettext is not on PATH on the development machine; it ships with Git:
-`$env:PATH = "C:\Program Files\Git\usr\bin;$env:PATH"`.
+GNU gettext on the development machine is mlocati's build (`winget install
+mlocati.GetText`, the one Django's docs recommend), installed per user at
+`%LOCALAPPDATA%\Programs\gettext-iconv\bin` and on the *user* PATH. A shell or
+editor started before it was installed does not see it — `makemessages` then
+fails with "Can't find msguniq" — and Git for Windows does not ship it either.
+For such a session:
+`$env:PATH = "$env:LOCALAPPDATA\Programs\gettext-iconv\bin;$env:PATH"`.
 
 `collectstatic` is a **prerequisite of the test suite**, not only of a
 deployment: `STORAGES` uses WhiteNoise's manifest storage in every mode, so

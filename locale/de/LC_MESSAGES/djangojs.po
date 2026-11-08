@@ -2,12 +2,12 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 20:37+0200\n"
+"POT-Creation-Date: 2026-11-08 17:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,66 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\static\js\roster_plan.js:594
+#, javascript-format
+msgid "Remove %s?"
+msgstr "%s entfernen?"
+
+#: .\static\js\roster_plan.js:598
+#, javascript-format
+msgid "People placed in it: %s. They are taken out with it."
+msgstr "Darin eingeteilte Personen: %s. Sie werden mit herausgenommen."
+
+#: .\static\js\roster_plan.js:599
+msgid "Remove"
+msgstr "Entfernen"
+
+#: .\static\js\roster_plan.js:674
+#, javascript-format
+msgid "Times for %s"
+msgstr "Zeiten für %s"
+
+#: .\static\js\roster_plan.js:676
+msgid "%(day)s, time range %(range)s. Enter the exact times this person works; the cell then shows only the time that differs."
+msgstr "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person ein; die Zelle zeigt dann nur die abweichende Zeit."
+
+#: .\static\js\roster_plan.js:695 .\static\js\timeinput.js:65
+msgid "That is not a time this app can read. Try 8:30, 8,5 or 830."
+msgstr "Das ist keine Zeitangabe, die diese App lesen kann. Versuchen Sie 8:30, 8,5 oder 830."
+
+#: .\static\js\roster_plan.js:700
+msgid "The times need a length."
+msgstr "Die Zeiten brauchen eine Dauer."
+
+#: .\static\js\roster_plan.js:1055
+msgid "Edit area"
+msgstr "Bereich bearbeiten"
+
+#: .\static\js\roster_plan.js:1055
+msgid "New area"
+msgstr "Neuer Bereich"
+
+#: .\static\js\roster_plan.js:1069
+msgid "That did not work. Please try again."
+msgstr "Das hat nicht geklappt. Bitte versuchen Sie es erneut."
+
+#: .\static\js\roster_plan.js:1089
+msgid "An area needs a name."
+msgstr "Ein Bereich braucht einen Namen."
+
+#: .\static\js\roster_plan.js:1129
+#, javascript-format
+msgid "Delete %s?"
+msgstr "%s löschen?"
+
+#: .\static\js\roster_plan.js:1130
+msgid "Only an area no week has used can be deleted. Anybody placed in it on this page moves to the first remaining cell of its time range."
+msgstr "Löschen lässt sich nur ein Bereich, der in keiner Woche vorkommt. Wer auf dieser Seite darin eingeteilt ist, rückt in die erste verbleibende Zelle des Zeitraums."
+
+#: .\static\js\roster_plan.js:1131
+msgid "Delete"
+msgstr "Löschen"
 
 #: .\static\js\shell.js:175 .\static\js\shell.js:184
 msgid "OK"
@@ -37,10 +97,6 @@ msgstr "Kopiert"
 msgid "Press Ctrl-C"
 msgstr "Strg-C drücken"
 
-#: .\static\js\timeinput.js:65
-msgid "That is not a time this app can read. Try 8:30, 8,5 or 830."
-msgstr "Das ist keine Zeitangabe, die diese App lesen kann. Versuchen Sie 8:30, 8,5 oder 830."
-
 #: .\static\js\timesheet_day.js:45
 msgid "running"
 msgstr "läuft"
@@ -48,42 +104,3 @@ msgstr "läuft"
 #: .\static\js\timesheet_day.js:128
 msgid "This overlaps another stretch on the same day."
 msgstr "Das überschneidet sich mit einem anderen Abschnitt am selben Tag."
-
-msgid "Remove %s?"
-msgstr "%s entfernen?"
-
-msgid "People placed in it: %s. They are taken out with it."
-msgstr "Darin eingeteilte Personen: %s. Sie werden mit herausgenommen."
-
-msgid "Remove"
-msgstr "Entfernen"
-
-msgid "Times for %s"
-msgstr "Zeiten für %s"
-
-msgid "%(day)s, time range %(range)s. Enter the exact times this person works; the cell then shows only the time that differs."
-msgstr "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person ein; die Zelle zeigt dann nur die abweichende Zeit."
-
-msgid "The times need a length."
-msgstr "Die Zeiten brauchen eine Dauer."
-
-msgid "Edit area"
-msgstr "Bereich bearbeiten"
-
-msgid "New area"
-msgstr "Neuer Bereich"
-
-msgid "That did not work. Please try again."
-msgstr "Das hat nicht geklappt. Bitte versuchen Sie es erneut."
-
-msgid "An area needs a name."
-msgstr "Ein Bereich braucht einen Namen."
-
-msgid "Delete %s?"
-msgstr "%s löschen?"
-
-msgid "Only an area no week has used can be deleted. Anybody placed in it on this page moves to the first remaining cell of its time range."
-msgstr "Löschen lässt sich nur ein Bereich, der in keiner Woche vorkommt. Wer auf dieser Seite darin eingeteilt ist, rückt in die erste verbleibende Zelle des Zeitraums."
-
-msgid "Delete"
-msgstr "Löschen"
