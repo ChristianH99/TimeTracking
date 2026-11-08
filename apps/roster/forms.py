@@ -493,16 +493,14 @@ def draft_from(source_monday, target_monday, unavailable):
 # --------------------------------------------------------------------------
 
 class AreaForm(forms.ModelForm):
+    """One area, from the dialog in a time range's area menu.
+
+    Posted by ``static/js/roster_plan.js`` and answered in JSON by
+    ``views.area_save``; the dialog draws the icons as radio buttons showing
+    the pictures themselves, because a list of words like "Palette" asks
+    somebody to imagine what the cell will show.
+    """
+
     class Meta:
         model = Area
         fields = ["name", "icon", "is_active"]
-        widgets = {
-            # Radio buttons drawn as the icons themselves (templates/roster/
-            # areas.html): a select of words like "Palette" asks somebody to
-            # imagine the picture the cell will show.
-            "icon": forms.RadioSelect(),
-            "name": forms.TextInput(attrs={"maxlength": 60}),
-        }
-
-
-AreaFormSet = modelformset_factory(Area, form=AreaForm, extra=0, can_delete=True)

@@ -13,5 +13,9 @@ urlpatterns = [
     # resolved url_name and a POST that resolved to nothing would leave the
     # Team section unmarked on the page somebody just saved.
     path("save/", views.plan, name="save"),
-    path("areas/", views.areas, name="areas"),
+    # The area dialog in a time range's menu. JSON in and out, so an area can be
+    # added half-way through planning a week without saving or losing the week.
+    path("areas/new/", views.area_save, name="area-new"),
+    path("areas/<int:pk>/", views.area_save, name="area-save"),
+    path("areas/<int:pk>/delete/", views.area_delete, name="area-delete"),
 ]

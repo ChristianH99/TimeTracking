@@ -3555,15 +3555,6 @@ msgstr "Ein Feiertag, ein Urlaubstag oder ein Krankheitstag wird mit den Sollstu
 msgid "Areas"
 msgstr "Bereiche"
 
-msgid "Rooms and groups on the roster"
-msgstr "Räume und Gruppen im Dienstplan"
-
-msgid "Back to the roster"
-msgstr "Zurück zum Dienstplan"
-
-msgid "An area is somewhere people work — a room, a group, the garden. Any time range on the roster can be split into the areas it needs; the split then applies to every day of that week."
-msgstr "Ein Bereich ist ein Ort, an dem gearbeitet wird — ein Raum, eine Gruppe, der Garten. Jeder Zeitraum im Dienstplan lässt sich in die Bereiche aufteilen, die er braucht; die Aufteilung gilt dann für jeden Tag dieser Woche."
-
 msgid "Icon"
 msgstr "Symbol"
 
@@ -3572,12 +3563,6 @@ msgstr "In Gebrauch"
 
 msgid "No areas yet."
 msgstr "Noch keine Bereiche."
-
-msgid "Area"
-msgstr "Bereich"
-
-msgid "Save the areas"
-msgstr "Bereiche speichern"
 
 msgid "Start with an empty week instead"
 msgstr "Stattdessen mit einer leeren Woche beginnen"
@@ -3608,9 +3593,6 @@ msgstr "Übernehmen"
 
 msgid "Use the time range"
 msgstr "Zeiten des Zeitraums verwenden"
-
-msgid "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells."
-msgstr "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf."
 
 msgid "Below the grid is everybody who has not been placed on that day yet. People whose contract has no hours that day are lighter, and people who are away are red — both can still be placed when needed. Not everybody has to be."
 msgstr "Unter dem Raster steht, wer an dem Tag noch nicht eingeteilt ist. Wer laut Vertrag an dem Tag keine Stunden hat, ist heller dargestellt, wer abwesend ist, rot — beide lassen sich bei Bedarf trotzdem einteilen. Es muss nicht jede Person eingeteilt werden."
@@ -3782,8 +3764,17 @@ msgstr "%(kind)s, beantragt"
 msgid "The roster was not saved — see the entries marked below."
 msgstr "Der Dienstplan wurde nicht gespeichert — siehe die markierten Einträge unten."
 
-msgid "%(names)s has been used in the roster and was kept. Untick “in use” instead: that stops it being offered and keeps every week it was used in."
-msgstr "%(names)s kommt im Dienstplan vor und wurde behalten. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten."
+msgid "Edit this area"
+msgstr "Diesen Bereich bearbeiten"
 
-msgid "The areas were saved."
-msgstr "Die Bereiche wurden gespeichert."
+msgid "Areas are saved straight away and shared by every week. Switching one off stops it being offered and keeps every week it was used in."
+msgstr "Bereiche werden sofort gespeichert und gelten für alle Wochen. Ein ausgeschalteter Bereich wird nicht mehr angeboten; jede Woche, in der er vorkam, bleibt erhalten."
+
+msgid "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells and shown by its icon. The same menu adds a new area or, with the pencil, changes one."
+msgstr "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf, gezeigt durch ihr Symbol. Im selben Menü legen Sie einen neuen Bereich an oder ändern mit dem Stift einen bestehenden."
+
+msgid "New area"
+msgstr "Neuer Bereich"
+
+msgid "%(name)s has been used in the roster and cannot be deleted. Untick “in use” instead: that stops it being offered and keeps every week it was used in."
+msgstr "%(name)s kommt im Dienstplan vor und kann nicht gelöscht werden. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten."

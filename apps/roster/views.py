@@ -18,16 +18,17 @@ holiday, which nobody notices until the morning they do not arrive.
 import datetime as dt
 
 from django.contrib import messages
-from django.db.models import ProtectedError
-from django.shortcuts import redirect, render
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from apps.absences.models import Absence, AbsenceKind, BankHoliday, RequestStatus
 from apps.employees.models import Employee
 from apps.employees.permissions import manager_required
-from apps.roster.forms import AreaFormSet, WeekGrid, draft_from, employed_on
+from apps.roster.forms import AreaForm, WeekGrid, draft_from, employed_on
 from apps.roster.models import (
     GRID_DAYS, Area, AreaIcon, PlannedWeek, Shift, TimeSlot,
 )
@@ -235,6 +236,8 @@ def plan(request):
         ],
         "last_day": days[-1],
         "areas": areas,
+        "icons": AreaIcon.choices,
+        "sprite": static("icons/areas.svg"),
         "outside": list(outside),
         "draft_source": draft_source,
         "left_out": left_out,
@@ -245,48 +248,53 @@ def plan(request):
     })
 
 
+def _area_data(area):
+    """What the planner knows about an area: the same shape as ``page_data``."""
+    return {"id": area.pk, "name": area.name, "icon": area.icon, "active": area.is_active}
+
+
 @manager_required
-def areas(request):
-    """Name the areas the grid can be split into, and give each an icon.
+@require_POST
+def area_save(request, pk=None):
+    """Create or change an area, from the dialog in a time range's area menu.
 
-    Deleting one that any week has used is refused and the message names the
-    reversible operation instead — the same rule as for employees and leave
-    types: the destructive version exists for the row created by a typo ten
-    seconds ago and nothing else.
+    Answers JSON rather than redirecting, and that is the reason it is a route
+    of its own rather than part of the roster's Save: somebody adding a room
+    half-way through planning a week must not have to save — or lose — the
+    week to do it. An area is not part of one week anyway; it is a name and an
+    icon every week shares, so it is written the moment the dialog says so.
     """
-    queryset = Area.objects.all()
-    if request.method == "POST":
-        formset = AreaFormSet(request.POST, queryset=queryset, prefix="area")
-        if formset.is_valid():
-            refused = []
-            instances = formset.save(commit=False)
-            for area in formset.deleted_objects:
-                try:
-                    if area.is_used:
-                        raise ProtectedError("used", [area])
-                    area.delete()
-                except ProtectedError:
-                    refused.append(area.name)
-            for index, area in enumerate(instances):
-                if area.position == 0 and not area.pk:
-                    area.position = Area.objects.count() + index + 1
-                area.save()
-            if refused:
-                messages.warning(request, _(
-                    "%(names)s has been used in the roster and was kept. Untick “in use” "
-                    "instead: that stops it being offered and keeps every week it was used in."
-                ) % {"names": ", ".join(refused)})
-            else:
-                messages.success(request, _("The areas were saved."))
-            return redirect(reverse("roster:areas") + (
-                f"?week={request.POST['week']}" if request.POST.get("week") else ""
-            ))
-    else:
-        formset = AreaFormSet(queryset=queryset, prefix="area")
+    area = get_object_or_404(Area, pk=pk) if pk else Area()
+    form = AreaForm(request.POST, instance=area)
+    if not form.is_valid():
+        return JsonResponse(
+            {"errors": {name: [str(e) for e in errors] for name, errors in form.errors.items()}},
+            status=400,
+        )
+    area = form.save(commit=False)
+    if not area.pk:
+        last = Area.objects.order_by("-position").values_list("position", flat=True).first()
+        area.position = (last or 0) + 1
+    area.save()
+    return JsonResponse(_area_data(area))
 
-    return render(request, "roster/areas.html", {
-        "formset": formset,
-        "icons": AreaIcon.choices,
-        "sprite": static("icons/areas.svg"),
-        "week": request.GET.get("week", ""),
-    })
+
+@manager_required
+@require_POST
+def area_delete(request, pk):
+    """Delete an area nobody has used; refuse, and name the alternative, if
+    anybody has.
+
+    The same rule as for employees and leave types: the destructive version
+    exists for the area created by a typo ten seconds ago and nothing else. An
+    area any week has used is part of what that week says, so it is switched
+    off instead — which stops it being offered and keeps every week it was in.
+    """
+    area = get_object_or_404(Area, pk=pk)
+    if area.is_used:
+        return JsonResponse({"error": _(
+            "%(name)s has been used in the roster and cannot be deleted. Untick “in use” "
+            "instead: that stops it being offered and keeps every week it was used in."
+        ) % {"name": area.name}}, status=409)
+    area.delete()
+    return JsonResponse({"deleted": pk})

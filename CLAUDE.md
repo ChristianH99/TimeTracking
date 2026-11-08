@@ -632,6 +632,17 @@ recognises them as decided rather than missed.
   that week here" over an existing grid and no "fill from contracts" any more:
   the grid replaced both, and a copy on top of a planned week is exactly the
   duplicate the old "adds rather than replaces" rule existed to make survivable.
+- **On the grid an area is its icon; it is made and changed from a range's
+  areas menu, and saved on its own.** The name is the header's tooltip and
+  screen-reader text — five names down the side made the grid too wide to see
+  a week at once. The pencil and "+ New area" in the menu open a dialog that
+  posts to `roster:area-new` / `area-save` / `area-delete` and gets JSON back,
+  so adding a room half-way through planning neither saves nor loses the week:
+  an area is shared by every week, not part of this one. The script then puts
+  the answer into every menu on the page, including the blank slot template.
+  An area some week has used answers 409 to a delete and is switched off
+  instead; switched off, it stays in the menu (that is where it comes back on)
+  but cannot be ticked on a range that does not already have it.
 - **Removing an area from a slot moves its people, it does not drop them.** They
   go to the slot's first remaining cell that day — a visible name in the wrong
   room takes one drag to fix; a name that silently vanished is noticed the

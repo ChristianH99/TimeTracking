@@ -1301,15 +1301,17 @@ textarea:focus-visible,
 .rgrid tbody[data-grid-body] tr:first-child > * { border-top: none; }
 
 .rgrid-time { width: 9.5rem; background: var(--white); }
-.rgrid-area {
-  width: 8rem;
+/* An area is its icon alone, so the column is only as wide as one; the name
+   is the header's tooltip and its screen-reader text. */
+.rgrid th.rgrid-area {
+  width: 2.75rem;
   background: var(--white);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-dark);
-  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  color: var(--pine-light);
+  cursor: help;
 }
-.rgrid-area .ricon { margin-right: var(--space-2); color: var(--pine-light); vertical-align: -3px; }
+.rgrid-area .ricon { width: 1.4em; height: 1.4em; }
 
 .ricon { width: 1.1em; height: 1.1em; display: inline-block; flex: none; }
 
@@ -1351,8 +1353,27 @@ textarea:focus-visible,
   padding: var(--space-4);
   margin-top: var(--space-2);
 }
-.rslot-area { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--text-dark); cursor: pointer; }
+.rslot-area-lines { display: flex; flex-direction: column; gap: var(--space-2); }
+.rslot-area-line { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.rslot-area-line.is-inactive .rslot-area { color: var(--text-light); }
+.rslot-area { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--text-dark); cursor: pointer; min-width: 0; }
 .rslot-area .ricon { color: var(--pine-light); }
+.rslot-area-line.is-inactive .ricon { color: var(--text-muted); }
+.rslot-area-edit {
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
+  line-height: 1;
+  transition: color var(--dur-3), background var(--dur-3);
+}
+.rslot-area-edit:hover { color: var(--ember); background: var(--ember-bg); }
+.rslot-area-new {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  font-size: var(--text-sm);
+}
 .rslot-remove {
   border: none; background: transparent; cursor: pointer;
   color: var(--text-muted);
@@ -1497,7 +1518,16 @@ textarea:focus-visible,
    console as the only clue. */
 .roster-holder { position: absolute; left: -9999px; top: 0; width: 1px; overflow: hidden; }
 
-/* ===== THE AREAS ===== */
+/* ===== THE AREA DIALOG ===== */
+.rarea-modal { max-width: 30rem; }
+.rarea-form { display: flex; flex-direction: column; min-height: 0; margin: 0; }
+.rarea-form .field { margin: 0 0 var(--space-5); }
+.rarea-form .icon-choices { margin-bottom: var(--space-5); }
+.rarea-form .icon-choices legend { font-size: var(--text-sm); font-weight: 600; color: var(--text-dark); margin-bottom: var(--space-3); padding: 0; }
+.rarea-active { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--text-dark); margin-bottom: var(--space-4); }
+.rarea-form .rarea-active input { width: auto; }
+.rarea-delete { margin-left: auto; color: var(--danger); }
+.rarea-delete:hover { color: var(--danger); }
 .icon-choices { border: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .icon-choice { position: relative; cursor: pointer; }
 .icon-choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }

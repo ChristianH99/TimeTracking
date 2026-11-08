@@ -1,6 +1,12 @@
-{% load i18n %}{% comment %}One time range: the row header of the grid. roster_plan.js moves it into the
+{% load i18n static %}{% comment %}One time range: the row header of the grid. roster_plan.js moves it into the
 first cell of its row and rebuilds the row around it whenever its times or
-areas change.{% endcomment %}
+areas change.
+
+The areas menu is also where areas are made and changed: each line has an edit
+button and the foot of the list adds a new one. Both open the area dialog in
+plan.html, which saves the area on its own — see views.area_save. A line's
+markup is the same as the `area-line` template in plan.html, which is what
+roster_plan.js clones when an area is added while the page is open.{% endcomment %}
 <div class="rslot{% if form.errors %} has-error{% endif %}" data-slot>
   {{ form.id }}{{ form.key }}
   <div class="rslot-times">
@@ -14,11 +20,19 @@ areas change.{% endcomment %}
     <details class="rslot-areas" data-slot-areas>
       <summary>{% translate "Areas" %}</summary>
       <div class="rslot-areas-list">
-        {% for box in form.areas %}
-          <label class="rslot-area" data-area-choice="{{ box.data.value }}">{{ box.tag }} <span>{{ box.choice_label }}</span></label>
-        {% empty %}
-          <p class="help">{% translate "No areas yet." %}</p>
-        {% endfor %}
+        <div class="rslot-area-lines" data-area-lines>
+          {% for box in form.areas %}
+            <div class="rslot-area-line" data-area-line="{{ box.data.value }}">
+              <label class="rslot-area" data-area-choice="{{ box.data.value }}">{{ box.tag }} <span data-area-name>{{ box.choice_label }}</span></label>
+              <button type="button" class="rslot-area-edit" data-area-edit="{{ box.data.value }}"
+                      aria-label="{% translate 'Edit this area' %}" title="{% translate 'Edit this area' %}">
+                <svg class="ricon" aria-hidden="true" focusable="false"><use href="{% static 'icons/areas.svg' %}#ui-edit"></use></svg>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+        <p class="help" data-area-none{% if form.areas.field.queryset.exists %} hidden{% endif %}>{% translate "No areas yet." %}</p>
+        <button type="button" class="link-button rslot-area-new" data-area-new>+ {% translate "New area" %}</button>
       </div>
     </details>
     <label class="sr-only">{{ form.DELETE }} {% translate "Remove this time range" %}</label>

@@ -170,17 +170,33 @@
     return svg;
   }
 
-  /* The area pickers: an icon beside each name, and an area that is no longer
-     in use offered only to a slot that already has it. */
+  /* The area menus, brought in line with what the page knows about each area:
+   * its icon and name (both can change from the area dialog while the page is
+   * open), and whether it is still in use.
+   *
+   * An area that is no longer in use stays in the menu — that is where it is
+   * switched back on — but cannot be ticked on a range that does not already
+   * have it. A range that has it keeps it ticked and enabled: a disabled box is
+   * not submitted, and the range would quietly lose the area on Save.
+   */
   function decorateAreaChoices(scope) {
-    scope.querySelectorAll("[data-area-choice]").forEach((label) => {
-      const area = areas[label.dataset.areaChoice];
-      if (!area) return;
-      if (!label.querySelector(".ricon")) {
-        label.insertBefore(icon(area.icon), label.querySelector("span"));
-      }
+    scope.querySelectorAll("[data-area-line]").forEach((line) => {
+      const area = areas[line.dataset.areaLine];
+      const label = line.querySelector("[data-area-choice]");
+      if (!area || !label) return;
+      const old = label.querySelector(".ricon");
+      const fresh = icon(area.icon);
+      if (old) old.replaceWith(fresh);
+      else label.insertBefore(fresh, label.querySelector("[data-area-name]"));
+      const name = label.querySelector("[data-area-name]");
+      if (name) name.textContent = area.name;
       const box = label.querySelector("input");
-      label.hidden = !area.active && !(box && box.checked);
+      line.classList.toggle("is-inactive", !area.active);
+      if (box) box.disabled = !area.active && !box.checked;
+    });
+    scope.querySelectorAll("[data-slot-areas]").forEach((menu) => {
+      const none = menu.querySelector("[data-area-none]");
+      if (none) none.hidden = Boolean(menu.querySelector("[data-area-line]"));
     });
   }
 
@@ -238,8 +254,14 @@
           th.className = "rgrid-area";
           const area = areas[areaId];
           if (area) {
+            // The icon alone: the column is read across a room, and five
+            // names down the side of a grid are what made it too wide to see
+            // a week at once. The name is the tooltip, and what a screen
+            // reader announces.
             th.appendChild(icon(area.icon));
+            th.title = area.name;
             const name = document.createElement("span");
+            name.className = "sr-only";
             name.textContent = area.name;
             th.appendChild(name);
           }
@@ -972,9 +994,197 @@
     }
   });
 
+  // ---- making and changing areas ------------------------------------------
+  //
+  // From any range's areas menu. Saved on its own, with fetch, the moment the
+  // dialog says so — an area is shared by every week rather than part of this
+  // one, and somebody adding a room half-way through planning must not have to
+  // save, or lose, the week to do it. What comes back is put into `areas` and
+  // into every menu on the page, including the template a new range is cloned
+  // from, so the page never has two ideas of what the areas are.
+
+  const areaModal = document.querySelector("[data-area-modal]");
+  const areaLineTemplate = form.querySelector('[data-template="area-line"]');
+  const slotTemplate = form.querySelector('[data-template="slot"]');
+
+  const areaDialog = areaModal && window.modalController ? {
+    controller: window.modalController(areaModal),
+    form: areaModal.querySelector("[data-area-form]"),
+    title: areaModal.querySelector("[data-area-title]"),
+    name: areaModal.querySelector("[data-area-field-name]"),
+    active: areaModal.querySelector("[data-area-field-active]"),
+    error: areaModal.querySelector("[data-area-error]"),
+    remove: areaModal.querySelector("[data-area-delete]"),
+    id: null,
+    busy: false,
+  } : null;
+
+  function areaUrl(kind, id) {
+    const pattern = areaModal.dataset[kind];
+    return id ? pattern.replace(/\/0\/(delete\/)?$/, "/" + id + "/$1") : pattern;
+  }
+
+  function slotScopes() {
+    // Every slot row on the page, and the blank one new ranges are cloned from.
+    const scopes = Array.from(form.querySelectorAll("[data-slot]"));
+    if (slotTemplate) scopes.push(slotTemplate.content.querySelector("[data-slot]"));
+    return scopes.filter(Boolean);
+  }
+
+  function addAreaLine(scope, area) {
+    const lines = scope.querySelector("[data-area-lines]");
+    const start = scope.querySelector("input[name$='-start']");
+    if (!lines || !start || !areaLineTemplate) return;
+    if (lines.querySelector('[data-area-line="' + area.id + '"]')) return;
+    const prefix = start.name.replace(/-start$/, "");
+    const line = areaLineTemplate.content.firstElementChild.cloneNode(true);
+    line.dataset.areaLine = String(area.id);
+    line.querySelector("[data-area-choice]").dataset.areaChoice = String(area.id);
+    line.querySelector("[data-area-edit]").dataset.areaEdit = String(area.id);
+    const box = line.querySelector("input");
+    box.name = prefix + "-areas";
+    box.value = String(area.id);
+    box.id = "id_" + prefix + "-areas_a" + area.id;
+    lines.appendChild(line);
+  }
+
+  function openArea(id) {
+    if (!areaDialog || areaDialog.controller.isOpen()) return;
+    const area = id ? areas[id] : null;
+    areaDialog.id = id || null;
+    areaDialog.title.textContent = area ? gettext("Edit area") : gettext("New area");
+    areaDialog.name.value = area ? area.name : "";
+    areaDialog.active.checked = area ? area.active : true;
+    const iconName = area ? area.icon : "star";
+    areaModal.querySelectorAll("input[name='area-dialog-icon']").forEach((radio) => {
+      radio.checked = radio.value === iconName;
+    });
+    areaDialog.remove.hidden = !area;
+    areaDialog.error.hidden = true;
+    areaDialog.controller.open();
+    areaDialog.name.focus();
+  }
+
+  function areaFailed(message) {
+    areaDialog.error.textContent = message || gettext("That did not work. Please try again.");
+    areaDialog.error.hidden = false;
+  }
+
+  async function postArea(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "X-CSRFToken": window.csrfToken(), "X-Requested-With": "fetch" },
+      body: body,
+      credentials: "same-origin",
+    });
+    let answer = {};
+    try { answer = await response.json(); } catch (error) { /* not JSON: a 404 page, say */ }
+    return { ok: response.ok, answer: answer };
+  }
+
+  async function saveArea() {
+    if (areaDialog.busy) return;
+    const name = areaDialog.name.value.trim();
+    if (!name) {
+      areaFailed(gettext("An area needs a name."));
+      areaDialog.name.focus();
+      return;
+    }
+    const chosen = areaModal.querySelector("input[name='area-dialog-icon']:checked");
+    const body = new FormData();
+    body.append("name", name);
+    body.append("icon", chosen ? chosen.value : "star");
+    if (areaDialog.active.checked) body.append("is_active", "on");
+
+    areaDialog.busy = true;
+    let result;
+    try {
+      result = await postArea(areaUrl(areaDialog.id ? "areaSaveUrl" : "areaNewUrl", areaDialog.id), body);
+    } catch (error) {
+      result = { ok: false, answer: {} };
+    }
+    areaDialog.busy = false;
+    if (!result.ok) {
+      const errors = result.answer.errors || {};
+      const first = Object.keys(errors).map((key) => errors[key][0])[0];
+      areaFailed(first);
+      return;
+    }
+
+    const area = result.answer;
+    const isNew = !areas[area.id];
+    areas[area.id] = { name: area.name, icon: area.icon, active: area.active };
+    if (isNew) slotScopes().forEach((scope) => addAreaLine(scope, area));
+    slotScopes().forEach((scope) => decorateAreaChoices(scope));
+    areaDialog.controller.close();
+    render();
+  }
+
+  async function deleteArea() {
+    const id = areaDialog.id;
+    if (!id || areaDialog.busy) return;
+    if (window.appConfirm) {
+      areaDialog.controller.close();
+      const ok = await window.appConfirm({
+        title: interpolate(gettext("Delete %s?"), [areas[id].name]),
+        body: gettext("Only an area no week has used can be deleted. Anybody placed in it on this page moves to the first remaining cell of its time range."),
+        accept: gettext("Delete"),
+        danger: true,
+      });
+      if (!ok) { openArea(id); return; }
+    }
+    areaDialog.busy = true;
+    let result;
+    try {
+      result = await postArea(areaUrl("areaDeleteUrl", id), new FormData());
+    } catch (error) {
+      result = { ok: false, answer: {} };
+    }
+    areaDialog.busy = false;
+    if (!result.ok) {
+      openArea(id);
+      areaFailed(result.answer.error);
+      return;
+    }
+    // Ticked on a range here but saved nowhere yet — the server only refuses an
+    // area something *saved* refers to — so taking the line away is a change
+    // to the week the guard has to know about.
+    const wasTicked = Array.from(form.querySelectorAll(
+      'input[name$="-areas"][value="' + id + '"]')).some((box) => box.checked);
+    slotScopes().forEach((scope) => {
+      const line = scope.querySelector('[data-area-line="' + id + '"]');
+      if (line) line.remove();
+      decorateAreaChoices(scope);
+    });
+    delete areas[id];
+    render();
+    if (wasTicked) changed();
+  }
+
+  if (areaDialog) {
+    form.addEventListener("click", (event) => {
+      const edit = event.target.closest("[data-area-edit]");
+      if (edit) {
+        event.preventDefault();
+        openArea(edit.dataset.areaEdit);
+        return;
+      }
+      if (event.target.closest("[data-area-new]")) {
+        event.preventDefault();
+        openArea(null);
+      }
+    });
+    areaDialog.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveArea();
+    });
+    areaModal.querySelector("[data-area-cancel]").addEventListener("click", () => areaDialog.controller.close());
+    areaDialog.remove.addEventListener("click", deleteArea);
+  }
+
   // ---- start --------------------------------------------------------------
 
-  decorateAreaChoices(holder);
+  slotScopes().forEach((scope) => decorateAreaChoices(scope));
   render();
 
   // A week copied from the last one is a draft that has not been saved, and

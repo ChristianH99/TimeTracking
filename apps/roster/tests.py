@@ -251,7 +251,7 @@ class TestThePage:
     def test_an_ordinary_employee_is_turned_away(self, client, org, anna, monday):
         assert client.get(reverse("roster:plan")).status_code == 404
         assert client.post(reverse("roster:save"), week_post(monday)).status_code == 404
-        assert client.get(reverse("roster:areas")).status_code == 404
+        assert client.post(reverse("roster:area-new"), {"name": "X", "icon": "star"}).status_code == 404
 
     def test_shifts_the_grid_cannot_draw_are_named(self, manager_client, org, anna, monday):
         saturday = monday + dt.timedelta(days=5)
@@ -912,58 +912,85 @@ class TestTheMigration:
 # The areas page
 # --------------------------------------------------------------------------
 
-def _area_post(rows):
-    data = _management("area", len(rows), sum(1 for row in rows if row.get("id")))
-    for index, row in enumerate(rows):
-        for name, value in row.items():
-            if name in ("DELETE", "is_active"):
-                if value:
-                    data[f"area-{index}-{name}"] = "on"
-            else:
-                data[f"area-{index}-{name}"] = str(value)
-    return data
+class TestAreasFromTheMenu:
+    """Areas are made and changed from a time range's menu, through three JSON
+    routes, so that adding one never costs the week being planned."""
 
-
-class TestTheAreasPage:
-    def test_it_renders_every_icon(self, manager_client, org, rooms):
-        response = manager_client.get(reverse("roster:areas"))
-        assert response.status_code == 200
-        body = response.content.decode()
+    def test_the_planner_offers_every_icon_in_its_dialog(self, manager_client, org, monday):
+        body = manager_client.get(reverse("roster:plan"), {"week": monday.isoformat()}).content.decode()
         for value, _label in AreaIcon.choices:
-            assert f"areas.svg#{value}" in body or f"#{value}\"" in body
+            assert f'name="area-dialog-icon" value="{value}"' in body
+        assert reverse("roster:area-new") in body
 
-    def test_adding_an_area(self, manager_client, org):
-        response = manager_client.post(reverse("roster:areas"), _area_post([
-            {"name": "Garden", "icon": "tree", "is_active": True},
-        ]))
-        assert response.status_code == 302
+    def test_there_is_no_separate_areas_page_any_more(self, manager_client, org, monday):
+        body = manager_client.get(reverse("roster:plan"), {"week": monday.isoformat()}).content.decode()
+        assert "/roster/areas/\"" not in body
+        assert manager_client.get("/roster/areas/").status_code == 404
+
+    def test_adding_an_area_answers_with_it(self, manager_client, org):
+        response = manager_client.post(reverse("roster:area-new"),
+                                       {"name": " Garden ", "icon": "tree", "is_active": "on"})
+        assert response.status_code == 200
         area = Area.objects.get()
-        assert (area.name, area.icon, area.is_active) == ("Garden", "tree", True)
+        assert response.json() == {"id": area.pk, "name": "Garden", "icon": "tree", "active": True}
+
+    def test_a_new_area_goes_to_the_end(self, manager_client, org, rooms):
+        manager_client.post(reverse("roster:area-new"), {"name": "Garden", "icon": "tree", "is_active": "on"})
+        assert list(Area.objects.values_list("name", flat=True)) == ["Room 1", "Room 2", "Garden"]
+
+    def test_changing_an_area(self, manager_client, org, rooms):
+        one, _two = rooms
+        response = manager_client.post(reverse("roster:area-save", args=[one.pk]),
+                                       {"name": "Nest", "icon": "heart"})
+        assert response.json()["active"] is False          # unticked box: switched off
+        one.refresh_from_db()
+        assert (one.name, one.icon, one.is_active) == ("Nest", "heart", False)
+
+    def test_a_name_is_required(self, manager_client, org):
+        response = manager_client.post(reverse("roster:area-new"), {"name": "  ", "icon": "tree"})
+        assert response.status_code == 400
+        assert "name" in response.json()["errors"]
+        assert not Area.objects.exists()
+
+    def test_an_icon_the_sprite_does_not_have_is_refused(self, manager_client, org):
+        response = manager_client.post(reverse("roster:area-new"), {"name": "X", "icon": "rocket"})
+        assert response.status_code == 400
+        assert "icon" in response.json()["errors"]
 
     def test_an_unused_area_can_be_deleted(self, manager_client, org, rooms):
         one, two = rooms
-        manager_client.post(reverse("roster:areas"), _area_post([
-            {"id": one.pk, "name": one.name, "icon": one.icon, "is_active": True},
-            {"id": two.pk, "name": two.name, "icon": two.icon, "is_active": True, "DELETE": True},
-        ]))
+        response = manager_client.post(reverse("roster:area-delete", args=[two.pk]))
+        assert response.json() == {"deleted": two.pk}
         assert list(Area.objects.all()) == [one]
 
-    def test_a_used_area_is_kept_and_the_page_says_why(self, manager_client, org, rooms, monday):
+    def test_a_used_area_is_kept_and_the_answer_says_why(self, manager_client, org, rooms, monday):
         one, _two = rooms
         TimeSlot.objects.create(week=monday, start=T(8, 0), end=T(9, 0)).areas.set([one])
-        response = manager_client.post(reverse("roster:areas"), _area_post([
-            {"id": one.pk, "name": one.name, "icon": one.icon, "is_active": True, "DELETE": True},
-        ]), follow=True)
+        response = manager_client.post(reverse("roster:area-delete", args=[one.pk]))
+        assert response.status_code == 409
+        assert "cannot be deleted" in response.json()["error"]
         assert Area.objects.filter(pk=one.pk).exists()
-        assert "has been used in the roster and was kept" in response.content.decode()
 
-    def test_switching_one_off_keeps_it(self, manager_client, org, rooms):
+    def test_an_area_named_in_a_cell_text_is_used_too(self, manager_client, org, rooms, monday):
         one, _two = rooms
-        manager_client.post(reverse("roster:areas"), _area_post([
-            {"id": one.pk, "name": one.name, "icon": one.icon, "is_active": False},
-        ]))
-        one.refresh_from_db()
-        assert not one.is_active
+        slot = TimeSlot.objects.create(week=monday, start=T(8, 0), end=T(9, 0))
+        CellNote.objects.create(slot=slot, date=monday, area=one, text="Outing")
+        assert manager_client.post(reverse("roster:area-delete", args=[one.pk])).status_code == 409
+
+    def test_they_are_post_only(self, manager_client, org, rooms):
+        one, _two = rooms
+        assert manager_client.get(reverse("roster:area-new")).status_code == 405
+        assert manager_client.get(reverse("roster:area-delete", args=[one.pk])).status_code == 405
+
+    def test_an_ordinary_employee_cannot_touch_them(self, client, org, anna, rooms):
+        one, _two = rooms
+        assert client.post(reverse("roster:area-new"), {"name": "X", "icon": "tree"}).status_code == 404
+        assert client.post(reverse("roster:area-save", args=[one.pk]), {"name": "X", "icon": "tree"}).status_code == 404
+        assert client.post(reverse("roster:area-delete", args=[one.pk])).status_code == 404
+        assert Area.objects.count() == 2
+
+    def test_an_area_that_does_not_exist(self, manager_client, org):
+        assert manager_client.post(reverse("roster:area-save", args=[999]), {"name": "X", "icon": "tree"}).status_code == 404
 
     def test_an_area_in_use_cannot_be_deleted_from_under_a_shift(self, anna, monday, rooms):
         from django.db.models import ProtectedError
@@ -975,6 +1002,17 @@ class TestTheAreasPage:
             one.delete()
 
 
+class TestTheGridShowsIcons:
+    def test_each_range_menu_lists_every_area_with_an_edit_button(self, manager_client, org, rooms, monday):
+        one, two = rooms
+        TimeSlot.objects.create(week=monday, start=T(8, 0), end=T(9, 0)).areas.set([one])
+        body = manager_client.get(reverse("roster:plan"), {"week": monday.isoformat()}).content.decode()
+        for area in (one, two):
+            assert f'data-area-edit="{area.pk}"' in body
+        assert "data-area-new" in body
+        assert "#ui-edit" in body
+
+
 def test_the_sprite_draws_every_icon_the_model_offers():
     """The sprite and ``AreaIcon`` are two lists of one thing, and an icon
     missing from the sprite renders as an empty square with no error."""
@@ -983,3 +1021,6 @@ def test_the_sprite_draws_every_icon_the_model_offers():
     sprite = (settings.BASE_DIR / "static" / "icons" / "areas.svg").read_text(encoding="utf-8")
     for value, _label in AreaIcon.choices:
         assert f'<symbol id="{value}"' in sprite, f"areas.svg has no symbol for {value}"
+    # The interface's own symbols are kept apart, so none can be chosen as an
+    # area's icon by accident.
+    assert not any(value.startswith("ui-") for value, _label in AreaIcon.choices)

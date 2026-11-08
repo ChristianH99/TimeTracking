@@ -66,3 +66,24 @@ msgstr "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person 
 
 msgid "The times need a length."
 msgstr "Die Zeiten brauchen eine Dauer."
+
+msgid "Edit area"
+msgstr "Bereich bearbeiten"
+
+msgid "New area"
+msgstr "Neuer Bereich"
+
+msgid "That did not work. Please try again."
+msgstr "Das hat nicht geklappt. Bitte versuchen Sie es erneut."
+
+msgid "An area needs a name."
+msgstr "Ein Bereich braucht einen Namen."
+
+msgid "Delete %s?"
+msgstr "%s löschen?"
+
+msgid "Only an area no week has used can be deleted. Anybody placed in it on this page moves to the first remaining cell of its time range."
+msgstr "Löschen lässt sich nur ein Bereich, der in keiner Woche vorkommt. Wer auf dieser Seite darin eingeteilt ist, rückt in die erste verbleibende Zelle des Zeitraums."
+
+msgid "Delete"
+msgstr "Löschen"

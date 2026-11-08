@@ -524,9 +524,6 @@ ROSTER_GRID = {
     "%(kind)s, asked for": "%(kind)s, beantragt",
     "The roster was not saved — see the entries marked below.":
         "Der Dienstplan wurde nicht gespeichert — siehe die markierten Einträge unten.",
-    "%(names)s has been used in the roster and was kept. Untick “in use” instead: that stops it being offered and keeps every week it was used in.":
-        "%(names)s kommt im Dienstplan vor und wurde behalten. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten.",
-    "The areas were saved.": "Die Bereiche wurden gespeichert.",
 
     # the planner
     "This week has not been planned yet, so it has been filled in from the week of %(week)s. Nothing is saved until you press Save.":
@@ -546,8 +543,14 @@ ROSTER_GRID = {
     "No areas yet.": "Noch keine Bereiche.",
     "Remove this time range": "Diesen Zeitraum entfernen",
     "Take out of this cell": "Aus dieser Zelle nehmen",
-    "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells.":
-        "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf.",
+    "Edit this area": "Diesen Bereich bearbeiten",
+    "New area": "Neuer Bereich",
+    "Areas are saved straight away and shared by every week. Switching one off stops it being offered and keeps every week it was used in.":
+        "Bereiche werden sofort gespeichert und gelten für alle Wochen. Ein ausgeschalteter Bereich wird nicht mehr angeboten; jede Woche, in der er vorkam, bleibt erhalten.",
+    "%(name)s has been used in the roster and cannot be deleted. Untick “in use” instead: that stops it being offered and keeps every week it was used in.":
+        "%(name)s kommt im Dienstplan vor und kann nicht gelöscht werden. Nehmen Sie stattdessen den Haken bei „In Gebrauch“ heraus: dann wird der Bereich nicht mehr angeboten, und jede Woche, in der er vorkam, bleibt erhalten.",
+    "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells and shown by its icon. The same menu adds a new area or, with the pencil, changes one.":
+        "Jede Zeile ist ein Zeitraum, jede Spalte ein Wochentag. Einen Zeitraum ändern Sie, indem Sie seine Zeiten überschreiben; das gilt für die ganze Woche. „Bereiche“ an einer Zeile teilt sie in Räume oder Gruppen mit jeweils eigenen Zellen auf, gezeigt durch ihr Symbol. Im selben Menü legen Sie einen neuen Bereich an oder ändern mit dem Stift einen bestehenden.",
     "Below the grid is everybody who has not been placed on that day yet. People whose contract has no hours that day are lighter, and people who are away are red — both can still be placed when needed. Not everybody has to be.":
         "Unter dem Raster steht, wer an dem Tag noch nicht eingeteilt ist. Wer laut Vertrag an dem Tag keine Stunden hat, ist heller dargestellt, wer abwesend ist, rot — beide lassen sich bei Bedarf trotzdem einteilen. Es muss nicht jede Person eingeteilt werden.",
     "Drag a name into a cell to place them, between cells to move them, or back to the list to take them out. Hold Ctrl while dropping to copy instead of move. You can also type in a cell: pick a name from the suggestions to place that person, or just leave the text — “Break”, for instance — and it is shown in the cell.":
@@ -558,14 +561,8 @@ ROSTER_GRID = {
         "Eine noch nicht geplante Woche beginnt als Kopie der zuletzt geplanten. Geschrieben wird nichts, bis Sie speichern.",
 
     # the areas page
-    "Rooms and groups on the roster": "Räume und Gruppen im Dienstplan",
-    "Back to the roster": "Zurück zum Dienstplan",
-    "An area is somewhere people work — a room, a group, the garden. Any time range on the roster can be split into the areas it needs; the split then applies to every day of that week.":
-        "Ein Bereich ist ein Ort, an dem gearbeitet wird — ein Raum, eine Gruppe, der Garten. Jeder Zeitraum im Dienstplan lässt sich in die Bereiche aufteilen, die er braucht; die Aufteilung gilt dann für jeden Tag dieser Woche.",
     "Icon": "Symbol",
     "In use": "In Gebrauch",
-    "Area": "Bereich",
-    "Save the areas": "Bereiche speichern",
 }
 
 ROSTER_GRID_PLURALS = {
@@ -584,6 +581,14 @@ ROSTER_GRID_JAVASCRIPT = {
     "%(day)s, time range %(range)s. Enter the exact times this person works; the cell then shows only the time that differs.":
         "%(day)s, Zeitraum %(range)s. Geben Sie die genauen Zeiten dieser Person ein; die Zelle zeigt dann nur die abweichende Zeit.",
     "The times need a length.": "Die Zeiten brauchen eine Dauer.",
+    "Edit area": "Bereich bearbeiten",
+    "New area": "Neuer Bereich",
+    "That did not work. Please try again.": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
+    "An area needs a name.": "Ein Bereich braucht einen Namen.",
+    "Delete %s?": "%s löschen?",
+    "Only an area no week has used can be deleted. Anybody placed in it on this page moves to the first remaining cell of its time range.":
+        "Löschen lässt sich nur ein Bereich, der in keiner Woche vorkommt. Wer auf dieser Seite darin eingeteilt ist, rückt in die erste verbleibende Zelle des Zeitraums.",
+    "Delete": "Löschen",
 }
 
 PAGES.update(ROSTER_GRID)

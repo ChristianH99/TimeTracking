@@ -94,8 +94,15 @@ def page(browser, live_server, manager):
     tab = context.new_page()
     problems = []
     tab.on("pageerror", lambda error: problems.append(str(error)))
-    tab.on("console", lambda message: problems.append(message.text)
-           if message.type == "error" else None)
+    def console(message):
+        # The browser logs every refused fetch as an error. A 409 is the area
+        # route's deliberate "used, switch it off instead" and is asserted on
+        # where it happens; anything else — a 404 for a script above all —
+        # still fails the test.
+        if message.type == "error" and "status of 409" not in message.text:
+            problems.append(message.text)
+
+    tab.on("console", console)
     tab.live_server = live_server
     yield tab
     context.close()
@@ -180,7 +187,8 @@ class TestTheGrid:
         open_week(page, monday)
         # early (1 row) + morning split in two (2 rows) + lunch (1 row)
         assert page.locator("[data-grid-body] tr").count() == 4
-        assert page.locator(".rgrid-area").all_inner_texts() == ["Room 1", "Room 2"]
+        headers = page.locator(".rgrid-area")
+        assert [headers.nth(i).get_attribute("title") for i in range(2)] == ["Room 1", "Room 2"]
         # The slots come out in clock order whatever order they arrived in.
         starts = page.locator("[data-grid-body] .rgrid-time input[name$='-start']")
         assert [starts.nth(i).input_value() for i in range(starts.count())] == ["07:15", "08:00", "12:00"]
@@ -522,12 +530,134 @@ class TestThePhoneWidth:
         assert scroller.evaluate("el => el.scrollWidth > el.clientWidth")
 
 
-def test_the_areas_page_saves_an_icon(page, org):
-    page.goto(f"{page.live_server.url}/roster/areas/")
-    page.click("[data-rows-add='areas']")
-    page.fill("input[name='area-0-name']", "Garden")
-    page.click(".icon-choice:has(input[name='area-0-icon'][value='tree'])")
-    with page.expect_navigation():
-        page.click(".form-actions button[type=submit]")
-    area = Area.objects.get()
-    assert (area.name, area.icon) == ("Garden", "tree")
+class TestAreasAreIcons:
+    def test_a_row_header_shows_the_icon_and_no_name(self, page, week, monday):
+        open_week(page, monday)
+        header = page.locator(".rgrid-area").first
+        assert header.locator("svg.ricon").is_visible()
+        # The name is there for a screen reader, and takes up no room.
+        name = header.locator(".sr-only")
+        assert name.inner_text() == "Room 1"
+        assert name.evaluate("el => el.getBoundingClientRect().width") <= 1
+        assert header.evaluate("el => el.getBoundingClientRect().width") < 60
+
+
+class TestAreasFromTheMenu:
+    def _menu(self, page, slot, monday):
+        row = page.locator(f'[data-cell^="{slot.pk}|"]').first.locator("xpath=..")
+        row.locator("[data-slot-areas] summary").click()
+        return row
+
+    def test_a_new_area_is_offered_on_every_range_and_saved_at_once(self, page, week, monday):
+        open_week(page, monday)
+        row = self._menu(page, week["lunch"], monday)
+        row.locator("[data-area-new]").click()
+        page.wait_for_selector("[data-area-modal]:not([hidden])")
+        page.fill("[data-area-field-name]", "Garden")
+        page.click(".icon-choice:has(input[value='tree'])")
+        page.click("[data-area-form] button[type=submit]")
+        page.wait_for_selector("[data-area-modal]", state="hidden")
+
+        garden = Area.objects.get(name="Garden")
+        assert (garden.icon, garden.is_active) == ("tree", True)
+        # In every range's menu, unticked.
+        boxes = page.locator(f'[data-grid-body] [data-area-line="{garden.pk}"] input')
+        assert boxes.count() == 3
+        assert not any(boxes.nth(i).is_checked() for i in range(3))
+        # And on a range added afterwards.
+        page.click("[data-slot-add]")
+        assert page.locator(f'[data-grid-body] [data-area-line="{garden.pk}"]').count() == 4
+
+    def test_a_new_area_can_be_ticked_straight_away_and_the_week_saves(self, page, week, monday, cem):
+        open_week(page, monday)
+        # An unsaved change first: it must survive the area being created.
+        drag(page, pool(page, monday).locator(".rpool-chip", has_text="Cem"), cell(page, week["early"].pk, monday))
+        row = self._menu(page, week["lunch"], monday)
+        row.locator("[data-area-new]").click()
+        page.fill("[data-area-field-name]", "Garden")
+        page.press("[data-area-field-name]", "Enter")
+        page.wait_for_selector("[data-area-modal]", state="hidden")
+        garden = Area.objects.get(name="Garden")
+        row.locator(f'[data-area-line="{garden.pk}"] input').check()
+        assert cell(page, week["lunch"].pk, monday, garden.pk).count() == 1
+        assert chips_in(page, week["early"].pk, monday) == ["Dilan (07:30)", "Cem"]
+        save(page)
+        assert list(TimeSlot.objects.get(pk=week["lunch"].pk).areas.all()) == [garden]
+        assert Shift.objects.filter(employee=cem, slot=week["early"]).exists()
+
+    def test_editing_an_area_changes_its_icon_on_the_grid(self, page, week, monday):
+        open_week(page, monday)
+        row = self._menu(page, week["morning"], monday)
+        row.locator(f'[data-area-edit="{week["one"].pk}"]').click()
+        page.wait_for_selector("[data-area-modal]:not([hidden])")
+        assert page.input_value("[data-area-field-name]") == "Room 1"
+        assert page.locator("input[name='area-dialog-icon'][value='star']").is_checked()
+        page.fill("[data-area-field-name]", "Nest")
+        page.click(".icon-choice:has(input[value='heart'])")
+        page.click("[data-area-form] button[type=submit]")
+        page.wait_for_selector("[data-area-modal]", state="hidden")
+        header = page.locator(".rgrid-area").first
+        assert header.get_attribute("title") == "Nest"
+        assert header.locator("use").get_attribute("href").endswith("#heart")
+        # Every menu on the page says the new name.
+        names = page.locator(f'[data-area-line="{week["one"].pk}"] [data-area-name]').all_text_contents()
+        assert set(names) == {"Nest"}
+        week["one"].refresh_from_db()
+        assert (week["one"].name, week["one"].icon) == ("Nest", "heart")
+
+    def test_an_area_switched_off_stays_on_the_ranges_that_have_it(self, page, week, monday):
+        open_week(page, monday)
+        row = self._menu(page, week["morning"], monday)
+        row.locator(f'[data-area-edit="{week["two"].pk}"]').click()
+        page.uncheck("[data-area-field-active]")
+        page.click("[data-area-form] button[type=submit]")
+        page.wait_for_selector("[data-area-modal]", state="hidden")
+        ticked = page.locator(f'[data-cell^="{week["morning"].pk}|"]').first.locator("xpath=..") \
+            .locator(f'[data-area-line="{week["two"].pk}"] input')
+        assert ticked.is_enabled() and ticked.is_checked()
+        elsewhere = page.locator(f'[data-cell^="{week["lunch"].pk}|"]').first.locator("xpath=..") \
+            .locator(f'[data-area-line="{week["two"].pk}"] input')
+        assert elsewhere.is_disabled()
+        save(page)
+        assert week["two"] in TimeSlot.objects.get(pk=week["morning"].pk).areas.all()
+
+    def test_deleting_an_unused_area(self, page, week, monday):
+        spare = Area.objects.create(name="Spare", icon=AreaIcon.FISH, position=9)
+        open_week(page, monday)
+        row = self._menu(page, week["lunch"], monday)
+        row.locator(f'[data-area-edit="{spare.pk}"]').click()
+        page.click("[data-area-delete]")
+        page.wait_for_selector("[data-app-dialog]:not([hidden])")
+        page.click("[data-dialog-accept]")
+        page.wait_for_function(f"() => !document.querySelector('[data-area-line=\"{spare.pk}\"]')")
+        assert not Area.objects.filter(pk=spare.pk).exists()
+
+    def test_deleting_a_used_area_is_refused_in_the_dialog(self, page, week, monday):
+        open_week(page, monday)
+        row = self._menu(page, week["morning"], monday)
+        row.locator(f'[data-area-edit="{week["one"].pk}"]').click()
+        page.click("[data-area-delete]")
+        page.click("[data-dialog-accept]")
+        page.wait_for_selector("[data-area-error]:not([hidden])")
+        assert "cannot be deleted" in page.inner_text("[data-area-error]")
+        assert Area.objects.filter(pk=week["one"].pk).exists()
+        assert page.locator(f'[data-area-line="{week["one"].pk}"]').count() == 3
+
+    def test_a_name_is_required(self, page, week, monday):
+        open_week(page, monday)
+        self._menu(page, week["lunch"], monday).locator("[data-area-new]").click()
+        page.click("[data-area-form] button[type=submit]")
+        assert page.locator("[data-area-error]").is_visible()
+        assert Area.objects.count() == 2
+
+    def test_the_first_area_can_be_made_from_an_empty_menu(self, page, org, monday):
+        TimeSlot.objects.create(week=monday, start=T(8, 0), end=T(9, 0))
+        open_week(page, monday)
+        page.locator("[data-slot-areas] summary").first.click()
+        assert page.locator("[data-area-none]").first.is_visible()
+        page.locator("[data-area-new]").first.click()
+        page.fill("[data-area-field-name]", "Room 1")
+        page.press("[data-area-field-name]", "Enter")
+        page.wait_for_selector("[data-area-modal]", state="hidden")
+        assert page.locator("[data-grid-body] [data-area-line]").count() == 1
+        assert page.locator("[data-grid-body] [data-area-none]").first.is_hidden()

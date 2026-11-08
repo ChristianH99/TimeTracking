@@ -16,9 +16,6 @@
       <a class="button button--secondary button--small" href="?week={{ this_week|date:'Y-m-d' }}">{% translate "This week" %}</a>
       <a class="button button--secondary button--small" href="?week={{ next_week|date:'Y-m-d' }}">{% translate "Next" %} &rarr;</a>
     </div>
-    <div class="toolbar-actions">
-      <a class="button button--secondary button--small" href="{% url 'roster:areas' %}?week={{ monday|date:'Y-m-d' }}">{% translate "Areas" %}</a>
-    </div>
   </div>
 
   {% if draft_source %}
@@ -127,6 +124,10 @@
     <template data-template="place">{% include "roster/_placement.html" with form=grid.places.empty_form %}</template>
     <template data-template="note">{% include "roster/_note.html" with form=grid.notes.empty_form %}</template>
     <template data-template="icon"><svg class="ricon" aria-hidden="true" focusable="false"><use href=""></use></svg></template>
+    {% comment %}One line of a time range's areas menu, for an area added while
+    the page is open. The same markup _slot.html renders for the areas that
+    already exist; roster_plan.js fills in the checkbox's name, value and id.{% endcomment %}
+    <template data-template="area-line"><div class="rslot-area-line" data-area-line=""><label class="rslot-area" data-area-choice=""><input type="checkbox"> <span data-area-name></span></label><button type="button" class="rslot-area-edit" data-area-edit="" aria-label="{% translate 'Edit this area' %}" title="{% translate 'Edit this area' %}"><svg class="ricon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#ui-edit"></use></svg></button></div></template>
 
     <div class="form-actions">
       <button type="submit" class="button">{% translate "Save the roster" %}</button>
@@ -172,6 +173,49 @@
     </div>
   </div>
 
+  {% comment %}Making or changing an area, opened from any time range's areas
+  menu. Outside the roster form, and saved on its own the moment Save is
+  pressed (views.area_save): an area is shared by every week rather than part
+  of this one, and somebody adding a room half-way through planning must not
+  have to save — or lose — the week to do it. The dialog says so.{% endcomment %}
+  <div class="modal-overlay" id="roster-area" hidden data-area-modal
+       data-area-new-url="{% url 'roster:area-new' %}"
+       data-area-save-url="{% url 'roster:area-save' 0 %}"
+       data-area-delete-url="{% url 'roster:area-delete' 0 %}">
+    <div class="modal rarea-modal" role="dialog" aria-modal="true" aria-labelledby="roster-area-title">
+      <h2 class="modal-title" id="roster-area-title" data-area-title></h2>
+      <form class="rarea-form" data-area-form novalidate>
+        <div class="modal-body">
+          <label class="field">
+            <span>{% translate "Name" %}</span>
+            <input type="text" maxlength="60" autocomplete="off" data-area-field-name>
+          </label>
+          <fieldset class="icon-choices">
+            <legend>{% translate "Icon" %}</legend>
+            {% for value, label in icons %}
+              <label class="icon-choice" title="{{ label }}">
+                <input type="radio" name="area-dialog-icon" value="{{ value }}">
+                <svg class="ricon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#{{ value }}"></use></svg>
+                <span class="sr-only">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </fieldset>
+          <label class="rarea-active">
+            <input type="checkbox" data-area-field-active>
+            <span>{% translate "In use" %}</span>
+          </label>
+          <p class="help">{% translate "Areas are saved straight away and shared by every week. Switching one off stops it being offered and keeps every week it was used in." %}</p>
+          <p class="field-error" data-area-error hidden></p>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="button">{% translate "Save" %}</button>
+          <button type="button" class="button button--secondary" data-area-cancel>{% translate "Cancel" %}</button>
+          <button type="button" class="link-button rarea-delete" data-area-delete hidden>{% translate "Delete" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   {{ page_data|json_script:"roster-data" }}
 {% endblock %}
 
@@ -180,7 +224,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="page-help-title">
       <h2 class="modal-title" id="page-help-title">{% translate "Planning the week" %}</h2>
       <div class="modal-body">
-        <p>{% translate "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells." %}</p>
+        <p>{% translate "Each row is a time range and each column a weekday. Change a range by typing over its times; it applies to the whole week. “Areas” on a row splits it into rooms or groups, each with its own cells and shown by its icon. The same menu adds a new area or, with the pencil, changes one." %}</p>
         <p>{% translate "Below the grid is everybody who has not been placed on that day yet. People whose contract has no hours that day are lighter, and people who are away are red — both can still be placed when needed. Not everybody has to be." %}</p>
         <p>{% translate "Drag a name into a cell to place them, between cells to move them, or back to the list to take them out. Hold Ctrl while dropping to copy instead of move. You can also type in a cell: pick a name from the suggestions to place that person, or just leave the text — “Break”, for instance — and it is shown in the cell." %}</p>
         <p>{% translate "If somebody works different times from the range, right-click their name (or press and hold it on a touch screen, or press Enter on it) and enter the exact times. The cell then shows only the time that differs: “Anna (07:30)” starts at 07:30, “Anna (–07:45)” leaves at 07:45." %}</p>
